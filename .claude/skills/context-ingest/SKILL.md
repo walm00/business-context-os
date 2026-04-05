@@ -1,0 +1,276 @@
+---
+name: context-ingest
+description: |
+  The single entry point for getting anything new into your context architecture.
+  Takes any input (documents, URLs, YouTube, meeting notes, pasted content) and
+  triages it: dump to _inbox, park in _planned, or integrate into active docs.
+
+  WHEN TO USE:
+  - "Here's a document — integrate it into my context"
+  - "Save this for later" / "Dump these meeting notes"
+  - "I have an idea — park it somewhere"
+  - "Read this article — not sure if it's relevant"
+  - "Our competitor just announced X — update positioning"
+  - Any time new information needs to enter the context architecture
+---
+
+# Context Ingest
+
+## Purpose
+
+**This skill IS:**
+
+- The entry point for getting new knowledge INTO your context architecture
+- A router that sends information to the correct owning data point
+- A classifier that determines what type of knowledge you're adding
+- The mechanism that makes your context system compound over time
+
+**This skill IS NOT:**
+
+- Creating the initial context architecture (use `context-onboarding` for that)
+- Auditing existing context (use `context-audit` for that)
+- A raw file storage system (it extracts and integrates, not archives)
+
+---
+
+## When to Use
+
+- "Here's our new brand guidelines PDF — integrate it" → **integrate** into active docs
+- "Save these meeting notes for later" → **dump** to `_inbox/`
+- "I have an idea about enterprise pricing" → **park** in `_planned/`
+- "I read this article — not sure if it's relevant" → **triage** — Claude reads, recommends a path
+- "Our competitor just launched a new product" → **integrate** into competitive positioning
+- "Watch this YouTube video and capture what matters" → **triage** — Claude extracts, asks where
+- "I pasted some notes — figure out where they belong" → **triage** — Claude classifies, user decides
+
+---
+
+## The Ingest Process
+
+### Step 1: Receive and Triage
+
+Accept input in any form:
+- A file path (markdown, PDF, text)
+- A URL (Claude reads the page, YouTube videos, articles)
+- Pasted text in the conversation
+- A description of what changed ("we decided to pivot to enterprise")
+
+Note what the source is and where it came from. This becomes the source citation.
+
+**Before doing anything else, ask the user: "What do you want to do with this?"**
+
+| User says... | Action | Where it goes |
+|-------------|--------|--------------|
+| "Just save this for later" / "Dump it" / "I'll deal with it later" | Save as-is to `docs/_inbox/` with a descriptive filename. No processing needed. Done. | `docs/_inbox/meeting-2026-04-06.md` |
+| "This is an idea" / "Might do this someday" / "Park it" | Extract the core concept, create a clean doc in `docs/_planned/`. Frontmatter recommended but linking optional. Done. | `docs/_planned/enterprise-tier.md` |
+| "Integrate this" / "Update our context" / "This is real now" | Proceed to Step 2 below — full classify → find owner → integrate flow. | Active data points in `docs/` |
+| "Not sure where this goes" | Read the content, show the user a summary + your recommendation (inbox / planned / integrate), let them decide. | Depends on user choice |
+
+**For _inbox deposits:** Create the file with a simple header:
+
+```markdown
+# [Descriptive title]
+
+**Source:** [URL / meeting / person]
+**Date:** [today]
+**Deposited by:** context-ingest (unprocessed)
+
+---
+
+[Raw content here]
+```
+
+**For _planned deposits:** Use the data point template but with relaxed requirements:
+
+```markdown
+---
+name: "[Concept Name]"
+type: context
+cluster: "[Best guess]"
+status: draft
+owner: "[User]"
+created: "[today]"
+last-updated: "[today]"
+---
+
+## Concept
+
+[Polished description of the idea]
+
+## Why This Matters
+
+[Why it might be worth doing]
+
+## Open Questions
+
+- [What needs to be figured out before this becomes active]
+```
+
+### Step 2: Classify the Content
+
+**Only reach this step if the user chose "integrate" in Step 1.**
+
+Identify what KIND of knowledge this is:
+
+| Content Type | Route To |
+|-------------|----------|
+| Company identity, mission, values | Company/identity data points |
+| Customer info, audience, segments | Audience data points |
+| Product/service changes | Product/value data points |
+| Process changes, workflow updates | Process documents |
+| Market shifts, competitor moves | Market/competitive data points |
+| Policy changes, rules | Policy documents |
+| New facts, reference data | Reference documents |
+| Strategic decisions, direction changes | Strategy data points |
+
+If the content spans multiple types, split it and route each piece separately.
+
+**Temporal check — is this about now or the future?**
+
+If the content made it to Step 2, the user chose "integrate." But double-check the temporal signals:
+
+| Signal in the content | Action |
+|----------------------|--------|
+| "We currently...", "Our pricing is...", "We serve..." | Integrate into active docs (proceed to Step 3) |
+| "We plan to...", "Next quarter...", "We're considering..." | **Stop.** This belongs in `docs/_planned/`, not active docs. Route back to Step 1 triage as a planned deposit. |
+| "We used to...", "Previously...", "Before the pivot..." | May update `_archive/` or inform an active doc's Context section |
+
+**Important:** Do not merge future-state content into an active document without discussing with the user.
+
+### Step 3: Find the Owner
+
+For each piece of knowledge:
+
+1. **Check existing data points** — does one already OWN this topic?
+   - Read the EXCLUSIVELY_OWNS section of candidate data points
+   - If a clear owner exists → route there
+
+2. **Check STRICTLY_AVOIDS** — make sure you're not putting it in the wrong place
+   - If data point X says "STRICTLY_AVOIDS competitor analysis" → don't put competitor info there
+
+3. **No owner found?** → Recommend creating a new data point
+   - Suggest a name, cluster, and initial DOMAIN
+   - Use the template from `docs/templates/context-data-point.md`
+
+### Step 4: Integrate
+
+For each affected data point:
+
+1. **Read the current content** of the owning data point
+2. **Merge the new knowledge** into the appropriate section:
+   - New facts → Content section
+   - New strategic implications → Context section
+   - Source info → Sources section (if it exists)
+3. **Check for contradictions** with existing content:
+   - If the new info contradicts existing content → flag it, don't silently overwrite
+   - Present both versions to the user and ask which is current
+4. **Update metadata:**
+   - Bump `version` (at least patch)
+   - Update `last-updated` to today
+   - Never touch `created`
+
+### Step 5: Update Cross-References
+
+After integrating:
+
+1. **Check relationships** — does this new knowledge affect other data points?
+   - If market context changed → competitive positioning may need review
+   - If audience changed → messaging and value prop may need review
+2. **Update BUILDS_ON / REFERENCES / PROVIDES** if new connections emerged
+3. **Update Document Index** (`docs/document-index.md`) if it exists:
+   - Add the source to "Knowledge Sources Found"
+   - Update coverage assessment if gaps were filled
+
+### Step 6: Report
+
+Summarize what happened:
+
+```
+## Ingest Summary
+
+**Source:** [what was ingested]
+**Date:** [today]
+
+### Updates Made
+- **[data-point-name]** (v1.2.0 → v1.3.0): Added [what]
+- **[data-point-name]** (v2.0.1 → v2.0.2): Updated [what]
+
+### Contradictions Found
+- [data-point]: new info says X, existing content says Y → [resolved/flagged]
+
+### New Data Points Recommended
+- [suggested name]: [why needed]
+
+### Cross-References Updated
+- [data-point-A] now REFERENCES [data-point-B]
+
+### Document Index
+- [Updated / No changes needed]
+```
+
+---
+
+## Handling Contradictions
+
+When new information contradicts existing content:
+
+1. **Don't silently overwrite.** The existing content may be deliberately different.
+2. **Present both versions** to the user:
+   - "Your market-context data point says X. The new source says Y. Which is current?"
+3. **If user confirms the new version:** Update the data point, note the change in the changelog.
+4. **If user says 'keep both':** Note the contradiction in the Context section as a known tension.
+5. **If user is unsure:** Flag the data point as `status: under-review`.
+
+---
+
+## Batch Ingest
+
+For multiple sources at once:
+
+1. List all sources first
+2. Classify each one
+3. Group by target data point
+4. Process one data point at a time (merge all relevant sources into it)
+5. Report all changes at the end
+
+**Recommendation:** Ingest one source at a time when possible. Stay involved. Check the summaries. Guide emphasis. Batch ingest is faster but less supervised.
+
+---
+
+## Source Citation
+
+When integrating new knowledge, preserve where it came from:
+
+```markdown
+## Sources
+
+| Claim | Source | Date | Confidence |
+|-------|--------|------|------------|
+| Market growing 15% YoY | Industry Report 2026 | 2026-03-15 | High |
+| Competitor X raised Series B | TechCrunch article | 2026-04-01 | High |
+| Customer segment shifting to enterprise | Q1 sales review | 2026-04-05 | Medium |
+```
+
+Not every claim needs a source. Use this for important facts, statistics, and claims that might be challenged or need periodic verification.
+
+---
+
+## Automatic Handoffs
+
+After ingest completes, **automatically do these** (don't wait for the user to ask):
+
+1. **→ Rebuild Document Index** — Always: `python .claude/scripts/build_document_index.py`
+2. **→ Update current-state.md** — If the ingested content is significant, offer to update "What Changed Recently"
+3. **→ context-audit** — If a new data point was created: "Want me to run a quick CLEAR audit on the new doc?"
+
+## Integration with Other Skills
+
+| Skill | How It Connects |
+|-------|----------------|
+| **context-onboarding** | Onboarding discovers what exists; ingest adds new knowledge to it |
+| **context-audit** | After ingest, audit catches any boundary violations introduced |
+| **daydream** | Reflection may reveal knowledge gaps; ingest fills them |
+| **core-discipline** | Compounding rule triggers ingest: "file this insight back into context" |
+| **clear-planner** | Large ingests (10+ sources) may need a plan first |
+
+> **Architecture docs:** For routing design context, see [`docs/architecture/content-routing.md`](../../docs/architecture/content-routing.md)

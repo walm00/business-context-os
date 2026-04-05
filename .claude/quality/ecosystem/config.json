@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-04-04",
+  "features": {
+    "lessonsConsolidationEnabled": true,
+    "ecosystemHealthTracking": true,
+    "daydreamEnabled": true
+  },
+  "architecture": {
+    "patterns": {
+      "simpleSkill": "Single SKILL.md with methodology - loads into user context",
+      "simpleAgent": "Single AGENT.md with focused responsibility - runs in isolated context"
+    },
+    "constraints": {
+      "agentsCannotSpawnAgents": true,
+      "skillsOrchestrate": true,
+      "humanApprovalRequired": true
+    }
+  }
+}

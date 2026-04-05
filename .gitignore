@@ -1,0 +1,38 @@
+# Quality session data (keep directory structure)
+.claude/quality/sessions/*
+!.claude/quality/sessions/.gitkeep
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# Temporary files
+*.tmp
+*.temp
+
+# Private strategy docs (not for public repo)
+.private/

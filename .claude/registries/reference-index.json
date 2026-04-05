@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-04-06",
+  "references": {
+    "methodology": {
+      "clear-principles": "docs/methodology/clear-principles.md",
+      "context-architecture": "docs/methodology/context-architecture.md",
+      "ownership-specification": "docs/methodology/ownership-specification.md",
+      "decision-framework": "docs/methodology/decision-framework.md",
+      "document-standards": "docs/methodology/document-standards.md"
+    },
+    "guides": {
+      "getting-started": "docs/guides/getting-started.md",
+      "defining-your-context": "docs/guides/defining-your-context.md",
+      "maintenance-guide": "docs/guides/maintenance-guide.md",
+      "adoption-tiers": "docs/guides/adoption-tiers.md",
+      "for-non-technical-users": "docs/guides/for-non-technical-users.md",
+      "scheduling": "docs/guides/scheduling.md",
+      "migration-guide": "docs/guides/migration-guide.md"
+    },
+    "skills-references": {
+      "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",
+      "clear-planner/plan-manifest-schema": ".claude/skills/clear-planner/references/plan-manifest-schema.md",
+      "clear-planner/planning-workflow-schema": ".claude/skills/clear-planner/references/planning-workflow-schema.md",
+      "clear-planner/discovery-protocol": ".claude/skills/clear-planner/references/discovery-protocol.md",
+      "context-audit/clear-principles-checks": ".claude/skills/context-audit/references/clear-principles-checks.md",
+      "ecosystem-manager/architecture": ".claude/skills/ecosystem-manager/references/architecture.md",
+      "ecosystem-manager/ecosystem-changes-checklist": ".claude/skills/ecosystem-manager/references/ecosystem-changes-checklist.md",
+      "ecosystem-manager/learnings-capture": ".claude/skills/ecosystem-manager/references/learnings-capture.md",
+      "todo-utilities/todo-patterns": ".claude/skills/todo-utilities/references/todo-patterns.md"
+    },
+    "architecture": {
+      "system-design": "docs/architecture/system-design.md",
+      "content-routing": "docs/architecture/content-routing.md",
+      "component-standards": "docs/architecture/component-standards.md",
+      "metadata-system": "docs/architecture/metadata-system.md",
+      "maintenance-lifecycle": "docs/architecture/maintenance-lifecycle.md"
+    },
+    "templates": {
+      "context-data-point": "docs/templates/context-data-point.md",
+      "context-cluster": "docs/templates/context-cluster.md",
+      "context-architecture-canvas": "docs/templates/context-architecture-canvas.md",
+      "maintenance-checklist": "docs/templates/maintenance-checklist.md",
+      "table-of-context": "docs/templates/table-of-context.md",
+      "current-state": "docs/templates/current-state.md"
+    },
+    "skills": {
+      "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",
+      "context-ingest": ".claude/skills/context-ingest/SKILL.md",
+      "core-discipline": ".claude/skills/core-discipline/SKILL.md",
+      "clear-planner": ".claude/skills/clear-planner/SKILL.md",
+      "context-audit": ".claude/skills/context-audit/SKILL.md",
+      "daydream": ".claude/skills/daydream/SKILL.md",
+      "ecosystem-manager": ".claude/skills/ecosystem-manager/SKILL.md",
+      "lessons-consolidate": ".claude/skills/lessons-consolidate/SKILL.md",
+      "doc-lint": ".claude/skills/doc-lint/SKILL.md",
+      "todo-utilities": ".claude/skills/todo-utilities/SKILL.md"
+    },
+    "agents": {
+      "explore": ".claude/agents/explore/AGENT.md"
+    },
+    "hooks": {
+      "post-edit-frontmatter-check": ".claude/hooks/post_edit_frontmatter_check.py"
+    },
+    "scripts": {
+      "build-document-index": ".claude/scripts/build_document_index.py",
+      "find-lessons": ".claude/scripts/find_lessons.py",
+      "consolidate-lessons": ".claude/scripts/consolidate_lessons.py"
+    }
+  }
+}
