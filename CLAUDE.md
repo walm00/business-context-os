@@ -124,10 +124,14 @@ See `docs/methodology/document-standards.md` for full spec, optional fields, and
 
 ### Table of Context
 
-The file `docs/table-of-context.md` is the living index of all business knowledge in this project. Keep it current:
-- Update it when data points are created, renamed, or archived
-- Update it when new undocumented knowledge sources are discovered
-- Run `context-onboarding` periodically to refresh it
+If `docs/table-of-context.md` exists, **read it at the start of context-related work.** It provides:
+- The full inventory of managed documents (so you don't have to scan every time)
+- Metadata health (which docs are complete, which have gaps)
+- **User Notes section** with human decisions, priorities, and context that can't be auto-detected
+
+Rebuild it with: `python .claude/scripts/build_table_of_context.py`
+
+The auto-generated section refreshes from file state. The User Notes section is preserved across runs.
 
 ### Common Workflows
 
