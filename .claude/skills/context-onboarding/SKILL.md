@@ -42,9 +42,23 @@ description: |
 
 ## The Onboarding Process
 
-### Phase 1: Scan (5-10 min)
+### Phase 0: Run the Discovery Script
 
-Systematically explore the repo to find existing business context.
+Start with the automated scan:
+
+```bash
+python .claude/scripts/build_table_of_context.py
+```
+
+This generates `docs/table-of-context.md` with:
+- All documents that have YAML frontmatter (grouped by cluster, with metadata health)
+- All unmanaged documents (markdown files without frontmatter — candidates for formalization)
+
+Review the output, then continue with the manual scan below to catch what the script misses (knowledge in non-markdown files, config files, git history, etc.).
+
+### Phase 1: Deep Scan (5-10 min)
+
+Go beyond what the script found. Explore the repo for business context in non-obvious places.
 
 **Step 1: Locate documentation**
 

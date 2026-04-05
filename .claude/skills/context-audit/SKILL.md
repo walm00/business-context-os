@@ -434,14 +434,15 @@ Before declaring any context area "clean":
 
 ## Table of Context Maintenance
 
-After every audit, check whether `docs/table-of-context.md` needs updating:
+After every audit, refresh the Table of Context:
 
-- New data points created since last update? Add them.
-- Data points renamed, archived, or restructured? Reflect the change.
-- New undocumented knowledge sources found during audit? Add to coverage assessment.
-- Ownership or cluster assignments changed? Update the inventory.
+```bash
+python .claude/scripts/build_table_of_context.py
+```
 
-The Table of Context is the living index of all business knowledge. If it exists, keep it current. If it doesn't exist yet, recommend running `context-onboarding` to create it.
+This regenerates `docs/table-of-context.md` from current file state — picks up new data points, reflects renames, updates metadata health. No manual editing needed.
+
+If the script isn't available or the Table of Context needs enrichment beyond what the script provides (gap analysis, recommendations), update it manually.
 
 ---
 
