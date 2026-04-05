@@ -428,6 +428,20 @@ Before declaring any context area "clean":
 - [ ] Frontmatter follows standard schema
 - [ ] Last-reviewed dates are current
 - [ ] No stale TODOs older than 6 months
+- [ ] Table of Context (`docs/table-of-context.md`) is up to date
+
+---
+
+## Table of Context Maintenance
+
+After every audit, check whether `docs/table-of-context.md` needs updating:
+
+- New data points created since last update? Add them.
+- Data points renamed, archived, or restructured? Reflect the change.
+- New undocumented knowledge sources found during audit? Add to coverage assessment.
+- Ownership or cluster assignments changed? Update the inventory.
+
+The Table of Context is the living index of all business knowledge. If it exists, keep it current. If it doesn't exist yet, recommend running `context-onboarding` to create it.
 
 ---
 

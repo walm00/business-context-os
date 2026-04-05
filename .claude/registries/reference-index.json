@@ -35,6 +35,7 @@
     },
     "skills": {
       "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",
+      "context-ingest": ".claude/skills/context-ingest/SKILL.md",
       "core-discipline": ".claude/skills/core-discipline/SKILL.md",
       "clear-planner": ".claude/skills/clear-planner/SKILL.md",
       "context-audit": ".claude/skills/context-audit/SKILL.md",

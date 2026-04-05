@@ -93,6 +93,22 @@ last-updated: "YYYY-MM-DD"            # MUST update on every edit
 
 ---
 
+## Sources
+
+<!-- Optional but recommended. Track where key claims come from.
+     Helps verify accuracy during reviews and shows confidence level. -->
+
+| Claim | Source | Date | Confidence |
+|-------|--------|------|------------|
+| <!-- e.g., "Market growing 15% YoY" --> | <!-- e.g., "Industry Report 2026" --> | <!-- YYYY-MM-DD --> | <!-- High/Medium/Low --> |
+
+<!-- Confidence guide:
+     High = verified from authoritative source (official report, signed document, direct observation)
+     Medium = from credible but secondary source (news article, team member report, industry estimate)
+     Low = inferred, estimated, or from unverified source (conversation, assumption, outdated data) -->
+
+---
+
 ## Maintenance
 
 ### Review Schedule

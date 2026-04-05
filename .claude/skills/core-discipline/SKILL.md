@@ -49,6 +49,7 @@ category: meta
 | Skill                  | When to Use                         |
 | ---------------------- | ----------------------------------- |
 | `context-onboarding`   | First setup, scanning existing repo |
+| `context-ingest`       | Integrating new sources into data points |
 | `context-audit`        | Auditing context architecture       |
 | `clear-planner`        | Planning changes                    |
 | `daydream`             | Stepping back to reflect            |
@@ -63,5 +64,22 @@ category: meta
 
 **Flexible (Contextual):**
 
+- `context-ingest` - Integrate new sources into existing data points
 - `daydream` - Process scales to need
 - `lessons-consolidate` - Process scales to need
+
+---
+
+## The Compounding Rule
+
+**Every significant task produces TWO outputs:**
+
+1. **The deliverable** — the answer, analysis, comparison, or recommendation the user asked for
+2. **Context updates** — updates to the relevant data points so the knowledge persists
+
+After any synthesis, analysis, or research:
+- Identify which data points are affected
+- Offer to update them with the new insight
+- Update the Table of Context if the landscape changed
+
+**Why:** Without this rule, knowledge evaporates into chat history. With it, every conversation makes the context architecture richer. The system compounds.

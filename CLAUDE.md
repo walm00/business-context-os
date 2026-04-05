@@ -108,6 +108,7 @@ See `docs/methodology/document-standards.md` for full spec, optional fields, and
 - Every document MUST have an Ownership Specification (DOMAIN + EXCLUSIVELY_OWNS at minimum)
 - Relationships between documents MUST be defined, not implied
 - All changes MUST follow CLEAR principles
+- **Compounding rule:** After any significant analysis, synthesis, or research — offer to update the relevant data point with the new insight. Knowledge must not evaporate into chat history. Every task produces two outputs: the answer + context updates.
 
 ### NEVER
 
@@ -120,6 +121,13 @@ See `docs/methodology/document-standards.md` for full spec, optional fields, and
 ---
 
 ## Quick Reference
+
+### Table of Context
+
+The file `docs/table-of-context.md` is the living index of all business knowledge in this project. Keep it current:
+- Update it when data points are created, renamed, or archived
+- Update it when new undocumented knowledge sources are discovered
+- Run `context-onboarding` periodically to refresh it
 
 ### Common Workflows
 

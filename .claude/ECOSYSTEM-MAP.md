@@ -9,6 +9,7 @@ This is your navigation hub for the Business Context OS ecosystem. Use this docu
 | Skill | Purpose | Tier |
 |-------|---------|------|
 | context-onboarding | Initial repo scan, produces Table of Context | 1 |
+| context-ingest | Integrate new sources into existing data points | 1 |
 | core-discipline | Bootstrap - proactive skill discovery | 1 |
 | doc-lint | Documentation quality validation | 1 |
 | clear-planner | Implementation planning with sessions | 2 |
