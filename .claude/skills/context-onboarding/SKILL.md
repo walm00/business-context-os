@@ -246,6 +246,25 @@ When re-running, compare against the existing Table of Context to highlight:
 
 ---
 
+## Phase 5: Set Up Your Maintenance Rhythm
+
+After the initial scan and first data points are created, recommend a schedule.
+
+**Ask the user:** "How would you describe your situation?"
+
+| If they say... | Recommend |
+|----------------|-----------|
+| "Just getting started" / "New project" / "Few docs" | **Building rhythm:** daily Table of Context rebuild, weekly health check |
+| "We have some docs, adding more regularly" | **Active rhythm:** weekly health check + ToC rebuild, bi-weekly daydream, monthly deep audit |
+| "Mature docs, not much changes" | **Steady rhythm:** bi-weekly health check, monthly daydream, quarterly review |
+| "It's a mess, need to consolidate" | **Migration rhythm:** daily ToC rebuild, health check every 2-3 days |
+
+Point them to `docs/guides/scheduling.md` for the full prompts and cron expressions.
+
+**Minimum recommended:** Set up at least the weekly health check + Table of Context rebuild before ending the onboarding session. One scheduled task is better than zero.
+
+---
+
 ## Tips
 
 - **Don't try to formalize everything at once.** The Table of Context is a map, not a to-do list.
