@@ -15,7 +15,8 @@
       "maintenance-guide": "docs/guides/maintenance-guide.md",
       "adoption-tiers": "docs/guides/adoption-tiers.md",
       "for-non-technical-users": "docs/guides/for-non-technical-users.md",
-      "scheduling": "docs/guides/scheduling.md"
+      "scheduling": "docs/guides/scheduling.md",
+      "migration-guide": "docs/guides/migration-guide.md"
     },
     "skills-references": {
       "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",

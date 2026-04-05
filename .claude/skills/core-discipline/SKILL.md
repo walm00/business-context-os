@@ -10,7 +10,13 @@ category: meta
 
 ## The Fundamental Rule
 
-**If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.**
+**If there's a reasonable chance a skill applies to what you're doing, CHECK it. Match the overhead to the task.**
+
+- **Small change** (update one data point, fix a typo) → just do it, no ceremony
+- **Medium change** (add a new data point, consolidate two docs) → check if context-audit or context-ingest applies
+- **Significant change** (restructure a cluster, create new skills) → use clear-planner, run the full workflow
+
+The point is not to invoke every skill every time. The point is to not miss the ones that matter.
 
 ---
 

@@ -166,6 +166,18 @@ Keep it short. Three to five recent entries. Not a full git log.
 
 ---
 
+## Ownership Disputes
+
+When two people or documents claim the same content:
+
+1. **Check the specs.** Read both EXCLUSIVELY_OWNS sections. Usually the answer is already there — one document owns the concept, the other should reference it.
+2. **If genuinely ambiguous:** the architecture owner (whoever maintains the Table of Context) decides. Their decision is documented by updating both ownership specs.
+3. **If no architecture owner exists:** the person who created the data point first is the default owner. The other party splits out their distinct angle into a separate data point with clear boundaries.
+
+The goal is not to prevent disagreement — it's to resolve it in the ownership spec so the same question never comes up twice.
+
+---
+
 ## Ownership Specification Format
 
 The ownership spec is the heart of every document. It prevents overlap and drift.
