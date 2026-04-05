@@ -3,6 +3,10 @@
 Build Table of Context - scans docs/ for managed documents, reads YAML frontmatter,
 and generates docs/table-of-context.md with inventory, coverage, and health report.
 
+The generated file has two zones:
+  1. AUTO-GENERATED (overwritten every run) - inventory, health, unmanaged docs
+  2. USER NOTES (preserved across runs) - your custom annotations, priorities, decisions
+
 Usage:
     python .claude/scripts/build_table_of_context.py              # Scan docs/, write table-of-context.md
     python .claude/scripts/build_table_of_context.py --path .     # Scan everything
@@ -18,10 +22,7 @@ from pathlib import Path
 
 # --- Configuration ---
 
-# Default scan directory
 DEFAULT_SCAN_DIR = "docs"
-
-# Output file
 OUTPUT_FILE = "docs/table-of-context.md"
 
 # Skip these paths (BCOS framework files, not user content)
@@ -32,12 +33,13 @@ SKIP_PATHS = {
     "docs/table-of-context.md",
 }
 
-# Required frontmatter fields
 REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "owner", "created", "last-updated"]
 
-# Valid values
-VALID_TYPES = {"context", "process", "policy", "reference", "playbook"}
-VALID_STATUSES = {"draft", "active", "under-review", "archived"}
+# Zone markers
+AUTO_START = "<!-- AUTO-GENERATED SECTION — DO NOT EDIT BELOW THIS LINE -->"
+AUTO_END = "<!-- END AUTO-GENERATED SECTION -->"
+USER_START = "<!-- USER NOTES — EDIT FREELY BELOW THIS LINE. This section is preserved across runs. -->"
+USER_END = "<!-- END USER NOTES -->"
 
 # --- YAML Frontmatter Extraction ---
 
@@ -72,14 +74,36 @@ def get_file_info(filepath):
     try:
         stat = os.stat(filepath)
         size = stat.st_size
-        if size < 1024:
-            size_str = f"{size} B"
-        else:
-            size_str = f"{size / 1024:.1f} KB"
+        size_str = f"{size} B" if size < 1024 else f"{size / 1024:.1f} KB"
         mtime = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d")
         return size_str, mtime
     except OSError:
         return "unknown", "unknown"
+
+
+# --- User Notes Preservation ---
+
+def extract_user_notes(filepath):
+    """Read existing file and extract the user notes section."""
+    if not os.path.exists(filepath):
+        return None
+
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except (IOError, UnicodeDecodeError):
+        return None
+
+    # Find content between USER_START and USER_END
+    start_idx = content.find(USER_START)
+    end_idx = content.find(USER_END)
+
+    if start_idx == -1 or end_idx == -1:
+        return None
+
+    # Extract everything between the markers (excluding the markers themselves)
+    notes = content[start_idx + len(USER_START):end_idx].strip()
+    return notes if notes else None
 
 
 # --- Scanning ---
@@ -97,9 +121,9 @@ def should_skip(filepath, scan_dir):
 
 def scan_documents(scan_dir):
     """Scan directory for markdown files, extract metadata."""
-    managed = []     # Files with valid frontmatter
-    unmanaged = []   # Files without frontmatter
-    incomplete = []  # Files with partial frontmatter
+    managed = []
+    unmanaged = []
+    incomplete = []
 
     pattern = os.path.join(scan_dir, "**", "*.md")
     files = sorted(glob.glob(pattern, recursive=True))
@@ -121,7 +145,6 @@ def scan_documents(scan_dir):
             })
             continue
 
-        # Check completeness
         missing = [f for f in REQUIRED_FIELDS if f not in meta]
         rel_path = os.path.relpath(filepath).replace("\\", "/")
 
@@ -141,25 +164,36 @@ def scan_documents(scan_dir):
 
 # --- Report Generation ---
 
-def generate_report(managed, unmanaged, incomplete, scan_dir):
-    """Generate the Table of Context markdown."""
+def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes):
+    """Generate the Table of Context markdown with auto and user zones."""
     today = datetime.date.today().strftime("%Y-%m-%d")
     lines = []
 
+    # --- Header ---
     lines.append("# Table of Context")
     lines.append("")
-    lines.append(f"**Generated:** {today}")
-    lines.append(f"**Script:** `.claude/scripts/build_table_of_context.py`")
-    lines.append(f"**Scanned:** `{scan_dir}/`")
+    lines.append(f"> **Generated:** {today} by `build_table_of_context.py`")
+    lines.append("")
+    lines.append("This file has two sections:")
+    lines.append("- **Auto-generated** — rebuilt every time the script runs. DO NOT edit.")
+    lines.append("- **Your Notes** — your annotations, priorities, decisions. Preserved across runs.")
     lines.append("")
     lines.append("---")
+    lines.append("")
+
+    # === AUTO-GENERATED ZONE ===
+    lines.append(AUTO_START)
+    lines.append("")
+    lines.append("## DO NOT EDIT THIS SECTION")
+    lines.append("")
+    lines.append("Everything between here and the end marker is regenerated automatically.")
+    lines.append("Your edits WILL be overwritten. Use the **Your Notes** section below for custom content.")
     lines.append("")
 
     # --- Summary ---
     lines.append("## Summary")
     lines.append("")
 
-    # Group by cluster
     clusters = {}
     for doc in managed:
         cluster = doc["meta"].get("cluster", "_Unassigned_")
@@ -180,7 +214,9 @@ def generate_report(managed, unmanaged, incomplete, scan_dir):
             total_complete += complete
         lines.append(f"| **Total** | **{total_docs}** | **{total_complete}/{total_docs}** |")
     else:
-        lines.append("No managed documents found.")
+        lines.append("No managed documents found. Create data points in `docs/` with YAML frontmatter to get started.")
+        lines.append("")
+        lines.append("See `docs/templates/context-data-point.md` for the template.")
 
     lines.append("")
 
@@ -218,28 +254,29 @@ def generate_report(managed, unmanaged, incomplete, scan_dir):
     lines.append("")
 
     # --- Documents by Cluster ---
-    lines.append("## Documents by Cluster")
-    lines.append("")
-
-    for cluster_name in sorted(clusters.keys()):
-        docs = clusters[cluster_name]
-        lines.append(f"### {cluster_name}")
-        lines.append("")
-        lines.append("| Document | Type | Owner | Version | Status | Last Updated |")
-        lines.append("|----------|------|-------|---------|--------|-------------|")
-        for doc in sorted(docs, key=lambda d: d["meta"].get("name", d["filename"])):
-            meta = doc["meta"]
-            name = meta.get("name", doc["filename"])
-            doc_type = meta.get("type", "MISSING")
-            owner = meta.get("owner", "MISSING")
-            version = meta.get("version", "MISSING")
-            status = meta.get("status", "MISSING")
-            updated = meta.get("last-updated", "MISSING")
-            lines.append(f"| [{name}]({doc['path']}) | {doc_type} | {owner} | {version} | {status} | {updated} |")
+    if clusters:
+        lines.append("## Documents by Cluster")
         lines.append("")
 
-    lines.append("---")
-    lines.append("")
+        for cluster_name in sorted(clusters.keys()):
+            docs = clusters[cluster_name]
+            lines.append(f"### {cluster_name}")
+            lines.append("")
+            lines.append("| Document | Type | Owner | Version | Status | Last Updated |")
+            lines.append("|----------|------|-------|---------|--------|-------------|")
+            for doc in sorted(docs, key=lambda d: d["meta"].get("name", d["filename"])):
+                meta = doc["meta"]
+                name = meta.get("name", doc["filename"])
+                doc_type = meta.get("type", "MISSING")
+                owner = meta.get("owner", "MISSING")
+                version = meta.get("version", "MISSING")
+                status = meta.get("status", "MISSING")
+                updated = meta.get("last-updated", "MISSING")
+                lines.append(f"| [{name}]({doc['path']}) | {doc_type} | {owner} | {version} | {status} | {updated} |")
+            lines.append("")
+
+        lines.append("---")
+        lines.append("")
 
     # --- Metadata Health ---
     lines.append("## Metadata Health")
@@ -265,16 +302,53 @@ def generate_report(managed, unmanaged, incomplete, scan_dir):
     lines.append("")
 
     # --- Unmanaged Documents ---
+    lines.append("## Unmanaged Documents")
+    lines.append("")
     if unmanaged:
-        lines.append("## Unmanaged Documents")
-        lines.append("")
         lines.append("Files found without YAML frontmatter. Consider adding metadata or formalizing as data points:")
         lines.append("")
         lines.append("| File | Size | Last Modified |")
         lines.append("|------|------|--------------|")
         for doc in unmanaged:
             lines.append(f"| {doc['path']} | {doc['size']} | {doc['modified']} |")
+    else:
+        lines.append("All documents have YAML frontmatter. No unmanaged files detected.")
+    lines.append("")
+
+    # === END AUTO-GENERATED ZONE ===
+    lines.append(AUTO_END)
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    # === USER NOTES ZONE ===
+    lines.append(USER_START)
+    lines.append("")
+
+    if existing_user_notes:
+        # Preserve whatever the user had
+        lines.append(existing_user_notes)
+    else:
+        # First run — provide starter template
+        lines.append("## Your Notes")
         lines.append("")
+        lines.append("This section is yours. It is **preserved** when the script regenerates the file above.")
+        lines.append("Use it for priorities, decisions, observations, or anything the auto-scan can't capture.")
+        lines.append("")
+        lines.append("### Priorities")
+        lines.append("")
+        lines.append("<!-- Which data points to create or update next? -->")
+        lines.append("")
+        lines.append("### Decisions")
+        lines.append("")
+        lines.append("<!-- Ownership rulings, boundary decisions, architectural choices -->")
+        lines.append("")
+        lines.append("### Observations")
+        lines.append("")
+        lines.append("<!-- Patterns you've noticed, gaps, things to investigate -->")
+
+    lines.append("")
+    lines.append(USER_END)
 
     return "\n".join(lines)
 
@@ -298,8 +372,11 @@ def main():
         print(f"Error: '{scan_dir}' is not a directory")
         sys.exit(1)
 
+    # Preserve user notes from existing file
+    existing_notes = extract_user_notes(OUTPUT_FILE) if not dry_run else None
+
     managed, unmanaged, incomplete = scan_documents(scan_dir)
-    report = generate_report(managed, unmanaged, incomplete, scan_dir)
+    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes)
 
     if dry_run:
         print(report)
@@ -311,6 +388,10 @@ def main():
         print(f"  Managed documents: {len(managed)}")
         print(f"  Unmanaged documents: {len(unmanaged)}")
         print(f"  Incomplete metadata: {len(incomplete)}")
+        if existing_notes:
+            print(f"  User notes: preserved")
+        else:
+            print(f"  User notes: starter template created")
 
 
 if __name__ == "__main__":
