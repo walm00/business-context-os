@@ -33,40 +33,67 @@ category: strategic
 
 ## The Daydream Process
 
-### Phase 1: Survey (5 min)
+### Phase 1: What Changed Since Last Time (5 min)
 
-Read the current state of the world:
-1. **`docs/table-of-context.md`** — Does the business description still feel right?
-2. **`docs/current-state.md`** — What changed recently? What's in flux? What are this week's priorities?
-3. **`docs/document-index.md`** — Any new unmanaged docs? Any stale metadata?
-4. Scan data point files — anything feel off?
+Start by finding what actually moved:
 
-The "What Changed Recently" section in current-state.md is the best starting point. Changes that haven't propagated to data points are where drift starts.
+**Step 1: Check git for document changes**
 
-### Phase 2: Question (10 min)
+```bash
+# What docs changed in the last 2 weeks (or since last daydream)?
+git log --since="2 weeks ago" --name-only --pretty=format:"%h %s (%ar)" -- docs/
+```
 
-Ask yourself these prompts:
+This shows exactly which files changed, when, and the commit messages (which often explain why).
 
-**Completeness:**
-- What do we know that isn't captured anywhere?
-- What questions do team members keep asking that our context should answer?
-- What decisions do we make regularly that don't have context to support them?
+**Step 2: For each changed file, understand what changed**
 
-**Relevance:**
-- Has our market changed since we last updated?
+```bash
+# See the actual diff for a specific file
+git diff HEAD~5 -- docs/path/to/changed-file.md
+```
+
+Read the diffs. Not just "file X was updated" but WHAT changed — new content added? Ownership boundary shifted? Metadata updated?
+
+**Step 3: Check for new or disappeared files**
+
+```bash
+# Rebuild the Document Index to catch new/removed files
+python .claude/scripts/build_document_index.py --dry-run
+```
+
+Compare the output against the existing `docs/document-index.md`. New files? Missing files?
+
+**Step 4: Read the context layers**
+
+1. **`docs/current-state.md`** — What's in flux? Active decisions? "What Changed Recently" section is the human's signal of what's moving.
+2. **`docs/table-of-context.md`** — Does the business description still match reality given what changed?
+3. **`docs/document-index.md`** — Any metadata going stale? New unmanaged docs?
+
+### Phase 2: Reflect on Changes (10 min)
+
+Based on what you found in Phase 1, ask:
+
+**About the changes:**
+- Why did these data points change? Was it a routine update or a signal of something bigger?
+- Do the changes in one data point create ripple effects in others that haven't been updated yet?
+- Are the "Active Decisions" in current-state.md resolved? Do they need to propagate?
+
+**About what's missing:**
+- Were any changes made directly to docs WITHOUT going through context-ingest? (Bypassed ownership?)
+- Are there new unmanaged files that appeared? What knowledge are they trying to capture?
+- What questions keep coming up that no data point answers?
+
+**About the big picture:**
+- Does table-of-context.md still describe the business accurately given recent changes?
 - Are we still solving the same problems for the same people?
-- Do our competitive advantages and key differentiators still hold?
-- Have any of our core processes changed without the docs catching up?
+- Has the competitive landscape shifted?
+- Have any processes changed without docs catching up?
 
-**Connections:**
-- Are there data points that should be connected but aren't?
+**About connections:**
+- Did recent changes create new relationships between data points that aren't documented?
 - Are there clusters that should exist but don't?
 - Is anything isolated that should be integrated?
-
-**Evolution:**
-- Where is our business heading in the next 6 months?
-- What context will we need that we don't have yet?
-- What context do we have that we won't need?
 
 ### Phase 3: Imagine (10 min)
 
@@ -77,13 +104,19 @@ Without constraints, imagine:
 - If a key team member left tomorrow, would their knowledge survive in our documentation?
 - What would our context architecture look like in 6 months if everything went well?
 
-### Phase 4: Capture (5 min)
+### Phase 4: Capture and Update (5 min)
 
-Write down:
+**Capture insights:**
 1. **Insights**: What did you realize?
 2. **Gaps**: What's missing from your architecture?
 3. **Actions**: What should you do about it? (Create, update, or remove data points)
 4. **Lessons**: What should be captured in lessons.json?
+
+**Update the context layers (offer to the user):**
+- **table-of-context.md** — If the business picture shifted, update the relevant sections
+- **current-state.md** — Refresh "What Changed Recently" based on what was discovered
+- **Document Index** — Run `python .claude/scripts/build_document_index.py` if files changed
+- **Data points** — Compounding rule: any insights from this reflection that should be filed back into specific data points
 
 ---
 
