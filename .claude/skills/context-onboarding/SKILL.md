@@ -194,7 +194,22 @@ These overlaps are your highest-value targets for CLEAR ownership.
 5. Re-run this scan periodically to find new undocumented knowledge
 ```
 
-### Phase 4: Recommend (2 min)
+### Phase 4: Draft the Table of Context (5 min)
+
+Based on everything discovered, create an initial `docs/table-of-context.md` using the template at `docs/templates/table-of-context.md`.
+
+Synthesize from the scan:
+- **Who We Are** — piece together the company/project identity from README, about pages, existing docs
+- **What We Do** — extract the core offering from product docs, descriptions
+- **Who We Serve** — find audience definitions wherever they exist
+- **What Makes Us Different** — look for positioning, competitive, or differentiator content
+- **Current Phase** — infer from doc recency, project maturity, recent commits
+
+Mark anything uncertain with "[TO VERIFY]". This is a draft — the user refines it.
+
+Also ask the user if they want to create `docs/current-state.md` now (using the template). If yes, have a brief conversation about their role, this week's priorities, and what's changing.
+
+### Phase 5: Recommend (2 min)
 
 Present findings to the user with:
 
@@ -202,6 +217,7 @@ Present findings to the user with:
 2. **Key gaps**: What's missing that most organizations need
 3. **Top 3 recommendations**: Which data points to create first and why
 4. **Overlaps**: Where the same info lives in multiple places (context rot already happening)
+5. **Table of Context**: "I created an initial draft — please review and correct"
 
 ---
 

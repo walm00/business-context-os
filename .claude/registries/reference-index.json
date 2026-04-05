@@ -32,7 +32,9 @@
       "context-data-point": "docs/templates/context-data-point.md",
       "context-cluster": "docs/templates/context-cluster.md",
       "context-architecture-canvas": "docs/templates/context-architecture-canvas.md",
-      "maintenance-checklist": "docs/templates/maintenance-checklist.md"
+      "maintenance-checklist": "docs/templates/maintenance-checklist.md",
+      "table-of-context": "docs/templates/table-of-context.md",
+      "current-state": "docs/templates/current-state.md"
     },
     "skills": {
       "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",

@@ -35,10 +35,13 @@ category: strategic
 
 ### Phase 1: Survey (5 min)
 
-Look at your current context architecture:
-- Read your context-architecture.md
-- Scan your data point files
-- Note what feels right and what feels off
+Read the current state of the world:
+1. **`docs/table-of-context.md`** — Does the business description still feel right?
+2. **`docs/current-state.md`** — What changed recently? What's in flux? What are this week's priorities?
+3. **`docs/document-index.md`** — Any new unmanaged docs? Any stale metadata?
+4. Scan data point files — anything feel off?
+
+The "What Changed Recently" section in current-state.md is the best starting point. Changes that haven't propagated to data points are where drift starts.
 
 ### Phase 2: Question (10 min)
 
