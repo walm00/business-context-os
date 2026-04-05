@@ -86,6 +86,6 @@ The point is not to invoke every skill every time. The point is to not miss the 
 After any synthesis, analysis, or research:
 - Identify which data points are affected
 - Offer to update them with the new insight
-- Update the Table of Context if the landscape changed
+- Update the Document Index if the landscape changed
 
 **Why:** Without this rule, knowledge evaporates into chat history. With it, every conversation makes the context architecture richer. The system compounds.

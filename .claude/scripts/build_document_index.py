@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Build Table of Context - scans docs/ for managed documents, reads YAML frontmatter,
-and generates docs/table-of-context.md with inventory, coverage, and health report.
+Build Document Index - scans docs/ for managed documents, reads YAML frontmatter,
+and generates docs/document-index.md with inventory, coverage, and health report.
 
 The generated file has two zones:
   1. AUTO-GENERATED (overwritten every run) - inventory, health, unmanaged docs
   2. USER NOTES (preserved across runs) - your custom annotations, priorities, decisions
 
 Usage:
-    python .claude/scripts/build_table_of_context.py              # Scan docs/, write table-of-context.md
-    python .claude/scripts/build_table_of_context.py --path .     # Scan everything
-    python .claude/scripts/build_table_of_context.py --dry-run    # Print to stdout, don't write
+    python .claude/scripts/build_document_index.py              # Scan docs/, write document-index.md
+    python .claude/scripts/build_document_index.py --path .     # Scan everything
+    python .claude/scripts/build_document_index.py --dry-run    # Print to stdout, don't write
 """
 
 import os
@@ -23,14 +23,14 @@ from pathlib import Path
 # --- Configuration ---
 
 DEFAULT_SCAN_DIR = "docs"
-OUTPUT_FILE = "docs/table-of-context.md"
+OUTPUT_FILE = "docs/document-index.md"
 
 # Skip these paths (BCOS framework files, not user content)
 SKIP_PATHS = {
     "docs/methodology",
     "docs/guides",
     "docs/templates",
-    "docs/table-of-context.md",
+    "docs/document-index.md",
 }
 
 REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "owner", "created", "last-updated"]
@@ -165,14 +165,14 @@ def scan_documents(scan_dir):
 # --- Report Generation ---
 
 def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes):
-    """Generate the Table of Context markdown with auto and user zones."""
+    """Generate the Document Index markdown with auto and user zones."""
     today = datetime.date.today().strftime("%Y-%m-%d")
     lines = []
 
     # --- Header ---
-    lines.append("# Table of Context")
+    lines.append("# Document Index")
     lines.append("")
-    lines.append(f"> **Generated:** {today} by `build_table_of_context.py`")
+    lines.append(f"> **Generated:** {today} by `build_document_index.py`")
     lines.append("")
     lines.append("This file has two sections:")
     lines.append("- **Auto-generated** — rebuilt every time the script runs. DO NOT edit.")
@@ -395,7 +395,7 @@ def main():
         os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
             f.write(report)
-        print(f"Table of Context written to {OUTPUT_FILE}")
+        print(f"Document Index written to {OUTPUT_FILE}")
         print(f"  Managed documents: {len(managed)}")
         print(f"  Unmanaged documents: {len(unmanaged)}")
         print(f"  Incomplete metadata: {len(incomplete)}")

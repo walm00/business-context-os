@@ -16,7 +16,7 @@ This guide walks you through consolidating that chaos into a CLEAR-compliant con
 
 **Run context-onboarding first.** Ask Claude:
 
-> "Scan my repo and create a Table of Context"
+> "Scan my repo and create a Document Index"
 
 This gives you a map of what exists before you start reorganizing. Don't skip this — you need the inventory before you can consolidate.
 
@@ -28,7 +28,7 @@ This gives you a map of what exists before you start reorganizing. Don't skip th
 
 ### Phase 1: Triage (30 min)
 
-Look at your Table of Context and sort every existing document into one of four buckets:
+Look at your Document Index and sort every existing document into one of four buckets:
 
 | Bucket | What Goes Here | Example |
 |--------|---------------|---------|
@@ -165,7 +165,7 @@ Not everything needs to be a data point:
 
 ## Migration Checklist
 
-- [ ] Ran context-onboarding to get Table of Context
+- [ ] Ran context-onboarding to get Document Index
 - [ ] Triaged all existing docs into Keep/Consolidate/Extract/Archive
 - [ ] Identified first 5 knowledge domains
 - [ ] Created 5 data points with ownership specs
@@ -174,5 +174,5 @@ Not everything needs to be a data point:
 - [ ] Added cross-references to replace removed sections in original docs
 - [ ] Connected data points with BUILDS_ON / REFERENCES / PROVIDES
 - [ ] Archived or cleaned up source documents
-- [ ] Updated Table of Context
+- [ ] Updated Document Index
 - [ ] Set up weekly maintenance rhythm

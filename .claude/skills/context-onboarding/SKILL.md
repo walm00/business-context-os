@@ -2,7 +2,7 @@
 name: context-onboarding
 description: |
   First-run discovery skill. Scans an existing repo to discover what business context already exists,
-  produces a Table of Context mapping all knowledge sources, and recommends which context data points
+  produces a Document Index mapping all knowledge sources, and recommends which context data points
   to create first. The starting point for adopting Business Context OS in any project.
 
   WHEN TO USE:
@@ -19,7 +19,7 @@ description: |
 
 - The recommended FIRST STEP when adopting Business Context OS
 - A discovery tool that scans your repo to find existing business context
-- The producer of your **Table of Context** -- a living map of all knowledge sources
+- The producer of your **Document Index** -- a living map of all knowledge sources
 - A recommender of which context data points to define first
 
 **This skill IS NOT:**
@@ -47,10 +47,10 @@ description: |
 Start with the automated scan:
 
 ```bash
-python .claude/scripts/build_table_of_context.py
+python .claude/scripts/build_document_index.py
 ```
 
-This generates `docs/table-of-context.md` with:
+This generates `docs/document-index.md` with:
 - All documents that have YAML frontmatter (grouped by cluster, with metadata health)
 - All unmanaged documents (markdown files without frontmatter — candidates for formalization)
 
@@ -95,7 +95,7 @@ Look for business context that lives in non-obvious places:
 
 ### Phase 2: Map (5 min)
 
-Organize findings into the **Table of Context**.
+Organize findings into the **Document Index**.
 
 **Cluster the discovered knowledge** into natural groups:
 
@@ -115,14 +115,14 @@ Organize findings into the **Table of Context**.
 - Are customer/audience definitions current?
 - Is competitive context captured?
 
-### Phase 3: Produce Table of Context (5 min)
+### Phase 3: Produce Document Index (5 min)
 
-Create the Table of Context file at `docs/table-of-context.md`.
+Create the Document Index file at `docs/document-index.md`.
 
 Use this structure:
 
 ```markdown
-# Table of Context
+# Document Index
 
 **Generated:** {date}
 **Scanned by:** context-onboarding skill
@@ -187,7 +187,7 @@ These overlaps are your highest-value targets for CLEAR ownership.
 
 ## Next Steps
 
-1. Review this Table of Context with your team
+1. Review this Document Index with your team
 2. Follow `docs/guides/getting-started.md` starting at Step 2
 3. Create your first 3 data points from the Priority 1 list above
 4. Use the `context-data-point.md` template in `docs/templates/`
@@ -219,14 +219,14 @@ When recommending which data points to create first, use this priority order:
 
 ## Re-running the Scan
 
-The Table of Context is a **living document**. Re-run the scan:
+The Document Index is a **living document**. Re-run the scan:
 
 - After major project milestones (launches, rebrands, pivots)
 - When new team members join and create new docs
 - Monthly, as part of your maintenance rhythm
 - Whenever you suspect undocumented knowledge is accumulating
 
-When re-running, compare against the existing Table of Context to highlight:
+When re-running, compare against the existing Document Index to highlight:
 - New sources discovered since last scan
 - Sources that have been updated
 - Sources that have gone stale
@@ -238,11 +238,11 @@ When re-running, compare against the existing Table of Context to highlight:
 
 | Skill | How It Connects |
 |-------|----------------|
-| **Getting Started guide** | Table of Context feeds directly into Step 2 (Define Your First 3 Data Points) |
+| **Getting Started guide** | Document Index feeds directly into Step 2 (Define Your First 3 Data Points) |
 | **context-audit** | After data points exist, audit them for CLEAR compliance |
-| **daydream** | Use Table of Context as input for strategic reflection |
-| **clear-planner** | Use Table of Context to scope documentation work |
-| **ecosystem-manager** | Table of Context can reveal need for new skills/agents |
+| **daydream** | Use Document Index as input for strategic reflection |
+| **clear-planner** | Use Document Index to scope documentation work |
+| **ecosystem-manager** | Document Index can reveal need for new skills/agents |
 
 ---
 
@@ -254,21 +254,21 @@ After the initial scan and first data points are created, recommend a schedule.
 
 | If they say... | Recommend |
 |----------------|-----------|
-| "Just getting started" / "New project" / "Few docs" | **Building rhythm:** daily Table of Context rebuild, weekly health check |
+| "Just getting started" / "New project" / "Few docs" | **Building rhythm:** daily Document Index rebuild, weekly health check |
 | "We have some docs, adding more regularly" | **Active rhythm:** weekly health check + ToC rebuild, bi-weekly daydream, monthly deep audit |
 | "Mature docs, not much changes" | **Steady rhythm:** bi-weekly health check, monthly daydream, quarterly review |
 | "It's a mess, need to consolidate" | **Migration rhythm:** daily ToC rebuild, health check every 2-3 days |
 
 Point them to `docs/guides/scheduling.md` for the full prompts and cron expressions.
 
-**Minimum recommended:** Set up at least the weekly health check + Table of Context rebuild before ending the onboarding session. One scheduled task is better than zero.
+**Minimum recommended:** Set up at least the weekly health check + Document Index rebuild before ending the onboarding session. One scheduled task is better than zero.
 
 ---
 
 ## Tips
 
-- **Don't try to formalize everything at once.** The Table of Context is a map, not a to-do list.
+- **Don't try to formalize everything at once.** The Document Index is a map, not a to-do list.
 - **Start with contradictions.** Where two files disagree is where CLEAR adds the most value.
-- **Include the team.** Share the Table of Context -- others will spot knowledge you missed.
+- **Include the team.** Share the Document Index -- others will spot knowledge you missed.
 - **Technical docs are context too.** Note them in the scan but don't prioritize formalizing them unless they contain business decisions.
 - **Git history is your friend.** Check when files were last modified to assess freshness.

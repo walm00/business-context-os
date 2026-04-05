@@ -428,21 +428,21 @@ Before declaring any context area "clean":
 - [ ] Frontmatter follows standard schema
 - [ ] Last-reviewed dates are current
 - [ ] No stale TODOs older than 6 months
-- [ ] Table of Context (`docs/table-of-context.md`) is up to date
+- [ ] Document Index (`docs/document-index.md`) is up to date
 
 ---
 
-## Table of Context Maintenance
+## Document Index Maintenance
 
-After every audit, refresh the Table of Context:
+After every audit, refresh the Document Index:
 
 ```bash
-python .claude/scripts/build_table_of_context.py
+python .claude/scripts/build_document_index.py
 ```
 
-This regenerates `docs/table-of-context.md` from current file state — picks up new data points, reflects renames, updates metadata health. No manual editing needed.
+This regenerates `docs/document-index.md` from current file state — picks up new data points, reflects renames, updates metadata health. No manual editing needed.
 
-If the script isn't available or the Table of Context needs enrichment beyond what the script provides (gap analysis, recommendations), update it manually.
+If the script isn't available or the Document Index needs enrichment beyond what the script provides (gap analysis, recommendations), update it manually.
 
 ---
 

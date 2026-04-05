@@ -86,7 +86,7 @@ bash /tmp/bcos/install.sh
 
 Then ask Claude:
 
-> "Scan my repo and create a Table of Context"
+> "Scan my repo and create a Document Index"
 
 That's it. The `context-onboarding` skill scans your existing docs, maps what knowledge you already have, and recommends which context data points to create first.
 
@@ -170,7 +170,7 @@ When two documents disagree, the ownership spec tells you which one is authorita
 <td width="50%">
 
 #### 🔍 Context Onboarding
-**First-run discovery.** Scans your repo, maps existing knowledge, produces a **Table of Context**, recommends what to formalize first.
+**First-run discovery.** Scans your repo, maps existing knowledge, produces a **Document Index**, recommends what to formalize first.
 
 *"Scan my repo and show me what business context exists"*
 

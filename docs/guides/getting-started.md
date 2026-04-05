@@ -31,12 +31,12 @@ If you are not sure about either of these, ask your IT person or a technically i
 
 If you already have documents, READMEs, guides, or any business knowledge in your project, start here. Ask Claude:
 
-> "Scan my repo and create a Table of Context -- show me what business context already exists."
+> "Scan my repo and create a Document Index -- show me what business context already exists."
 
 This invokes the **context-onboarding** skill, which will:
 1. Scan your repo for existing documentation and knowledge sources
 2. Classify what it finds by topic (brand, audience, product, strategy, etc.)
-3. Produce a **Table of Context** at `docs/table-of-context.md`
+3. Produce a **Document Index** at `docs/document-index.md`
 4. Recommend which data points to create first, based on what already exists
 
 **This step takes 5-15 minutes** and gives you a map before you start building. The recommendations from the scan feed directly into Step 2 below.
@@ -47,7 +47,7 @@ If you are starting with a blank project and no existing docs, skip to Step 1.
 
 ## Step 1: Understand Your Starting Point (10 minutes)
 
-Before creating anything, take 10 minutes to think about the context your team already relies on. If you ran Step 0, review your Table of Context alongside these questions. If not, grab a notebook or open a blank document and answer these three questions.
+Before creating anything, take 10 minutes to think about the context your team already relies on. If you ran Step 0, review your Document Index alongside these questions. If not, grab a notebook or open a blank document and answer these three questions.
 
 ### Question 1: What context does your team rely on?
 

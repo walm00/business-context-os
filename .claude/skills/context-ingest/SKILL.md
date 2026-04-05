@@ -112,7 +112,7 @@ After integrating:
    - If market context changed → competitive positioning may need review
    - If audience changed → messaging and value prop may need review
 2. **Update BUILDS_ON / REFERENCES / PROVIDES** if new connections emerged
-3. **Update Table of Context** (`docs/table-of-context.md`) if it exists:
+3. **Update Document Index** (`docs/document-index.md`) if it exists:
    - Add the source to "Knowledge Sources Found"
    - Update coverage assessment if gaps were filled
 
@@ -139,7 +139,7 @@ Summarize what happened:
 ### Cross-References Updated
 - [data-point-A] now REFERENCES [data-point-B]
 
-### Table of Context
+### Document Index
 - [Updated / No changes needed]
 ```
 

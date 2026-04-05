@@ -122,14 +122,14 @@ See `docs/methodology/document-standards.md` for full spec, optional fields, and
 
 ## Quick Reference
 
-### Table of Context
+### Document Index
 
-If `docs/table-of-context.md` exists, **read it at the start of context-related work.** It provides:
+If `docs/document-index.md` exists, **read it at the start of context-related work.** It provides:
 - The full inventory of managed documents (so you don't have to scan every time)
 - Metadata health (which docs are complete, which have gaps)
 - **User Notes section** with human decisions, priorities, and context that can't be auto-detected
 
-Rebuild it with: `python .claude/scripts/build_table_of_context.py`
+Rebuild it with: `python .claude/scripts/build_document_index.py`
 
 The auto-generated section refreshes from file state. The User Notes section is preserved across runs.
 
