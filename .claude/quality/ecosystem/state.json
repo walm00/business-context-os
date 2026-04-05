@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-04-04",
+  "lastAudit": null,
+  "inventory": {
+    "skills": {
+      "total": 9,
+      "list": [
+        "context-onboarding",
+        "context-ingest",
+        "core-discipline",
+        "doc-lint",
+        "clear-planner",
+        "context-audit",
+        "daydream",
+        "ecosystem-manager",
+        "lessons-consolidate"
+      ],
+      "overlayCapable": [
+        "core-discipline"
+      ],
+      "discoveryCapable": [
+        "context-onboarding",
+        "clear-planner",
+        "context-audit",
+        "ecosystem-manager"
+      ]
+    },
+    "agents": {
+      "total": 1,
+      "byCategory": {
+        "Exploration": [
+          "explore"
+        ]
+      }
+    }
+  },
+  "health": {
+    "overall": "NEW",
+    "gaps": [],
+    "conflicts": [],
+    "duplications": []
+  },
+  "maintenanceBacklog": []
+}
