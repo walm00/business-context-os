@@ -35,40 +35,64 @@ category: strategic
 
 ### Phase 1: What Changed Since Last Time (5 min)
 
-Start by finding what actually moved:
+**Step 1: Find when daydream last ran**
 
-**Step 1: Check git for document changes**
+Check `.claude/quality/last-daydream.txt` for the timestamp. If the file doesn't exist, this is the first run — use 2 weeks ago as the baseline.
 
 ```bash
-# What docs changed in the last 2 weeks (or since last daydream)?
-git log --since="2 weeks ago" --name-only --pretty=format:"%h %s (%ar)" -- docs/
+# Read last run timestamp (or default to 2 weeks ago)
+cat .claude/quality/last-daydream.txt 2>/dev/null || echo "no previous run"
 ```
 
-This shows exactly which files changed, when, and the commit messages (which often explain why).
+**Step 2: Check git for USER DOCUMENT changes only**
 
-**Step 2: For each changed file, understand what changed**
+Scope to `docs/` only — exclude `.claude/`, sessions, agents, skills, and framework files:
 
 ```bash
-# See the actual diff for a specific file
-git diff HEAD~5 -- docs/path/to/changed-file.md
+# Only user documents — NOT agents, skills, sessions, or framework docs
+git log --since="{last_daydream_date}" --name-only --pretty=format:"%h %s (%ar)" -- docs/ ':!docs/methodology/' ':!docs/guides/' ':!docs/templates/'
 ```
 
-Read the diffs. Not just "file X was updated" but WHAT changed — new content added? Ownership boundary shifted? Metadata updated?
+This shows ONLY changes to user-created content: data points, table-of-context.md, current-state.md, document-index.md, and any other user docs. Ignores all BCOS framework files and .claude/ internals.
 
-**Step 3: Check for new or disappeared files**
+If nothing changed → short daydream. Report "No document changes since last run" and skip to Phase 3 (Imagine) for forward-looking reflection only.
+
+**Step 3: For each changed file, read the diff**
 
 ```bash
-# Rebuild the Document Index to catch new/removed files
+# What exactly changed in this specific file?
+git diff {last_daydream_commit}..HEAD -- docs/path/to/changed-file.md
+```
+
+Understand WHAT changed — not just that it was touched. New content? Boundary shift? Metadata bump? Ownership reassignment?
+
+**Step 4: Check for new or disappeared files**
+
+Rebuild the Document Index and compare:
+
+```bash
 python .claude/scripts/build_document_index.py --dry-run
 ```
 
-Compare the output against the existing `docs/document-index.md`. New files? Missing files?
+Compare against existing `docs/document-index.md`:
+- New files that weren't there before?
+- Files that disappeared?
+- New unmanaged docs (no frontmatter)?
 
-**Step 4: Read the context layers**
+**Step 5: Read the context layers**
 
-1. **`docs/current-state.md`** — What's in flux? Active decisions? "What Changed Recently" section is the human's signal of what's moving.
-2. **`docs/table-of-context.md`** — Does the business description still match reality given what changed?
-3. **`docs/document-index.md`** — Any metadata going stale? New unmanaged docs?
+1. **`docs/current-state.md`** — "What Changed Recently" is the human's signal. Any active decisions resolved?
+2. **`docs/table-of-context.md`** — Does the business description still match given the changes found?
+
+**Step 6: Record this run**
+
+At the END of the daydream session (after Phase 4), save the timestamp:
+
+```bash
+echo "{today's date}" > .claude/quality/last-daydream.txt
+```
+
+This ensures the next daydream knows exactly where to pick up.
 
 ### Phase 2: Reflect on Changes (10 min)
 
