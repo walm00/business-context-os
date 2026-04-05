@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-04-04",
+  "references": {
+    "methodology": {
+      "clear-principles": "docs/methodology/clear-principles.md",
+      "context-architecture": "docs/methodology/context-architecture.md",
+      "ownership-specification": "docs/methodology/ownership-specification.md",
+      "decision-framework": "docs/methodology/decision-framework.md",
+      "document-standards": "docs/methodology/document-standards.md"
+    },
+    "guides": {
+      "getting-started": "docs/guides/getting-started.md",
+      "defining-your-context": "docs/guides/defining-your-context.md",
+      "maintenance-guide": "docs/guides/maintenance-guide.md",
+      "adoption-tiers": "docs/guides/adoption-tiers.md",
+      "for-non-technical-users": "docs/guides/for-non-technical-users.md",
+      "scheduling": "docs/guides/scheduling.md"
+    },
+    "skills-references": {
+      "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",
+      "clear-planner/plan-manifest-schema": ".claude/skills/clear-planner/references/plan-manifest-schema.md",
+      "clear-planner/planning-workflow-schema": ".claude/skills/clear-planner/references/planning-workflow-schema.md",
+      "clear-planner/discovery-protocol": ".claude/skills/clear-planner/references/discovery-protocol.md",
+      "context-audit/clear-principles-checks": ".claude/skills/context-audit/references/clear-principles-checks.md",
+      "ecosystem-manager/architecture": ".claude/skills/ecosystem-manager/references/architecture.md",
+      "ecosystem-manager/ecosystem-changes-checklist": ".claude/skills/ecosystem-manager/references/ecosystem-changes-checklist.md",
+      "ecosystem-manager/learnings-capture": ".claude/skills/ecosystem-manager/references/learnings-capture.md"
+    },
+    "templates": {
+      "context-data-point": "docs/templates/context-data-point.md",
+      "context-cluster": "docs/templates/context-cluster.md",
+      "context-architecture-canvas": "docs/templates/context-architecture-canvas.md",
+      "maintenance-checklist": "docs/templates/maintenance-checklist.md"
+    },
+    "skills": {
+      "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",
+      "core-discipline": ".claude/skills/core-discipline/SKILL.md",
+      "clear-planner": ".claude/skills/clear-planner/SKILL.md",
+      "context-audit": ".claude/skills/context-audit/SKILL.md",
+      "daydream": ".claude/skills/daydream/SKILL.md",
+      "ecosystem-manager": ".claude/skills/ecosystem-manager/SKILL.md",
+      "lessons-consolidate": ".claude/skills/lessons-consolidate/SKILL.md",
+      "doc-lint": ".claude/skills/doc-lint/SKILL.md"
+    },
+    "agents": {
+      "explore": ".claude/agents/explore/AGENT.md"
+    }
+  }
+}
