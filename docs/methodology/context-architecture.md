@@ -38,7 +38,23 @@ Context data points are the building blocks of your architecture. Each one answe
 | What do our customers struggle with? | Customer Pain Points |
 | What do our customers want to achieve? | Customer Desired Outcomes |
 
-Each data point is NOT a document. It is a **unit of knowledge** that might live in a document, a section of a document, a database, a shared note, or any other container. The data point defines WHAT the knowledge is. The container is WHERE it lives.
+Each data point is NOT a document. It is a **knowledge domain** — a topic area with clear boundaries that your organization needs to keep accurate over time.
+
+### Data Points vs. Operational Data
+
+This distinction matters. A data point is the **knowledge that tells you what things should say**, not the things themselves:
+
+| Data Point (BCOS manages this) | Operational Data (BCOS does NOT manage this) |
+|-------------------------------|----------------------------------------------|
+| "Our Target Audience" — the definition, segments, logic | Individual customer records, CRM entries |
+| "Our Pricing Model" — the structure, tiers, rationale | Individual invoices and quotes |
+| "Our Sales Process" — the steps, roles, handoffs | Individual deal notes and call logs |
+| "Our Outreach Strategy" — messaging, channels, approach | Individual emails and messages sent |
+| "Our Brand Voice" — the guidelines, tone, dos/don'ts | Individual social media posts |
+
+A data point captures **knowledge that doesn't change every day but drifts if nobody maintains it**. It's the stuff people disagree about because there's no single source of truth.
+
+If you're thinking "should I put all my invoices in BCOS?" — no. Put your **pricing model** in BCOS. The invoices are generated FROM that knowledge. BCOS manages the source, not the outputs.
 
 ### What Makes a Good Data Point
 

@@ -4,9 +4,10 @@
   "lastAudit": null,
   "inventory": {
     "skills": {
-      "total": 8,
+      "total": 9,
       "list": [
         "context-onboarding",
+        "context-ingest",
         "core-discipline",
         "doc-lint",
         "clear-planner",

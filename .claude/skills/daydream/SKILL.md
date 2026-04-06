@@ -33,37 +33,91 @@ category: strategic
 
 ## The Daydream Process
 
-### Phase 1: Survey (5 min)
+### Phase 1: What Changed Since Last Time (5 min)
 
-Look at your current context architecture:
-- Read your context-architecture.md
-- Scan your data point files
-- Note what feels right and what feels off
+**Step 1: Find when daydream last ran**
 
-### Phase 2: Question (10 min)
+Check `.claude/quality/last-daydream.txt` for the timestamp. If the file doesn't exist, this is the first run — use 2 weeks ago as the baseline.
 
-Ask yourself these prompts:
+```bash
+# Read last run timestamp (or default to 2 weeks ago)
+cat .claude/quality/last-daydream.txt 2>/dev/null || echo "no previous run"
+```
 
-**Completeness:**
-- What do we know that isn't captured anywhere?
-- What questions do team members keep asking that our context should answer?
-- What decisions do we make regularly that don't have context to support them?
+**Step 2: Check git for USER DOCUMENT changes only**
 
-**Relevance:**
-- Has our market changed since we last updated?
+Scope to `docs/` only — exclude `.claude/`, sessions, agents, skills, and framework files:
+
+```bash
+# Only user documents — NOT agents, skills, sessions, or framework docs
+git log --since="{last_daydream_date}" --name-only --pretty=format:"%h %s (%ar)" -- docs/ ':!docs/methodology/' ':!docs/guides/' ':!docs/templates/'
+```
+
+This shows ONLY changes to user-created content: data points, table-of-context.md, current-state.md, document-index.md, and any other user docs. Ignores all BCOS framework files and .claude/ internals.
+
+If nothing changed → short daydream. Report "No document changes since last run" and skip to Phase 3 (Imagine) for forward-looking reflection only.
+
+**Step 3: For each changed file, read the diff**
+
+```bash
+# What exactly changed in this specific file?
+git diff {last_daydream_commit}..HEAD -- docs/path/to/changed-file.md
+```
+
+Understand WHAT changed — not just that it was touched. New content? Boundary shift? Metadata bump? Ownership reassignment?
+
+**Step 4: Check for new or disappeared files**
+
+Rebuild the Document Index and compare:
+
+```bash
+python .claude/scripts/build_document_index.py --dry-run
+```
+
+Compare against existing `docs/document-index.md`:
+- New files that weren't there before?
+- Files that disappeared?
+- New unmanaged docs (no frontmatter)?
+
+**Step 5: Read the context layers**
+
+1. **`docs/current-state.md`** — "What Changed Recently" is the human's signal. Any active decisions resolved?
+2. **`docs/table-of-context.md`** — Does the business description still match given the changes found?
+
+**Step 6: Record this run**
+
+At the END of the daydream session (after Phase 4), save the timestamp:
+
+```bash
+echo "{today's date}" > .claude/quality/last-daydream.txt
+```
+
+This ensures the next daydream knows exactly where to pick up.
+
+### Phase 2: Reflect on Changes (10 min)
+
+Based on what you found in Phase 1, ask:
+
+**About the changes:**
+- Why did these data points change? Was it a routine update or a signal of something bigger?
+- Do the changes in one data point create ripple effects in others that haven't been updated yet?
+- Are the "Active Decisions" in current-state.md resolved? Do they need to propagate?
+
+**About what's missing:**
+- Were any changes made directly to docs WITHOUT going through context-ingest? (Bypassed ownership?)
+- Are there new unmanaged files that appeared? What knowledge are they trying to capture?
+- What questions keep coming up that no data point answers?
+
+**About the big picture:**
+- Does table-of-context.md still describe the business accurately given recent changes?
 - Are we still solving the same problems for the same people?
-- Do our competitive advantages and key differentiators still hold?
-- Have any of our core processes changed without the docs catching up?
+- Has the competitive landscape shifted?
+- Have any processes changed without docs catching up?
 
-**Connections:**
-- Are there data points that should be connected but aren't?
+**About connections:**
+- Did recent changes create new relationships between data points that aren't documented?
 - Are there clusters that should exist but don't?
 - Is anything isolated that should be integrated?
-
-**Evolution:**
-- Where is our business heading in the next 6 months?
-- What context will we need that we don't have yet?
-- What context do we have that we won't need?
 
 ### Phase 3: Imagine (10 min)
 
@@ -74,13 +128,19 @@ Without constraints, imagine:
 - If a key team member left tomorrow, would their knowledge survive in our documentation?
 - What would our context architecture look like in 6 months if everything went well?
 
-### Phase 4: Capture (5 min)
+### Phase 4: Capture and Update (5 min)
 
-Write down:
+**Capture insights:**
 1. **Insights**: What did you realize?
 2. **Gaps**: What's missing from your architecture?
 3. **Actions**: What should you do about it? (Create, update, or remove data points)
 4. **Lessons**: What should be captured in lessons.json?
+
+**Update the context layers (offer to the user):**
+- **table-of-context.md** — If the business picture shifted, update the relevant sections
+- **current-state.md** — Refresh "What Changed Recently" based on what was discovered
+- **Document Index** — Run `python .claude/scripts/build_document_index.py` if files changed
+- **Data points** — Compounding rule: any insights from this reflection that should be filed back into specific data points
 
 ---
 

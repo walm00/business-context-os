@@ -10,7 +10,13 @@ category: meta
 
 ## The Fundamental Rule
 
-**If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.**
+**If there's a reasonable chance a skill applies to what you're doing, CHECK it. Match the overhead to the task.**
+
+- **Small change** (update one data point, fix a typo) → just do it, no ceremony
+- **Medium change** (add a new data point, consolidate two docs) → check if context-audit or context-ingest applies
+- **Significant change** (restructure a cluster, create new skills) → use clear-planner, run the full workflow
+
+The point is not to invoke every skill every time. The point is to not miss the ones that matter.
 
 ---
 
@@ -49,6 +55,7 @@ category: meta
 | Skill                  | When to Use                         |
 | ---------------------- | ----------------------------------- |
 | `context-onboarding`   | First setup, scanning existing repo |
+| `context-ingest`       | Integrating new sources into data points |
 | `context-audit`        | Auditing context architecture       |
 | `clear-planner`        | Planning changes                    |
 | `daydream`             | Stepping back to reflect            |
@@ -63,5 +70,22 @@ category: meta
 
 **Flexible (Contextual):**
 
+- `context-ingest` - Integrate new sources into existing data points
 - `daydream` - Process scales to need
 - `lessons-consolidate` - Process scales to need
+
+---
+
+## The Compounding Rule
+
+**Every significant task produces TWO outputs:**
+
+1. **The deliverable** — the answer, analysis, comparison, or recommendation the user asked for
+2. **Context updates** — updates to the relevant data points so the knowledge persists
+
+After any synthesis, analysis, or research:
+- Identify which data points are affected
+- Offer to update them with the new insight
+- Update the Document Index if the landscape changed
+
+**Why:** Without this rule, knowledge evaporates into chat history. With it, every conversation makes the context architecture richer. The system compounds.

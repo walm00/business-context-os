@@ -15,7 +15,8 @@
       "maintenance-guide": "docs/guides/maintenance-guide.md",
       "adoption-tiers": "docs/guides/adoption-tiers.md",
       "for-non-technical-users": "docs/guides/for-non-technical-users.md",
-      "scheduling": "docs/guides/scheduling.md"
+      "scheduling": "docs/guides/scheduling.md",
+      "migration-guide": "docs/guides/migration-guide.md"
     },
     "skills-references": {
       "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",
@@ -31,10 +32,13 @@
       "context-data-point": "docs/templates/context-data-point.md",
       "context-cluster": "docs/templates/context-cluster.md",
       "context-architecture-canvas": "docs/templates/context-architecture-canvas.md",
-      "maintenance-checklist": "docs/templates/maintenance-checklist.md"
+      "maintenance-checklist": "docs/templates/maintenance-checklist.md",
+      "table-of-context": "docs/templates/table-of-context.md",
+      "current-state": "docs/templates/current-state.md"
     },
     "skills": {
       "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",
+      "context-ingest": ".claude/skills/context-ingest/SKILL.md",
       "core-discipline": ".claude/skills/core-discipline/SKILL.md",
       "clear-planner": ".claude/skills/clear-planner/SKILL.md",
       "context-audit": ".claude/skills/context-audit/SKILL.md",

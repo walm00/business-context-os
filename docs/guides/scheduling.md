@@ -12,71 +12,115 @@ Claude Code supports scheduled tasks that run on a recurring basis. Instead of h
 
 ---
 
-## The Recommended Schedule
+## Choose Your Rhythm
 
-These are the recurring tasks that keep your context alive. Set them up once, and they run automatically.
+Not everyone needs the same schedule. Your maintenance rhythm depends on how fast your context is changing.
 
-### Weekly: Context Health Check
+### Which phase are you in?
 
-**What it does:** Runs a quick CLEAR audit across your context data points. Checks for stale content, broken cross-references, ownership gaps, and boundary violations.
+| Phase | You Are... | Change Pace | Right Rhythm |
+|-------|-----------|-------------|-------------|
+| **Building** | First 1-2 months. Adding new docs frequently. Still figuring out what data points you need. | High | [Building rhythm](#building-rhythm) |
+| **Active** | 3-6 months in. Occasional additions, regular edits. Architecture is taking shape. | Medium | [Active rhythm](#active-rhythm) |
+| **Steady** | 6+ months. Mature docs. Changes are infrequent. Mostly maintenance. | Low | [Steady rhythm](#steady-rhythm) |
+| **Migration** | Consolidating existing chaos into CLEAR structure. | Burst | [Migration rhythm](#migration-rhythm) |
 
-**Skills involved:** `context-audit` + `doc-lint`
-
-**Schedule:** Weekly, Monday morning
-
-**Prompt for Claude Code scheduling:**
-
-> Set up a weekly scheduled task: Every Monday morning, run a quick context health check. Scan all data points in the docs/ folder for CLEAR compliance issues. Check for: stale data points (not updated in 60+ days), broken cross-references, ownership gaps, naming inconsistencies, and markdown syntax issues. Produce a brief health summary -- what's fine, what needs attention, and what's urgent. Keep it under 1 page.
-
-**What to expect:** A short health report surfaced every Monday. Most weeks: "All clear." Some weeks: "Brand voice hasn't been updated in 90 days -- is it still accurate?"
+**Not sure?** Start with the Building rhythm. Move to Active when you stop adding new data points every week. Move to Steady when a month goes by without structural changes.
 
 ---
 
-### Bi-weekly: Strategic Reflection (Daydream)
+### Building Rhythm
 
-**What it does:** Steps back and asks the bigger questions. Are your data points still aligned with where the business is heading? Any gaps emerging? Any context that's becoming irrelevant?
+You're creating data points, figuring out boundaries, adding content constantly. Things are messy and that's fine.
 
-**Skills involved:** `daydream`
+| Task | Frequency | What it does |
+|------|-----------|-------------|
+| **Document Index rebuild** | Daily | `python .claude/scripts/build_document_index.py` — catches new unmanaged docs, tracks metadata health as you add things |
+| **Quick health check** | Weekly | Quick CLEAR audit: boundary violations, stale references, naming drift |
+| **Lessons capture** | Weekly | What worked this week? What was confusing? Capture while fresh. |
 
-**Schedule:** Every other Friday afternoon
+**Skip for now:** Daydream (too early to reflect — you're still building), deep audit (not enough content), quarterly review.
 
-**Prompt for Claude Code scheduling:**
+**Prompt:**
 
-> Set up a bi-weekly scheduled task: Every other Friday, run a daydream reflection on my context architecture. Review the Table of Context and all data points. Ask: What's changed in the business that our context hasn't caught up with? Are there new topics we should be tracking? Are any data points becoming irrelevant? What connections between data points are we missing? Produce a short reflection note with any suggested actions.
+> Schedule a daily task: Run `python .claude/scripts/build_document_index.py` to rebuild the Document Index. Then check if any new documents appeared without YAML frontmatter. List them briefly.
 
-**What to expect:** A reflective note that prompts you to think. Not urgent actions -- more "have you considered..." nudges that prevent strategic drift.
-
----
-
-### Monthly: Deep Audit + Lessons Consolidation
-
-**What it does:** Runs a thorough audit of one cluster (rotating), consolidates institutional knowledge, and re-scans the repo for undocumented context.
-
-**Skills involved:** `context-audit` (deep mode) + `lessons-consolidate` + `context-onboarding` (re-scan)
-
-**Schedule:** First Monday of each month
-
-**Prompt for Claude Code scheduling:**
-
-> Set up a monthly scheduled task: On the first Monday of each month, run a deep context maintenance cycle. Do three things: (1) Pick the next cluster in rotation and run a thorough CLEAR audit -- check every data point for accuracy, completeness, boundary integrity, and relationship health. (2) Run lessons consolidation -- check lessons.json for stale, overlapping, or contradictory lessons. (3) Re-scan the repo for any new documents or knowledge sources that haven't been formalized into data points. Produce a monthly maintenance report with findings and recommendations.
-
-**What to expect:** A comprehensive monthly report. Takes 10-15 minutes to review. The most important maintenance touchpoint.
+> Schedule a weekly task (Monday): Run a quick CLEAR audit across all data points in docs/. Check for boundary violations, broken cross-references, and incomplete metadata. Keep it brief — what needs attention this week?
 
 ---
 
-### Quarterly: Architecture Review
+### Active Rhythm
 
-**What it does:** Full architecture health assessment. Reviews whether the entire context architecture still matches business reality.
+Architecture is taking shape. You're editing more than creating. Time to add reflection.
 
-**Skills involved:** `context-onboarding` (full re-scan) + `context-audit` (full) + `daydream` (strategic)
+| Task | Frequency | What it does |
+|------|-----------|-------------|
+| **Document Index rebuild** | Weekly | Refresh the index, catch new docs |
+| **Health check** | Weekly | CLEAR audit + doc-lint + metadata validation |
+| **Daydream** | Bi-weekly | Strategic reflection: gaps, relevance, connections |
+| **Deep audit + lessons** | Monthly | Thorough cluster audit, lessons consolidation, repo re-scan |
 
-**Schedule:** Last week of each quarter
+**Prompt:**
 
-**Prompt for Claude Code scheduling:**
+> Schedule a weekly task (Monday): Rebuild the Document Index by running `python .claude/scripts/build_document_index.py`. Then run a quick CLEAR audit across all data points. Check for stale content (not updated in 60+ days), boundary violations, and broken references. Produce a brief health summary.
 
-> Set up a quarterly scheduled task: In the last week of each quarter, run a full architecture review. (1) Re-scan the entire repo to update the Table of Context. (2) Run a comprehensive CLEAR audit across ALL data points and clusters. (3) Run a strategic daydream focused on: Does our context architecture still match our business direction? Should any clusters be added or retired? Are ownership assignments still correct? Produce a quarterly architecture report with a health score and strategic recommendations.
+> Schedule a bi-weekly task (Friday): Run a daydream reflection. Review the Document Index and data points. What's changed that our context hasn't caught up with? Any gaps? Any data points becoming irrelevant? Produce a short reflection note.
 
-**What to expect:** A thorough quarterly report. Share this with your team and use it to plan context maintenance for the next quarter.
+> Schedule a monthly task (1st Monday): Deep maintenance cycle. (1) Thorough CLEAR audit of one cluster in rotation. (2) Run lessons consolidation. (3) Rebuild Document Index and check for new unmanaged documents. Monthly maintenance report.
+
+---
+
+### Steady Rhythm
+
+Mature architecture. Rare structural changes. Maintenance is about keeping things accurate, not building new.
+
+| Task | Frequency | What it does |
+|------|-----------|-------------|
+| **Document Index rebuild** | Bi-weekly | Refresh the index |
+| **Health check** | Bi-weekly | CLEAR audit, lighter touch |
+| **Daydream** | Monthly | Strategic reflection |
+| **Deep audit + lessons** | Quarterly | Full architecture review |
+
+**Prompt:**
+
+> Schedule a bi-weekly task (Monday): Rebuild the Document Index and run a CLEAR health check. Focus on staleness — any data points not updated in 90+ days? Any metadata gaps? Brief summary.
+
+> Schedule a monthly task (1st Friday): Daydream reflection. Is the architecture still aligned with business reality? Any clusters that should be added, retired, or restructured?
+
+> Schedule a quarterly task (last week of quarter): Full architecture review. Rebuild Document Index. Comprehensive CLEAR audit across ALL data points. Review ownership assignments. Produce a quarterly report with health score and recommendations.
+
+---
+
+### Migration Rhythm
+
+You're consolidating existing chaos. Heavy activity for 1-3 weeks, then transition.
+
+| Task | Frequency | What it does |
+|------|-----------|-------------|
+| **Document Index rebuild** | Daily | Track progress as you formalize docs |
+| **Quick health check** | Every 2-3 days | Catch contradictions and boundary issues early |
+| **Progress review** | Weekly | How many docs migrated? What's left? Any blockers? |
+
+**After migration is complete** (2-3 weeks): Switch to [Active rhythm](#active-rhythm).
+
+**Prompt:**
+
+> Schedule a daily task: Rebuild the Document Index. Report: how many managed documents vs unmanaged? What was added since yesterday?
+
+> Schedule a task every 3 days: Quick CLEAR audit on recently created data points. Check for ownership overlaps and missing boundaries. Flag contradictions between new data points and old documents that haven't been migrated yet.
+
+---
+
+## Every Scheduled Task Includes Document Index Rebuild
+
+`python .claude/scripts/build_document_index.py` runs as part of every scheduled task. It takes seconds. It catches:
+
+- New documents added without metadata
+- Metadata that went stale
+- Documents that disappeared or were renamed
+- Growth or shrinkage of the architecture
+
+The Document Index is always current. No manual maintenance needed.
 
 ---
 
@@ -99,52 +143,45 @@ Use the scheduled tasks feature:
 4. Set the cron schedule
 5. Enable notifications so you see the results
 
-### Suggested Cron Expressions
+### Cron Expressions Reference
 
-| Task | Schedule | Cron Expression |
-|------|----------|-----------------|
-| Weekly health check | Monday 9am | `0 9 * * 1` |
-| Bi-weekly daydream | Every other Friday 3pm | `0 15 * * 5` (manually skip alternating weeks, or use a specific date pattern) |
-| Monthly deep audit | 1st Monday of month 9am | `0 9 1-7 * 1` |
-| Quarterly review | Last Monday of Mar/Jun/Sep/Dec | Manual trigger recommended |
-
----
-
-## What's Automatic vs. Manual
-
-Not everything should be scheduled. Here's the breakdown:
-
-### Schedule These (Recurring)
-
-| Task | Why Automate? |
-|------|---------------|
-| **Weekly health check** | Drift happens silently. Catching it early prevents expensive fixes later. |
-| **Bi-weekly daydream** | Strategic thinking gets squeezed out by daily urgency. A scheduled prompt makes space for it. |
-| **Monthly deep audit** | Nobody remembers to do deep audits. Scheduling removes willpower from the equation. |
-| **Monthly lessons consolidation** | Institutional knowledge degrades without active maintenance. |
-| **Monthly repo re-scan** | New documents appear that should be formalized. Scheduled scans catch them. |
-
-### Keep Manual (Triggered by Need)
-
-| Task | Why Manual? |
-|------|-------------|
-| **clear-planner** | Triggered by specific work -- "I need to restructure our audience data points." |
-| **ecosystem-manager** | Triggered by ecosystem changes -- "I want to create a new skill." |
-| **Trigger-based reviews** | Business events (product launch, rebrand, competitor move) -- can't predict the schedule. |
+| Task | Cron Expression | Notes |
+|------|-----------------|-------|
+| Daily | `0 9 * * *` | Every day at 9am |
+| Every 3 days | `0 9 */3 * *` | Approximate — runs 1st, 4th, 7th, etc. |
+| Weekly (Monday) | `0 9 * * 1` | Monday at 9am |
+| Bi-weekly (Friday) | `0 15 * * 5` | Every Friday at 3pm (manually skip alternating weeks) |
+| Monthly (1st Monday) | `0 9 1-7 * 1` | First Monday of each month |
+| Quarterly | — | Manual trigger recommended |
 
 ---
 
-## Starting Simple
+## Always Scheduled vs. Always Manual
 
-Don't set up all schedules on day one. Build up gradually:
+| Always Schedule | Always Manual |
+|----------------|---------------|
+| Document Index rebuild (part of every task) | `clear-planner` (triggered by specific work) |
+| Health check (catches silent drift) | `context-ingest` (triggered by new source material) |
+| Lessons capture (prevents knowledge evaporation) | `ecosystem-manager` (triggered by ecosystem changes) |
+| | Trigger-based reviews (product launch, rebrand, etc.) |
 
-**Week 1:** Set up the weekly health check only. See if it's useful.
+---
 
-**Week 3:** Add the bi-weekly daydream if you find the weekly check valuable.
+## Evolving Your Rhythm
 
-**Month 2:** Add the monthly deep audit + lessons consolidation.
+Your schedule is not permanent. As your context architecture matures, adjust:
 
-**Quarter 2:** Add the quarterly review once you have a quarter of history.
+**Signs to increase frequency:**
+- Finding stale content during scheduled checks
+- Team members creating docs without metadata
+- Business changing faster than context keeps up
+
+**Signs to decrease frequency:**
+- Weekly checks consistently find nothing
+- Architecture hasn't changed structurally in a month
+- Scheduled tasks feel like noise, not signal
+
+**Rule of thumb:** If 3 consecutive scheduled checks find nothing, reduce that task's frequency by half.
 
 ---
 

@@ -428,6 +428,21 @@ Before declaring any context area "clean":
 - [ ] Frontmatter follows standard schema
 - [ ] Last-reviewed dates are current
 - [ ] No stale TODOs older than 6 months
+- [ ] Document Index (`docs/document-index.md`) is up to date
+
+---
+
+## Document Index Maintenance
+
+After every audit, refresh the Document Index:
+
+```bash
+python .claude/scripts/build_document_index.py
+```
+
+This regenerates `docs/document-index.md` from current file state — picks up new data points, reflects renames, updates metadata health. No manual editing needed.
+
+If the script isn't available or the Document Index needs enrichment beyond what the script provides (gap analysis, recommendations), update it manually.
 
 ---
 

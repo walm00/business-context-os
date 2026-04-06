@@ -2,7 +2,7 @@
 name: context-onboarding
 description: |
   First-run discovery skill. Scans an existing repo to discover what business context already exists,
-  produces a Table of Context mapping all knowledge sources, and recommends which context data points
+  produces a Document Index mapping all knowledge sources, and recommends which context data points
   to create first. The starting point for adopting Business Context OS in any project.
 
   WHEN TO USE:
@@ -19,7 +19,7 @@ description: |
 
 - The recommended FIRST STEP when adopting Business Context OS
 - A discovery tool that scans your repo to find existing business context
-- The producer of your **Table of Context** -- a living map of all knowledge sources
+- The producer of your **Document Index** -- a living map of all knowledge sources
 - A recommender of which context data points to define first
 
 **This skill IS NOT:**
@@ -42,9 +42,23 @@ description: |
 
 ## The Onboarding Process
 
-### Phase 1: Scan (5-10 min)
+### Phase 0: Run the Discovery Script
 
-Systematically explore the repo to find existing business context.
+Start with the automated scan:
+
+```bash
+python .claude/scripts/build_document_index.py
+```
+
+This generates `docs/document-index.md` with:
+- All documents that have YAML frontmatter (grouped by cluster, with metadata health)
+- All unmanaged documents (markdown files without frontmatter — candidates for formalization)
+
+Review the output, then continue with the manual scan below to catch what the script misses (knowledge in non-markdown files, config files, git history, etc.).
+
+### Phase 1: Deep Scan (5-10 min)
+
+Go beyond what the script found. Explore the repo for business context in non-obvious places.
 
 **Step 1: Locate documentation**
 
@@ -81,7 +95,7 @@ Look for business context that lives in non-obvious places:
 
 ### Phase 2: Map (5 min)
 
-Organize findings into the **Table of Context**.
+Organize findings into the **Document Index**.
 
 **Cluster the discovered knowledge** into natural groups:
 
@@ -101,14 +115,14 @@ Organize findings into the **Table of Context**.
 - Are customer/audience definitions current?
 - Is competitive context captured?
 
-### Phase 3: Produce Table of Context (5 min)
+### Phase 3: Produce Document Index (5 min)
 
-Create the Table of Context file at `docs/table-of-context.md`.
+Create the Document Index file at `docs/document-index.md`.
 
 Use this structure:
 
 ```markdown
-# Table of Context
+# Document Index
 
 **Generated:** {date}
 **Scanned by:** context-onboarding skill
@@ -173,14 +187,29 @@ These overlaps are your highest-value targets for CLEAR ownership.
 
 ## Next Steps
 
-1. Review this Table of Context with your team
+1. Review this Document Index with your team
 2. Follow `docs/guides/getting-started.md` starting at Step 2
 3. Create your first 3 data points from the Priority 1 list above
 4. Use the `context-data-point.md` template in `docs/templates/`
 5. Re-run this scan periodically to find new undocumented knowledge
 ```
 
-### Phase 4: Recommend (2 min)
+### Phase 4: Draft the Table of Context (5 min)
+
+Based on everything discovered, create an initial `docs/table-of-context.md` using the template at `docs/templates/table-of-context.md`.
+
+Synthesize from the scan:
+- **Who We Are** — piece together the company/project identity from README, about pages, existing docs
+- **What We Do** — extract the core offering from product docs, descriptions
+- **Who We Serve** — find audience definitions wherever they exist
+- **What Makes Us Different** — look for positioning, competitive, or differentiator content
+- **Current Phase** — infer from doc recency, project maturity, recent commits
+
+Mark anything uncertain with "[TO VERIFY]". This is a draft — the user refines it.
+
+Also ask the user if they want to create `docs/current-state.md` now (using the template). If yes, have a brief conversation about their role, this week's priorities, and what's changing.
+
+### Phase 5: Recommend (2 min)
 
 Present findings to the user with:
 
@@ -188,6 +217,7 @@ Present findings to the user with:
 2. **Key gaps**: What's missing that most organizations need
 3. **Top 3 recommendations**: Which data points to create first and why
 4. **Overlaps**: Where the same info lives in multiple places (context rot already happening)
+5. **Table of Context**: "I created an initial draft — please review and correct"
 
 ---
 
@@ -205,14 +235,14 @@ When recommending which data points to create first, use this priority order:
 
 ## Re-running the Scan
 
-The Table of Context is a **living document**. Re-run the scan:
+The Document Index is a **living document**. Re-run the scan:
 
 - After major project milestones (launches, rebrands, pivots)
 - When new team members join and create new docs
 - Monthly, as part of your maintenance rhythm
 - Whenever you suspect undocumented knowledge is accumulating
 
-When re-running, compare against the existing Table of Context to highlight:
+When re-running, compare against the existing Document Index to highlight:
 - New sources discovered since last scan
 - Sources that have been updated
 - Sources that have gone stale
@@ -224,18 +254,37 @@ When re-running, compare against the existing Table of Context to highlight:
 
 | Skill | How It Connects |
 |-------|----------------|
-| **Getting Started guide** | Table of Context feeds directly into Step 2 (Define Your First 3 Data Points) |
+| **Getting Started guide** | Document Index feeds directly into Step 2 (Define Your First 3 Data Points) |
 | **context-audit** | After data points exist, audit them for CLEAR compliance |
-| **daydream** | Use Table of Context as input for strategic reflection |
-| **clear-planner** | Use Table of Context to scope documentation work |
-| **ecosystem-manager** | Table of Context can reveal need for new skills/agents |
+| **daydream** | Use Document Index as input for strategic reflection |
+| **clear-planner** | Use Document Index to scope documentation work |
+| **ecosystem-manager** | Document Index can reveal need for new skills/agents |
+
+---
+
+## Phase 5: Set Up Your Maintenance Rhythm
+
+After the initial scan and first data points are created, recommend a schedule.
+
+**Ask the user:** "How would you describe your situation?"
+
+| If they say... | Recommend |
+|----------------|-----------|
+| "Just getting started" / "New project" / "Few docs" | **Building rhythm:** daily Document Index rebuild, weekly health check |
+| "We have some docs, adding more regularly" | **Active rhythm:** weekly health check + ToC rebuild, bi-weekly daydream, monthly deep audit |
+| "Mature docs, not much changes" | **Steady rhythm:** bi-weekly health check, monthly daydream, quarterly review |
+| "It's a mess, need to consolidate" | **Migration rhythm:** daily ToC rebuild, health check every 2-3 days |
+
+Point them to `docs/guides/scheduling.md` for the full prompts and cron expressions.
+
+**Minimum recommended:** Set up at least the weekly health check + Document Index rebuild before ending the onboarding session. One scheduled task is better than zero.
 
 ---
 
 ## Tips
 
-- **Don't try to formalize everything at once.** The Table of Context is a map, not a to-do list.
+- **Don't try to formalize everything at once.** The Document Index is a map, not a to-do list.
 - **Start with contradictions.** Where two files disagree is where CLEAR adds the most value.
-- **Include the team.** Share the Table of Context -- others will spot knowledge you missed.
+- **Include the team.** Share the Document Index -- others will spot knowledge you missed.
 - **Technical docs are context too.** Note them in the scan but don't prioritize formalizing them unless they contain business decisions.
 - **Git history is your friend.** Check when files were last modified to assess freshness.
