@@ -6,7 +6,6 @@ cluster: "Audience & Market"
 version: "1.1.0"
 last-updated: "2026-03-15"
 status: "active"
-owner: "Strategy Lead"
 ```
 
 ---

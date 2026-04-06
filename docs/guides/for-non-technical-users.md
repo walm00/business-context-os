@@ -31,11 +31,11 @@ CLEAR Context OS gives each piece of business knowledge a clear home, a clear ow
 
 ### Ownership
 
-**What it is:** Each topic has one official source of truth, maintained by one person.
+**What it is:** Each data point has clear boundaries about what it covers and what it does not.
 
-**Analogy:** In a well-run office, if you need the latest sales figures, you know to ask the sales director -- not dig through old spreadsheets or ask five different people. Ownership works the same way. Each data point has one person whose job it is to keep that information current.
+**Analogy:** Think of departments in a company. Marketing handles marketing, sales handles sales, and they coordinate but do not do each other's jobs. Ownership works the same way -- each data point has a defined DOMAIN (what it covers) and an EXCLUSIVELY_OWNS list (what can ONLY be found here). There is no ambiguity about where a piece of information belongs.
 
-**Why it matters:** When nobody owns a piece of information, nobody updates it. It slowly goes stale. Eventually it actively misleads people because it describes a business that no longer exists.
+**Why it matters:** When a topic has no clear home, it ends up duplicated across multiple documents. The copies diverge over time. Eventually they actively mislead people because they describe different versions of reality.
 
 ### Boundaries
 
