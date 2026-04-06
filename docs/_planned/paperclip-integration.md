@@ -2,11 +2,15 @@
 name: "Paperclip Integration Exploration"
 type: reference
 cluster: "Strategy & Operations"
-version: "1.0.0"
+version: "1.1.0"
 status: draft
 owner: "Walm00"
 created: "2026-04-06"
 last-updated: "2026-04-06"
+relationships:
+  - type: informs
+    target: "docs/current-state.md"
+    context: "Potential future tooling decision"
 ---
 
 # Paperclip + CLEAR Context OS Integration
@@ -51,25 +55,32 @@ Without BCOS, Paperclip agents have no structured, maintained context — they'l
 
 ### The Two-Layer Model
 
+**Important:** These are two completely independent environments. Paperclip does NOT run on your machine. It runs its own headless Claude Code instances as subprocesses on the Paperclip server (VPS, Railway, Docker container). Your interactive Claude Code and Paperclip's autonomous agents share only the git repo — nothing else.
+
 ```
 ┌──────────────────────────────────────────────────┐
-│  YOU + Claude Code (interactive layer)            │
+│  YOUR MACHINE (interactive layer)                 │
+│  You + Claude Code running locally/interactively  │
 │  - Ask questions, get answers from BCOS context   │
 │  - Trigger skills manually (audit, daydream)      │
 │  - Make decisions, update strategy                │
 │  - Push changes → shared git repo                 │
 └──────────────┬───────────────────────────────────┘
-               │ shared git repo (the bridge)
+               │ shared git repo on GitHub
 ┌──────────────▼───────────────────────────────────┐
-│  Paperclip (autonomous layer)                     │
-│  - Heartbeat fires → spawns Claude Code agent     │
-│  - Agent reads BCOS context from repo             │
+│  PAPERCLIP SERVER (autonomous layer)              │
+│  Runs on Railway / Fly.io / VPS / Docker          │
+│  Has its own Claude Code installed headlessly      │
+│  - Heartbeat fires → spawns `claude --headless`   │
+│  - Agent runs as subprocess ON THE SERVER          │
+│  - Reads BCOS context from cloned repo            │
 │  - Performs scheduled maintenance:                 │
 │    · Context audits (CLEAR compliance)            │
 │    · Daydream sessions (strategic reflection)     │
 │    · Inbox triage (process _inbox/ material)      │
 │    · Lessons consolidation                        │
-│  - Commits results → shared git repo              │
+│  - Commits + pushes results → shared git repo     │
+│  - Process exits, Paperclip logs cost + output    │
 │  - Budget-capped, audit-logged                    │
 └──────────────────────────────────────────────────┘
 ```
