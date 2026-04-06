@@ -352,7 +352,7 @@ Month 7+:   Add specialized data points as needed, refine continuously
 - [ ] STRICTLY_AVOIDS defined (common areas of confusion, with redirects)
 - [ ] Content written (concrete facts, organized into subsections)
 - [ ] Context written (strategic interpretation, application guidance)
-- [ ] Owner assigned (one person, not a committee)
+- [ ] Ownership Specification defined (DOMAIN + EXCLUSIVELY_OWNS at minimum)
 - [ ] Template used (`docs/templates/context-data-point.md`)
 
 ### Common Pitfalls
@@ -362,7 +362,7 @@ Month 7+:   Add specialized data points as needed, refine continuously
 | Too vague | DOMAIN says "brand stuff" -- nobody knows what goes here | Be specific: "Core brand attributes, mission, vision, values" |
 | Too broad | One data point covers everything about customers | Split into Target Audience, Pain Points, Desired Outcomes |
 | No boundaries | Content creeps in from everywhere | Add STRICTLY_AVOIDS with redirects |
-| No owner | Nobody updates it, it rots | Assign one person by name |
+| No ownership spec | No clear boundaries, content drifts and overlaps | Define DOMAIN + EXCLUSIVELY_OWNS at minimum |
 | Over-engineered | 20 items in EXCLUSIVELY_OWNS, relationships to everything | Start with 3-5 items, add more when the need is real |
 
 ---

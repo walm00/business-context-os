@@ -39,7 +39,7 @@ INBOX_DIR = "docs/_inbox"
 PLANNED_DIR = "docs/_planned"
 ARCHIVE_DIR = "docs/_archive"
 
-REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "owner", "created", "last-updated"]
+REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "created", "last-updated"]
 
 # Zone markers
 AUTO_START = "<!-- AUTO-GENERATED SECTION — DO NOT EDIT BELOW THIS LINE -->"
@@ -324,17 +324,16 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
             docs = clusters[cluster_name]
             lines.append(f"### {cluster_name}")
             lines.append("")
-            lines.append("| Document | Type | Owner | Version | Status | Last Updated |")
-            lines.append("|----------|------|-------|---------|--------|-------------|")
+            lines.append("| Document | Type | Version | Status | Last Updated |")
+            lines.append("|----------|------|---------|--------|-------------|")
             for doc in sorted(docs, key=lambda d: d["meta"].get("name", d["filename"])):
                 meta = doc["meta"]
                 name = meta.get("name", doc["filename"])
                 doc_type = meta.get("type", "MISSING")
-                owner = meta.get("owner", "MISSING")
                 version = meta.get("version", "MISSING")
                 status = meta.get("status", "MISSING")
                 updated = meta.get("last-updated", "MISSING")
-                lines.append(f"| [{name}]({doc['path']}) | {doc_type} | {owner} | {version} | {status} | {updated} |")
+                lines.append(f"| [{name}]({doc['path']}) | {doc_type} | {version} | {status} | {updated} |")
             lines.append("")
 
         lines.append("---")
@@ -405,11 +404,11 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
     if planned:
         lines.append("Polished ideas in `docs/_planned/` — documented but not yet active reality:")
         lines.append("")
-        lines.append("| Document | Owner | Last Modified |")
-        lines.append("|----------|-------|--------------|")
+        lines.append("| Document | Status | Last Modified |")
+        lines.append("|----------|--------|--------------|")
         for doc in planned:
-            owner = doc["meta"].get("owner", "—") if doc.get("meta") else "—"
-            lines.append(f"| [{doc['name']}]({doc['path']}) | {owner} | {doc['modified']} |")
+            status = doc["meta"].get("status", "—") if doc.get("meta") else "—"
+            lines.append(f"| [{doc['name']}]({doc['path']}) | {status} | {doc['modified']} |")
     else:
         lines.append("No planned documents. Put polished ideas and future plans in `docs/_planned/`.")
     lines.append("")
