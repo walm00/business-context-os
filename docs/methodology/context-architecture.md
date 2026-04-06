@@ -290,7 +290,7 @@ You have separate "Customer Demographics" and "Customer Firmographics" data poin
 
 3. **Define 5-8 data points.** For each one, write a one-sentence DOMAIN and a short EXCLUSIVELY_OWNS list. That is enough to start.
 
-4. **Assign owners.** Each data point needs one person or team responsible for keeping it current. Not a committee. One owner.
+4. **Define ownership boundaries.** Each data point needs a clear Ownership Specification — at minimum DOMAIN and EXCLUSIVELY_OWNS — so there's no ambiguity about what lives where.
 
 5. **Start using them.** When someone asks "what do we do?" or "who do we sell to?" point them to the relevant data point. When something changes, update the authority and notify downstream consumers.
 

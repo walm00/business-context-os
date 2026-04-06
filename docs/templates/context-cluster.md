@@ -10,7 +10,6 @@ cluster-name: "Your Cluster Name"       # e.g., "Brand & Identity"
 purpose: ""                              # One sentence: what strategic area does this cluster serve?
 version: "1.0.0"
 last-updated: "YYYY-MM-DD"
-cluster-owner: "Name or Role"           # Who is accountable for this cluster's health?
 ```
 
 ---

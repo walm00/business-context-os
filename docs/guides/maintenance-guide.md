@@ -14,9 +14,9 @@ Context dies in five specific ways. Understanding them is the first step to prev
 
 **What it looks like:** A data point was created, used enthusiastically for a month, and then forgotten. Six months later, it describes a business that no longer exists.
 
-**Why it happens:** No one is specifically responsible for keeping it current. It was "everyone's job," which means it was nobody's job.
+**Why it happens:** No clear ownership boundaries were defined. It was "everyone's topic," which means nobody knew what it covered or what belonged elsewhere.
 
-**How to prevent it:** Every data point has one named owner. Not a team. A person. They do not need to write every update themselves, but they are accountable for accuracy.
+**How to prevent it:** Every data point has a clear Ownership Specification -- a defined DOMAIN, EXCLUSIVELY_OWNS list, and STRICTLY_AVOIDS boundaries. When the topic boundaries are explicit, maintenance responsibility is obvious.
 
 ### 2. Drift
 
@@ -36,11 +36,11 @@ Context dies in five specific ways. Understanding them is the first step to prev
 
 ### 4. Ownership Vacuum
 
-**What it looks like:** The person who created a data point has moved to a different role, left the company, or is no longer involved. Nobody picked up ownership. The data point is orphaned.
+**What it looks like:** A data point's Ownership Specification has gone stale -- the DOMAIN no longer reflects what the business actually needs, or the EXCLUSIVELY_OWNS list no longer matches reality. The data point is effectively orphaned.
 
-**Why it happens:** Ownership transfer does not happen automatically. When people change roles, their context responsibilities are rarely part of the handover.
+**Why it happens:** Ownership boundaries are not reviewed when the business evolves. New topics emerge that no data point claims, or existing boundaries no longer make sense.
 
-**How to prevent it:** Include data point ownership in role transitions. When someone moves on, their data point ownership is explicitly reassigned before they leave.
+**How to prevent it:** Review Ownership Specifications during quarterly deep reviews. When the business changes, update DOMAIN and EXCLUSIVELY_OWNS to match current reality. Ensure no topic falls outside all data points' boundaries.
 
 ### 5. Change Blindness
 
@@ -116,8 +116,8 @@ After checking the data points, do one cross-check: ask someone from a different
 - Does the architecture reflect your CURRENT strategy, not last quarter's?
 
 **Ownership**
-- Does every data point have a current, active owner?
-- Have any owners changed roles or left? Reassign immediately.
+- Does every data point have a current, well-defined Ownership Specification?
+- Have any DOMAIN or EXCLUSIVELY_OWNS boundaries gone stale? Update immediately.
 - Are boundaries clear? Any disputes or gray areas?
 
 **Relationships**

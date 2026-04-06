@@ -15,7 +15,6 @@ type: context                         # context | process | policy | reference |
 cluster: "Parent Cluster Name"        # e.g., "Brand & Identity", "Operations"
 version: "1.0.0"                      # Bump on EVERY change (patch/minor/major)
 status: draft                         # draft | active | under-review | archived
-owner: "Name or Role"                 # e.g., "Head of Marketing", "Ops Lead"
 created: "YYYY-MM-DD"                 # Set once, NEVER change
 last-updated: "YYYY-MM-DD"            # MUST update on every edit
 
