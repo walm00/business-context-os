@@ -465,6 +465,8 @@ If the script isn't available or the Document Index needs enrichment beyond what
 
 ---
 
+> **Architecture docs:** For metadata validation rules, see [`docs/architecture/metadata-system.md`](../../docs/architecture/metadata-system.md)
+
 ## References
 
 - `references/clear-principles-checks.md` - Detailed CLEAR compliance checks

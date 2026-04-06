@@ -134,3 +134,5 @@ After any ecosystem change:
 - Lessons: `.claude/quality/ecosystem/lessons.json`
 - Lessons schema: `.claude/quality/ecosystem/lessons-schema.md`
 - Ecosystem map: `.claude/ECOSYSTEM-MAP.md`
+
+> **Architecture docs:** For component standards, see [`docs/architecture/component-standards.md`](../../docs/architecture/component-standards.md)

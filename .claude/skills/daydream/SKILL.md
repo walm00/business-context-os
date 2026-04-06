@@ -187,6 +187,8 @@ There is no formal template. Daydreaming is deliberately unstructured. The value
 
 ---
 
+> **Architecture docs:** For maintenance lifecycle context, see [`docs/architecture/maintenance-lifecycle.md`](../../docs/architecture/maintenance-lifecycle.md)
+
 ## Tips
 
 - **Don't optimize too early.** The point is to think freely, not to immediately act.

@@ -339,6 +339,8 @@ Point them to `docs/guides/scheduling.md` for the full prompts and cron expressi
 
 ---
 
+> **Architecture docs:** For system design context, see [`docs/architecture/system-design.md`](../../docs/architecture/system-design.md) and [`docs/architecture/content-routing.md`](../../docs/architecture/content-routing.md)
+
 ## Tips
 
 - **Don't try to formalize everything at once.** The Document Index is a map, not a to-do list.

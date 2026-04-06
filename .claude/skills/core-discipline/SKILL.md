@@ -89,3 +89,5 @@ After any synthesis, analysis, or research:
 - Update the Document Index if the landscape changed
 
 **Why:** Without this rule, knowledge evaporates into chat history. With it, every conversation makes the context architecture richer. The system compounds.
+
+> **Architecture docs:** For system design context, see [`docs/architecture/system-design.md`](../../docs/architecture/system-design.md)

@@ -30,6 +30,7 @@ SKIP_PATHS = {
     "docs/methodology",
     "docs/guides",
     "docs/templates",
+    "docs/architecture",
     "docs/document-index.md",
 }
 

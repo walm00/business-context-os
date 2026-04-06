@@ -272,3 +272,5 @@ After ingest completes, **automatically do these** (don't wait for the user to a
 | **daydream** | Reflection may reveal knowledge gaps; ingest fills them |
 | **core-discipline** | Compounding rule triggers ingest: "file this insight back into context" |
 | **clear-planner** | Large ingests (10+ sources) may need a plan first |
+
+> **Architecture docs:** For routing design context, see [`docs/architecture/content-routing.md`](../../docs/architecture/content-routing.md)

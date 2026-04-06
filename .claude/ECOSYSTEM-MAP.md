@@ -47,6 +47,7 @@ This is your navigation hub for the Business Context OS ecosystem. Use this docu
 | `docs/methodology/` | CLEAR methodology reference |
 | `docs/guides/` | User-facing guides |
 | `docs/templates/` | Data point and cluster templates |
+| `docs/architecture/` | Developer/contributor architecture docs |
 
 ---
 
