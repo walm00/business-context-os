@@ -35,7 +35,6 @@ type: context                   # context | process | policy | reference | playb
 cluster: "Parent Cluster"       # Which cluster this belongs to
 version: "1.0.0"               # Semantic versioning: major.minor.patch
 status: active                  # draft | active | under-review | archived
-owner: "Name or Role"          # The ONE person accountable for accuracy
 created: "2026-04-05"          # ISO date, set once, NEVER change
 last-updated: "2026-04-05"     # ISO date, MUST update on every change
 ---
@@ -65,7 +64,6 @@ confidentiality: internal             # public | internal | confidential | restr
 | `cluster` | Yes | Parent cluster for grouping |
 | `version` | Yes | Semantic version. Bump on every change (see versioning rules) |
 | `status` | Yes | Lifecycle state (see status definitions below) |
-| `owner` | Yes | Single accountable person. Not a team. A name or role. |
 | `created` | Yes | Date document was first created. Set once, never change. |
 | `last-updated` | Yes | Date content was last changed. MUST update on every edit. |
 | `tags` | No | Free-form labels for discovery and filtering |
@@ -138,8 +136,7 @@ Every document must meet these checks to be considered healthy. This is what `co
 
 ### Level 2: Has Clear Ownership
 
-- [ ] `owner` field names a specific person or role
-- [ ] Has an Ownership Specification section (DOMAIN at minimum)
+- [ ] Has an Ownership Specification section with DOMAIN and EXCLUSIVELY_OWNS at minimum
 - [ ] DOMAIN is a clear, one-sentence scope statement
 - [ ] EXCLUSIVELY_OWNS lists at least 3 specific items
 
@@ -282,7 +279,6 @@ When `context-audit` runs, it checks every managed document against this standar
 - `version` follows semantic versioning format
 - `created` is present and immutable (never changed after creation)
 - `last-updated` is recent relative to review cycle
-- `owner` is specified (not blank, not "TBD")
 
 ### Ownership Checks
 - DOMAIN exists and is a clear statement

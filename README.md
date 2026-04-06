@@ -131,7 +131,6 @@ type: context
 cluster: "Strategy & Positioning"
 version: "1.2.0"              # Bump on EVERY change
 status: active                 # draft | active | under-review | archived
-owner: "Head of Strategy"
 created: "2026-01-15"         # Set once, NEVER change
 last-updated: "2026-04-05"    # MUST update on every edit
 ---
@@ -283,7 +282,7 @@ When two documents disagree, the ownership spec tells you which one is authorita
 
 | Mechanism | What It Does |
 |-----------|-------------|
-| 🔒 **Frontmatter Hook** | PostToolUse hook validates YAML frontmatter every time Claude edits a doc. Warns about missing fields, invalid status, blank owner. |
+| 🔒 **Frontmatter Hook** | PostToolUse hook validates YAML frontmatter every time Claude edits a doc. Warns about missing fields, invalid status, invalid type. |
 | 📜 **build_document_index.py** | Python script auto-generates the Document Index with inventory, metadata health, and separate sections for inbox/planned/archive. |
 
 ---

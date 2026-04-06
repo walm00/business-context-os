@@ -89,7 +89,6 @@ type: context              # context | process | policy | reference | playbook
 cluster: "Cluster Name"
 version: "1.0.0"           # Bump on EVERY change
 status: active             # draft | active | under-review | archived
-owner: "Name or Role"
 created: "YYYY-MM-DD"      # Set once, NEVER change
 last-updated: "YYYY-MM-DD" # MUST update on every edit
 ---
@@ -104,7 +103,6 @@ See `docs/methodology/document-standards.md` for full spec, optional fields, and
 ### ALWAYS
 
 - All documents MUST have YAML frontmatter with required fields
-- Every document MUST have an explicit owner (a person, not a team)
 - Every document MUST have an Ownership Specification (DOMAIN + EXCLUSIVELY_OWNS at minimum)
 - Relationships between documents MUST be defined, not implied
 - All changes MUST follow CLEAR principles

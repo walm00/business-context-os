@@ -15,7 +15,6 @@ Every managed document in `docs/` (excluding `_inbox/`) MUST have these fields:
 | `cluster` | string | Non-empty, names the parent cluster this belongs to | audit, index script |
 | `version` | semver | `x.y.z` format. Bump on every change. | audit |
 | `status` | enum | `draft` &#124; `active` &#124; `under-review` &#124; `archived` | hook, audit |
-| `owner` | string | Specific person or role. Not blank, not `TBD`, not `todo`, not `none`. | hook, audit |
 | `created` | ISO date | `YYYY-MM-DD`. Set once when document is created. NEVER change. | audit |
 | `last-updated` | ISO date | `YYYY-MM-DD`. MUST update on every edit. Must be >= `created`. | audit |
 
@@ -28,7 +27,6 @@ type: context
 cluster: "Brand & Identity"
 version: "1.2.0"
 status: active
-owner: "Marketing Lead"
 created: "2026-01-15"
 last-updated: "2026-04-01"
 ---
@@ -56,7 +54,7 @@ The file path supplements metadata. Claude uses the folder to determine trust le
 
 | Location | What It Means | Metadata Requirements |
 |----------|--------------|----------------------|
-| `docs/*.md` | Active context -- current business reality | Full compliance required. All 8 required fields. |
+| `docs/*.md` | Active context -- current business reality | Full compliance required. All 7 required fields. |
 | `docs/_inbox/` | Raw material -- meeting notes, brain dumps | No metadata required. Skip all validation. |
 | `docs/_planned/` | Polished ideas -- documented but not yet real | Frontmatter recommended. Relaxed staleness (180 days). Incomplete cross-references are informational, not errors. |
 | `docs/_archive/` | Superseded -- was real once, kept for reference | As-was when archived. Skip audit or report separately. |
@@ -77,10 +75,9 @@ The file path supplements metadata. Claude uses the folder to determine trust le
 | Check | Severity | What Validates It | Scope |
 |-------|----------|------------------|-------|
 | Frontmatter exists | CRITICAL | hook, audit | `docs/` excluding `_inbox/`, `_archive/` |
-| All 8 required fields present | HIGH | hook, audit, index script | `docs/` excluding `_inbox/`, `_archive/` |
+| All 7 required fields present | HIGH | hook, audit, index script | `docs/` excluding `_inbox/`, `_archive/` |
 | `status` is valid enum | WARNING | hook, audit | All files with frontmatter |
 | `type` is valid enum | WARNING | hook, audit | All files with frontmatter |
-| `owner` is not blank/TBD/none | WARNING | hook, audit | All files with frontmatter |
 | `version` follows semver | MEDIUM | audit | All managed docs |
 | `created` is immutable | MEDIUM | audit | Compare across versions |
 | `last-updated` >= `created` | MEDIUM | audit | All managed docs |
@@ -104,10 +101,9 @@ The file path supplements metadata. Claude uses the folder to determine trust le
 ### What It Validates
 
 1. YAML frontmatter block exists (delimited by `---`)
-2. All 8 required fields are present
+2. All 7 required fields are present
 3. `status` is one of: `draft`, `active`, `under-review`, `archived`
 4. `type` is one of: `context`, `process`, `policy`, `reference`, `playbook`
-5. `owner` is not blank, `TBD`, `todo`, or `none`
 
 ### When It Fires
 
@@ -226,14 +222,13 @@ Documents progress through five quality levels. Levels 1-3 are required for `sta
 
 ### Level 1: Exists and Is Findable
 
-- Has YAML frontmatter with all 8 required fields
+- Has YAML frontmatter with all 7 required fields
 - Lives in the correct cluster directory
 - Is listed in the Document Index
 - Filename is kebab-case and descriptive
 
 ### Level 2: Has Clear Ownership
 
-- `owner` names a specific person or role
 - Has an Ownership Specification section with DOMAIN at minimum
 - DOMAIN is a clear, one-sentence scope statement
 - EXCLUSIVELY_OWNS lists at least 3 specific items
