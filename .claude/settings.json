@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking frontmatter compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking frontmatter compliance..."
+          }
+        ]
+      }
+    ]
+  }
+}

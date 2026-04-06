@@ -26,7 +26,8 @@
       "context-audit/clear-principles-checks": ".claude/skills/context-audit/references/clear-principles-checks.md",
       "ecosystem-manager/architecture": ".claude/skills/ecosystem-manager/references/architecture.md",
       "ecosystem-manager/ecosystem-changes-checklist": ".claude/skills/ecosystem-manager/references/ecosystem-changes-checklist.md",
-      "ecosystem-manager/learnings-capture": ".claude/skills/ecosystem-manager/references/learnings-capture.md"
+      "ecosystem-manager/learnings-capture": ".claude/skills/ecosystem-manager/references/learnings-capture.md",
+      "todo-utilities/todo-patterns": ".claude/skills/todo-utilities/references/todo-patterns.md"
     },
     "templates": {
       "context-data-point": "docs/templates/context-data-point.md",
@@ -45,10 +46,14 @@
       "daydream": ".claude/skills/daydream/SKILL.md",
       "ecosystem-manager": ".claude/skills/ecosystem-manager/SKILL.md",
       "lessons-consolidate": ".claude/skills/lessons-consolidate/SKILL.md",
-      "doc-lint": ".claude/skills/doc-lint/SKILL.md"
+      "doc-lint": ".claude/skills/doc-lint/SKILL.md",
+      "todo-utilities": ".claude/skills/todo-utilities/SKILL.md"
     },
     "agents": {
       "explore": ".claude/agents/explore/AGENT.md"
+    },
+    "hooks": {
+      "post-edit-frontmatter-check": ".claude/hooks/post_edit_frontmatter_check.py"
     },
     "scripts": {
       "build-document-index": ".claude/scripts/build_document_index.py",

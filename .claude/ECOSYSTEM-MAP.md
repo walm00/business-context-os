@@ -17,9 +17,11 @@ This is your navigation hub for the Business Context OS ecosystem. Use this docu
 | daydream | Strategic reflection on context architecture | 2 |
 | ecosystem-manager | Agent/skill ecosystem maintenance | 2 |
 | lessons-consolidate | Institutional knowledge maintenance | 2 |
+| todo-utilities | Shared TodoWrite patterns (reference, not invocable) | — |
 
 **Tier 1** - Always active or frequently invoked. Foundation skills.
 **Tier 2** - Invoked for specific workflows. Core operational skills.
+**—** - Reference/utility (not directly invoked, used by other skills).
 
 ---
 
@@ -40,6 +42,7 @@ This is your navigation hub for the Business Context OS ecosystem. Use this docu
 | `.claude/quality/ecosystem/` | Ecosystem config, state, and lessons |
 | `.claude/quality/sessions/` | Planning session artifacts |
 | `.claude/scripts/` | Utility scripts (lessons search, consolidation) |
+| `.claude/hooks/` | Claude Code enforcement hooks |
 | `.claude/registries/` | Machine-readable indexes |
 | `docs/methodology/` | CLEAR methodology reference |
 | `docs/guides/` | User-facing guides |
