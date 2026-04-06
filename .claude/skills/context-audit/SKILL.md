@@ -66,6 +66,17 @@ Please specify scope.
 
 ### Step 2: Gather and Check Metadata
 
+**Context window strategy:** For scopes with 20+ documents, delegate the metadata scanning to an explore agent. Keep the main window for CLEAR analysis (Step 3).
+
+```
+# For large scopes:
+Agent (Explore): "Read all .md files in [scope]. For each, extract YAML frontmatter
+and check: all 8 required fields present? status valid? last-updated within 90 days
+(180 days for _planned/)? owner not blank? Return a validation table."
+```
+
+For small scopes (< 20 files), scan directly:
+
 1. **Scan target area for all managed documents:**
 
    ```bash

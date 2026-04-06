@@ -60,6 +60,17 @@ Review the output, then continue with the manual scan below to catch what the sc
 
 Go beyond what the script found. Explore the repo for business context in non-obvious places.
 
+**Context window strategy:** For repos with 20+ documents, delegate the scanning to explore agents running in parallel. Keep the main window clean for synthesis.
+
+```
+# Launch up to 3 explore agents in parallel:
+Agent 1 (Explore): "Scan docs/ for all .md files. For each: path, frontmatter summary (name, type, cluster, status), first 3 content lines."
+Agent 2 (Explore): "Scan root-level files (README.md, CLAUDE.md) and .claude/memory/ for business context fragments. Summarize what you find."
+Agent 3 (Explore): "Check git log --oneline -50 for commits mentioning strategy, pricing, audience, brand, or market. Summarize."
+```
+
+For small repos (< 20 files), skip the agents and scan directly.
+
 **Step 1: Locate documentation**
 
 ```

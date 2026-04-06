@@ -299,3 +299,79 @@ You have separate "Customer Demographics" and "Customer Firmographics" data poin
 ---
 
 **Remember: A small, well-maintained context architecture is worth more than a large, neglected one. Start simple. Grow when the need is real.**
+
+---
+
+## Context Window Management
+
+As your context architecture grows, Claude's context window becomes a limited resource. Reading 50+ documents in a single session fills the context window before the real work starts. This section defines when to delegate work to sub-agents vs. do it in the main session.
+
+### The Principle
+
+**Main session = thinking and deciding. Agents = reading and scanning.**
+
+The main context window is expensive — it's where Claude reasons, synthesizes, and makes decisions. Don't waste it on file scanning. Delegate bulk reading to agents, get back summaries, then think in the main window.
+
+### When to Delegate to Agents
+
+| Task | Main Window | Delegate to Agent |
+|------|-------------|-------------------|
+| Read 1-3 specific files | ✅ | |
+| Scan a directory for patterns | | ✅ Use `explore` agent |
+| Search across all docs for a keyword | | ✅ Use `explore` agent |
+| Classify one new source | ✅ | |
+| Audit 20+ documents for frontmatter | | ✅ Batch via agent |
+| Reflect on what changed (daydream) | ✅ | |
+| Read git diffs of 10+ files | | ✅ Agent reads, returns summary |
+| Synthesize findings into recommendations | ✅ | |
+| Write or update a data point | ✅ | |
+
+**Rule of thumb:** If a task involves reading more than 5 files or scanning a directory, delegate it.
+
+### How Delegation Works in Claude Code
+
+Claude Code has a built-in `Agent` tool that spawns sub-agents with their own context windows. Skills can instruct Claude to use this:
+
+```
+Use the Agent tool (subagent_type: "Explore") to scan docs/ for all files
+mentioning "pricing". Return: file paths, relevant excerpts, and frontmatter status.
+```
+
+The agent runs in its own context window, reads the files, and returns a compact summary. The main session never loads the raw file content — it only sees the summary.
+
+### Parallel Execution
+
+Some skill phases can run agents in parallel to save time:
+
+**Context Onboarding — Phase 1 (Deep Scan):**
+- Agent 1: Scan `docs/` for business knowledge
+- Agent 2: Scan root files (README, CLAUDE.md) for context fragments
+- Agent 3: Check git history for strategy-related commits
+- Main window: Receives 3 summaries → synthesizes the full picture
+
+**Context Audit — Step 2 (Frontmatter Checks):**
+- Agent 1: Validate frontmatter for cluster A docs
+- Agent 2: Validate frontmatter for cluster B docs
+- Main window: Receives validation reports → runs CLEAR analysis
+
+**Daydream — Phase 1 (What Changed):**
+- Agent: Read all git diffs since last run, summarize what changed and why
+- Main window: Receives change summary → reflects (Phase 2-4)
+
+### When NOT to Delegate
+
+Keep these in the main window — they require judgment:
+- **Triage decisions** (context-ingest Step 1) — user interaction needed
+- **Contradiction resolution** — "which version is correct?" requires discussion
+- **Synthesis and reflection** (daydream Phase 2-4) — the whole point is deep thinking
+- **Plan creation** (clear-planner) — architecture decisions need full context
+- **Cross-reference updates** — need awareness of the whole graph
+
+### Scaling Guide
+
+| Context Size | Strategy |
+|-------------|----------|
+| **< 20 docs** | No delegation needed. Everything fits in main window. |
+| **20-50 docs** | Delegate full scans (onboarding, audit). Keep targeted reads in main. |
+| **50-100 docs** | Delegate ALL bulk reads. Use explore agent for any multi-file operation. Batch audit by cluster. |
+| **100+ docs** | Run Python scripts for inventory. Agent-per-cluster for audits. Main window only for synthesis and decisions. |

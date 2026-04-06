@@ -59,6 +59,16 @@ If nothing changed → short daydream. Report "No document changes since last ru
 
 **Step 3: For each changed file, read the diff**
 
+If 10+ files changed, delegate the reading to an explore agent:
+
+```
+Agent (Explore): "Read git diffs for these files: [list]. For each, summarize
+in 1-2 sentences: what changed, was it content or metadata, does it look like
+a routine update or a significant shift?"
+```
+
+For fewer files, read directly:
+
 ```bash
 # What exactly changed in this specific file?
 git diff {last_daydream_commit}..HEAD -- docs/path/to/changed-file.md
