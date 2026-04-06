@@ -255,6 +255,14 @@ Not every claim needs a source. Use this for important facts, statistics, and cl
 
 ---
 
+## Automatic Handoffs
+
+After ingest completes, **automatically do these** (don't wait for the user to ask):
+
+1. **→ Rebuild Document Index** — Always: `python .claude/scripts/build_document_index.py`
+2. **→ Update current-state.md** — If the ingested content is significant, offer to update "What Changed Recently"
+3. **→ context-audit** — If a new data point was created: "Want me to run a quick CLEAR audit on the new doc?"
+
 ## Integration with Other Skills
 
 | Skill | How It Connects |

@@ -278,12 +278,42 @@ When re-running, compare against the existing Document Index to highlight:
 
 ---
 
+## Automatic Handoffs
+
+After onboarding completes, **automatically offer the next steps** — don't wait for the user to know what to ask for:
+
+1. **→ context-audit** — "Want me to run a CLEAR audit on the data points we just created?"
+2. **→ context-ingest** — If `_inbox/` has files: "You have X items in the inbox. Want me to process them?"
+3. **→ Scheduling setup** — "Let's set up at least one recurring health check."
+
+These handoffs are **offered, not forced**. The user decides. But they should always be presented.
+
+### TodoWrite Progress Pattern
+
+Use TodoWrite to show progress during the multi-phase onboarding:
+
+```
+TodoWrite([
+  { content: "Run document discovery script", status: "in_progress", activeForm: "Running discovery script" },
+  { content: "Deep scan for hidden context", status: "pending", activeForm: "Scanning for hidden context" },
+  { content: "Map and classify findings", status: "pending", activeForm: "Mapping findings" },
+  { content: "Draft Table of Context", status: "pending", activeForm: "Drafting Table of Context" },
+  { content: "Create folder structure", status: "pending", activeForm: "Creating folder structure" },
+  { content: "Present recommendations", status: "pending", activeForm: "Presenting recommendations" }
+])
+```
+
+**Before each agent invocation:** mark the task `in_progress`.
+**After each agent returns:** mark it `completed` and advance.
+This keeps the user informed even when agents are working in isolated contexts.
+
 ## Integration with Other Skills
 
 | Skill | How It Connects |
 |-------|----------------|
 | **Getting Started guide** | Document Index feeds directly into Step 2 (Define Your First 3 Data Points) |
 | **context-audit** | After data points exist, audit them for CLEAR compliance |
+| **context-ingest** | Process any raw material in `_inbox/` |
 | **daydream** | Use Document Index as input for strategic reflection |
 | **clear-planner** | Use Document Index to scope documentation work |
 | **ecosystem-manager** | Document Index can reveal need for new skills/agents |
