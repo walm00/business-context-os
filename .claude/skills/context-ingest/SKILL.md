@@ -1,14 +1,15 @@
 ---
 name: context-ingest
 description: |
-  Integrates new knowledge sources into existing context data points. Takes raw input
-  (documents, URLs, meeting notes, pasted content) and routes the knowledge to the
-  correct owning data points — or recommends creating new ones.
+  The single entry point for getting anything new into your context architecture.
+  Takes any input (documents, URLs, YouTube, meeting notes, pasted content) and
+  triages it: dump to _inbox, park in _planned, or integrate into active docs.
 
   WHEN TO USE:
   - "Here's a document — integrate it into my context"
-  - "I just had a meeting — capture the key decisions"
-  - "Read this article and update our market context"
+  - "Save this for later" / "Dump these meeting notes"
+  - "I have an idea — park it somewhere"
+  - "Read this article — not sure if it's relevant"
   - "Our competitor just announced X — update positioning"
   - Any time new information needs to enter the context architecture
 ---
@@ -34,28 +35,80 @@ description: |
 
 ## When to Use
 
-- "Here's our new brand guidelines PDF — integrate it"
-- "Update our context with these meeting notes"
-- "I read this article about our market — capture the key insights"
-- "Our competitor just launched a new product — update competitive positioning"
-- "Here's our updated pricing — make sure context reflects it"
-- "I pasted some notes — figure out where they belong"
+- "Here's our new brand guidelines PDF — integrate it" → **integrate** into active docs
+- "Save these meeting notes for later" → **dump** to `_inbox/`
+- "I have an idea about enterprise pricing" → **park** in `_planned/`
+- "I read this article — not sure if it's relevant" → **triage** — Claude reads, recommends a path
+- "Our competitor just launched a new product" → **integrate** into competitive positioning
+- "Watch this YouTube video and capture what matters" → **triage** — Claude extracts, asks where
+- "I pasted some notes — figure out where they belong" → **triage** — Claude classifies, user decides
 
 ---
 
 ## The Ingest Process
 
-### Step 1: Receive the Source
+### Step 1: Receive and Triage
 
 Accept input in any form:
 - A file path (markdown, PDF, text)
-- A URL (Claude reads the page)
+- A URL (Claude reads the page, YouTube videos, articles)
 - Pasted text in the conversation
 - A description of what changed ("we decided to pivot to enterprise")
 
 Note what the source is and where it came from. This becomes the source citation.
 
+**Before doing anything else, ask the user: "What do you want to do with this?"**
+
+| User says... | Action | Where it goes |
+|-------------|--------|--------------|
+| "Just save this for later" / "Dump it" / "I'll deal with it later" | Save as-is to `docs/_inbox/` with a descriptive filename. No processing needed. Done. | `docs/_inbox/meeting-2026-04-06.md` |
+| "This is an idea" / "Might do this someday" / "Park it" | Extract the core concept, create a clean doc in `docs/_planned/`. Frontmatter recommended but linking optional. Done. | `docs/_planned/enterprise-tier.md` |
+| "Integrate this" / "Update our context" / "This is real now" | Proceed to Step 2 below — full classify → find owner → integrate flow. | Active data points in `docs/` |
+| "Not sure where this goes" | Read the content, show the user a summary + your recommendation (inbox / planned / integrate), let them decide. | Depends on user choice |
+
+**For _inbox deposits:** Create the file with a simple header:
+
+```markdown
+# [Descriptive title]
+
+**Source:** [URL / meeting / person]
+**Date:** [today]
+**Deposited by:** context-ingest (unprocessed)
+
+---
+
+[Raw content here]
+```
+
+**For _planned deposits:** Use the data point template but with relaxed requirements:
+
+```markdown
+---
+name: "[Concept Name]"
+type: context
+cluster: "[Best guess]"
+status: draft
+owner: "[User]"
+created: "[today]"
+last-updated: "[today]"
+---
+
+## Concept
+
+[Polished description of the idea]
+
+## Why This Matters
+
+[Why it might be worth doing]
+
+## Open Questions
+
+- [What needs to be figured out before this becomes active]
+```
+
 ### Step 2: Classify the Content
+
+**Only reach this step if the user chose "integrate" in Step 1.**
 
 Identify what KIND of knowledge this is:
 
@@ -72,15 +125,17 @@ Identify what KIND of knowledge this is:
 
 If the content spans multiple types, split it and route each piece separately.
 
-**Temporal classification — is this about now or the future?**
+**Temporal check — is this about now or the future?**
 
-| Signal in the content | Status to assign |
-|----------------------|-----------------|
-| "We currently...", "Our pricing is...", "We serve..." | `active` — current reality |
-| "We plan to...", "Next quarter we will...", "We're considering..." | `planned` — future intent |
-| "We used to...", "Previously...", "Before the pivot..." | May need `archived` |
+If the content made it to Step 2, the user chose "integrate." But double-check the temporal signals:
 
-**Important:** Do not merge future-state content into an active document without discussing with the user. If someone says "we plan to add enterprise pricing", that belongs in `docs/_planned/enterprise-pricing.md`, not in the active pricing doc. When the plan becomes reality, move it to `docs/` root and build full cross-references.
+| Signal in the content | Action |
+|----------------------|--------|
+| "We currently...", "Our pricing is...", "We serve..." | Integrate into active docs (proceed to Step 3) |
+| "We plan to...", "Next quarter...", "We're considering..." | **Stop.** This belongs in `docs/_planned/`, not active docs. Route back to Step 1 triage as a planned deposit. |
+| "We used to...", "Previously...", "Before the pivot..." | May update `_archive/` or inform an active doc's Context section |
+
+**Important:** Do not merge future-state content into an active document without discussing with the user.
 
 ### Step 3: Find the Owner
 
