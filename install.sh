@@ -6,7 +6,7 @@
 # into the current directory. Does NOT overwrite existing files.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_ORG/business-context-os/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/main/install.sh | bash
 #
 #   Or clone the repo and run:
 #   bash /path/to/business-context-os/install.sh

@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
     <img src="https://img.shields.io/badge/skills-10-blue" alt="10 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
-    <img src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey" alt="CC BY-NC-SA 4.0 License">
+    <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
     <img src="https://img.shields.io/badge/free-open--source-brightgreen" alt="Free & Open Source">
   </p>
 </p>
@@ -476,9 +476,19 @@ This is the most natural contribution path — you're already generating insight
 
 If you want to understand HOW BCOS is built (not just how to use it), start with `docs/architecture/system-design.md`. The architecture docs explain design decisions, the skill graph, component standards, and why things are built the way they are.
 
+## 📖 Origin
+
+CLEAR Context OS was created by **[Guntis Walmanis](https://github.com/walm00)** after two years of building and operating context systems in production — first for competitive intelligence work, then for broader business context management.
+
+The **CLEAR methodology** (Contextual Ownership, Linking, Elimination, Alignment, Refinement) emerged from a practical problem: AI context degrades silently over time, and no amount of one-time documentation prevents it. The solution required a system — not just documents, but ownership boundaries, automated maintenance, self-learning, and structured reflection.
+
+The **Table of Context** concept — a living synthesis of what your business IS, distinct from the file inventory — was first articulated in a [Medium article on business context engineering](https://medium.com/@guntis.walmanis) and became a core architectural pattern.
+
+This isn't a theoretical framework. Every skill, every pattern, every architectural decision was tested in real-world use before being abstracted into this open-source package.
+
 ## 📄 License
 
-[CC BY-NC-SA 4.0](LICENSE) — Free to use, adapt, and share. Attribution required. You may not sell this work or any derivative of it. Using BCOS within your own organisation to manage internal business context is permitted.
+[MIT](LICENSE) — Free to use, modify, distribute. No restrictions.
 
 ---
 

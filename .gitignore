@@ -34,5 +34,8 @@ Desktop.ini
 *.tmp
 *.temp
 
+# Local Claude Code settings (contains machine-specific paths)
+.claude/settings.local.json
+
 # Private strategy docs (not for public repo)
 .private/
