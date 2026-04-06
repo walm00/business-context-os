@@ -388,6 +388,21 @@ Start with Tier 1. Move to Tier 2 when manual maintenance feels like overhead. E
 
 Contributions welcome. Whether you've found a better way to structure business context, built a useful skill, or improved the docs — open an issue or submit a PR.
 
+### Branch Strategy
+
+| Branch | Purpose | Who uses it |
+|--------|---------|-------------|
+| `main` | Stable releases — what users download | Everyone using BCOS |
+| `dev` | Active development — where contributions land | Contributors |
+
+**For contributors:** fork the repo, branch off `dev`, open your PR targeting `dev`. When `dev` is stable it gets squash-merged into `main` as a clean release.
+
+**Ideas for contributions:**
+- New skills (new maintenance workflows, context patterns)
+- Examples for specific industries or functions
+- Improvements to existing skills or methodology docs
+- Better templates for context data points
+
 ## 📄 License
 
 MIT. See [LICENSE](LICENSE).
