@@ -109,102 +109,17 @@ Look for business context that lives in non-obvious places:
 
 Organize findings into the **Document Index**.
 
-**Cluster the discovered knowledge** into natural groups:
+Cluster discovered knowledge into natural groups (Company & Identity, Audience & Market, Product & Value, Operations & Process, Strategy & Growth, Technical).
 
-| Cluster | Typical Contents |
-|---------|-----------------|
-| Company & Identity | Mission/values, company story, org structure, investor narrative |
-| Audience & Market | Customer profiles, market research, competitive landscape, partner context |
-| Product & Value | Product descriptions, value proposition, pricing model, feature context |
-| Operations & Process | SOPs, workflows, approval processes, vendor management |
-| Strategy & Growth | Business model, goals, OKRs, expansion plans, M&A context |
-| Technical | Architecture docs, API docs, setup guides (note but don't formalize) |
+> For cluster definitions, see `docs/architecture/content-routing.md`
 
-**Identify gaps** -- common business context that's missing:
-- Is there a clear description of what the company does?
-- Are key processes documented (not just in people's heads)?
-- Is the company's strategic direction written down?
-- Are customer/audience definitions current?
-- Is competitive context captured?
+**Identify gaps** -- is there a clear company description? Are key processes documented? Is strategic direction written down? Are audience definitions current? Is competitive context captured?
 
 ### Phase 3: Produce Document Index (5 min)
 
-Create the Document Index file at `docs/document-index.md`.
+Create `docs/document-index.md`. Structure: Header (date, scanner, status) -> Knowledge Sources Found (table per cluster: Source, Location, Type, Freshness, Completeness, Notes) -> Coverage Assessment (table: Context Area, Status, Sources, Recommendation) -> Recommended First Data Points (Priority 1 and 2 with rationale) -> Overlap & Drift Detected (table: Topic, Found In, Issue) -> Next Steps.
 
-Use this structure:
-
-```markdown
-# Document Index
-
-**Generated:** {date}
-**Scanned by:** context-onboarding skill
-**Status:** Initial scan
-
----
-
-## Knowledge Sources Found
-
-### [Cluster Name] (e.g., Brand & Identity)
-
-| Source | Location | Type | Freshness | Completeness | Notes |
-|--------|----------|------|-----------|--------------|-------|
-| Company Overview | README.md | Company identity | 2025-11-15 | Thorough | Good candidate for formalization |
-| Sales Process | docs/sales-process.md | Process | 2026-01-20 | Partial | Missing handoff steps |
-| Team Context | CLAUDE.md (lines 45-60) | Reference | 2026-02-10 | Fragment | Embedded in instructions |
-
-### [Next Cluster...]
-
-[...repeat for each cluster...]
-
----
-
-## Coverage Assessment
-
-| Context Area | Status | Sources Found | Recommendation |
-|--------------|--------|---------------|----------------|
-| Brand Identity | Covered | 2 files | Consolidate into data point |
-| Target Audience | Partial | 1 file (outdated) | Update and formalize |
-| Value Proposition | Missing | None | Create from scratch |
-| Competitive Positioning | Missing | None | Create from scratch |
-| Brand Voice | Fragments | Scattered across 3 files | Consolidate into data point |
-| Market Context | Partial | 1 file | Review and formalize |
-
----
-
-## Recommended First Data Points
-
-Based on this scan, here are the recommended first data points to create:
-
-### Priority 1 (Start here)
-1. **[Name]** -- [Why: has existing content to consolidate, high team value]
-2. **[Name]** -- [Why: critical gap, frequently needed]
-3. **[Name]** -- [Why: existing content is scattered/contradictory]
-
-### Priority 2 (Add when Priority 1 is stable)
-4. **[Name]** -- [Why]
-5. **[Name]** -- [Why]
-
----
-
-## Overlap & Drift Detected
-
-| Topic | Found In | Issue |
-|-------|----------|-------|
-| Product description | README.md, pitch-deck.md, about.md | Three different versions |
-| Audience definition | personas.md, CLAUDE.md | Contradictory segments |
-
-These overlaps are your highest-value targets for CLEAR ownership.
-
----
-
-## Next Steps
-
-1. Review this Document Index with your team
-2. Follow `docs/guides/getting-started.md` starting at Step 2
-3. Create your first 3 data points from the Priority 1 list above
-4. Use the `context-data-point.md` template in `docs/templates/`
-5. Re-run this scan periodically to find new undocumented knowledge
-```
+The `build_document_index.py` script generates the base structure. Enrich manually with gap analysis and recommendations.
 
 ### Phase 4: Draft the Table of Context (5 min)
 
@@ -234,7 +149,7 @@ mkdir -p docs/_inbox docs/_planned docs/_archive
 | `docs/_planned/` | Polished ideas — documented concepts that may or may not happen. Future plans, expansion ideas, strategic initiatives not yet launched. |
 | `docs/_archive/` | Superseded documents. Kept for reference, not active context. Never delete — archive instead. |
 
-**Why folders?** When Claude searches for a keyword, the file path is the first thing it sees. `docs/_planned/enterprise-pricing.md` tells Claude "this is an idea, not reality" before the file is even opened. A metadata field buried in YAML is easy to miss.
+> For folder design rationale, see `docs/architecture/content-routing.md`
 
 ### Phase 5: Recommend (2 min)
 

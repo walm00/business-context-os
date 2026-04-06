@@ -120,178 +120,39 @@ For small scopes (< 20 files), scan directly:
 
 ### Step 3: CLEAR Audit Categories
 
-**SAFETY RULE: When duplication is found, consolidate into the owning document first, then clean up the duplicate. Never delete content without ensuring it lives in its authoritative home. The goal is clean, single-source-of-truth documents -- not cluttered ones with archived sections everywhere.**
+**SAFETY RULE:** When duplication is found, consolidate into the owning document first, then clean up the duplicate. Never delete without ensuring content lives in its authoritative home.
+
+> For background on consolidation principles, see `docs/methodology/document-standards.md`
 
 Run all five audit categories against the scoped files.
 
 #### A. Contextual Ownership Issues
 
-**Look for:**
+Look for: multiple owners for same content, unclear responsibility (mixed domains in one doc), orphaned content (no consumers).
 
-1. **Multiple owners for same content:**
-
-   ```
-   ISSUE: "Company mission" defined in both company-overview.md AND strategic-plan.md
-   VIOLATION: No clear single owner for mission statement
-   RESOLUTION: Designate one as owner, other links to it
-   ```
-
-2. **Unclear responsibility:**
-
-   ```
-   ISSUE: data-point-helpers.md contains unrelated sections:
-   - Pricing analysis helpers
-   - Competitor identification helpers
-   - Market sizing helpers
-   VIOLATION: Mixed responsibility in one data point
-   RESOLUTION: Split by domain
-   ```
-
-3. **Orphaned content:**
-
-   ```
-   ISSUE: Section in context doc not referenced by any other doc
-   VIOLATION: Content exists without clear consumer
-   RESOLUTION: Link from consumers or remove if obsolete
-   ```
-
-**Audit output:**
-
-```markdown
-## Ownership Issues
-
-### Critical: Content Without Single Owner
-
-#### Issue 1: Market Segment Duplication
-
-- **Files:**
-  - `docs/context/company-overview.md` (includes mission statement)
-  - `docs/context/strategic-plan.md` (also states mission)
-- **CLEAR Violation:** No single owner for mission statement
-- **Recommendation:** Designate company-overview.md as owner, strategic-plan.md links to it
-- **Effort:** LOW (1 hour)
-- **Value:** HIGH (prevents future divergence)
-- **Priority:** QUICK WIN
+**Example finding format:**
+```
+ISSUE: "Company mission" defined in both company-overview.md AND strategic-plan.md
+VIOLATION: No clear single owner
+RESOLUTION: Designate one as owner, other links to it
+EFFORT: LOW | VALUE: HIGH | PRIORITY: QUICK WIN
 ```
 
 #### B. Linking Issues (Should Reference, Not Duplicate)
 
-**Look for:**
-
-1. **Duplicated information across data points:**
-
-   ```
-   ISSUE: Company description appears in 3 separate context documents
-   VIOLATION: Should link to single source, not copy
-   ```
-
-2. **Copy-paste between data points:**
-
-   ```
-   ISSUE: Same methodology explanation in multiple docs
-   VIOLATION: DRY principle -- link to one authority source
-   ```
-
-3. **Inconsistent cross-references:**
-   ```
-   ISSUE: Some docs use relative links, others use absolute
-   VIOLATION: Inconsistent linking format
-   ```
-
-**Audit output:**
-
-```markdown
-## Linking Issues
-
-### High: Information Duplication
-
-#### Issue 1: Company Description Scattered
-
-- **Pattern:** Company overview text
-- **Locations:**
-  - `brand-identity.md` (lines 20-35)
-  - `competitive-positioning.md` (lines 5-15)
-  - `value-proposition.md` (lines 10-20)
-- **CLEAR Violation:** Should link to single source
-- **Recommendation:**
-  - Define once in `brand-identity.md` (it EXCLUSIVELY_OWNS brand story)
-  - Other data points reference: "See Brand Identity for company overview"
-- **Effort:** LOW (30 minutes)
-- **Value:** HIGH (prevents divergence)
-- **Priority:** QUICK WIN
-```
+Look for: duplicated information across data points, copy-paste between docs, inconsistent cross-reference format (relative vs absolute links).
 
 #### C. Elimination Issues (Remove Duplication)
 
-**Detect duplication:**
-
-1. **Same content in multiple places:**
-
-   ```
-   ISSUE: Identical pricing tier definitions in 4 documents
-   RESOLUTION: Extract to single authority, others reference it
-   ```
-
-2. **Redundant data points:**
-
-   ```
-   ISSUE: Two data points covering same concept with slight variation
-   RESOLUTION: Merge into one comprehensive data point
-   ```
-
-3. **Hardcoded values repeated:**
-   ```
-   ISSUE: Same threshold values defined in multiple contexts
-   RESOLUTION: Define constants in one place
-   ```
+Look for: same content in multiple places, redundant data points covering same concept, hardcoded values repeated across docs. Resolution is always: extract to single authority, others reference it.
 
 #### D. Alignment Issues (Consistency Problems)
 
-**Check for:**
-
-1. **Naming inconsistency:**
-
-   ```
-   ISSUE: "market_category" in one doc, "marketCategory" in another, "Market Category" in third
-   RESOLUTION: Pick one convention, apply everywhere
-   ```
-
-2. **Format differences:**
-
-   ```
-   ISSUE: Some data points use tables, others use lists for same type of information
-   RESOLUTION: Standardize format per content type
-   ```
-
-3. **Structure inconsistency:**
-   ```
-   ISSUE: Data point frontmatter varies between documents
-   RESOLUTION: Define standard frontmatter schema, apply consistently
-   ```
+Look for: naming inconsistency (e.g., `market_category` vs `marketCategory`), format differences (tables vs lists for same content type), structure inconsistency in frontmatter.
 
 #### E. Refinement Issues (Clarity Problems)
 
-**Check for:**
-
-1. **Overly complex data points:**
-
-   ```
-   ISSUE: Single data point covers 5 different concepts across 500 lines
-   RESOLUTION: Split into focused data points, one concept each
-   ```
-
-2. **Unclear language:**
-
-   ```
-   ISSUE: Vague descriptions like "various market factors"
-   RESOLUTION: Use precise, specific language
-   ```
-
-3. **Missing maintenance documentation:**
-   ```
-   ISSUE: No indication of when document was last updated
-   RESOLUTION: Ensure last-updated date and review-cycle are set in frontmatter
-   ```
+Look for: overly complex data points (500+ lines covering multiple concepts -- split them), vague language ("various market factors"), missing maintenance metadata (no `last-updated` or `review-cycle`).
 
 ---
 
@@ -326,101 +187,26 @@ Grep: "DEPRECATED"
 
 ### Step 5: Priority Matrix
 
-**Calculate for each issue:**
+Score each issue: `Priority = (Impact x Frequency) / (Effort x Risk)`
 
-```
-Priority = (Impact x Frequency) / (Effort x Risk)
+| Impact Level | Score | Effort Level | Score |
+|-------------|-------|-------------|-------|
+| CRITICAL (blocks context delivery) | 10 | Quick (< 1 hour) | 0.5 |
+| HIGH (causes wrong decisions) | 7 | Medium (1-4 hours) | 2 |
+| MEDIUM (slows consumers) | 5 | Large (1+ day) | 8 |
+| LOW (minor inconvenience) | 2 | | |
 
-Impact:
-- CRITICAL: Prevents accurate context delivery (10)
-- HIGH: Causes confusion or wrong decisions (7)
-- MEDIUM: Slows context consumers (5)
-- LOW: Minor inconvenience (2)
-
-Effort (hours):
-- Quick (< 1 hour): 0.5
-- Medium (1-4 hours): 2
-- Large (1+ day): 8
-```
-
-**Priority Quadrants:**
-
-```
-                 High Value
-                     |
-         QUICK WINS  |  BIG WINS
-         (Do first)  | (Plan carefully)
-    Low  ------------|------------ High
-    Effort           |            Effort
-         LOW         |  AVOID
-         PRIORITY    | (Not worth it)
-                     |
-                 Low Value
-```
+Classify into quadrants: **QUICK WINS** (high value, low effort -- do first), **BIG WINS** (high value, high effort -- plan carefully), **LOW PRIORITY**, **AVOID**.
 
 ---
 
 ### Step 6: Generate Output
 
-**Output format:**
-
-```markdown
-# Context Audit Report: [Scope]
-
-**Audit Date:** [Date]
-**Scope:** [What was audited]
-
-## Executive Summary
-
-- Total Issues: X
-- Critical: Y (boundary violations, blocking)
-- Quick Wins: Z (< 1 hour, high value)
-
-## CLEAR Analysis
-
-### Contextual Ownership
-[Ownership conflicts found...]
-
-### Linking
-[Should reference, not duplicate...]
-
-### Elimination
-[Duplication to remove...]
-
-### Alignment
-[Consistency issues...]
-
-### Refinement
-[Clarity improvements...]
-
-## Priority Matrix
-
-### QUICK WINS (High Value, Low Effort)
-[List...]
-
-### BIG WINS (High Value, High Effort)
-[List with modular plans...]
-
-### LOW PRIORITY
-[List...]
-
-## Recommendations
-
-### Immediate Actions
-1. Fix critical boundary violations
-2. Complete quick wins
-3. Standardize naming conventions
-
-### This Sprint
-1. Merge duplicate data points
-2. Fix broken cross-references
-3. Add missing ownership designations
-
-### Ongoing
-1. Regular context audit cadence
-2. Ownership review when adding new data points
-3. Cross-reference validation across data points
-```
+Produce a report with these sections:
+1. **Executive Summary** -- total issues, critical count, quick win count
+2. **CLEAR Analysis** -- one subsection per category (C/L/E/A/R) with findings
+3. **Priority Matrix** -- issues sorted into quadrants
+4. **Recommendations** -- immediate actions, this sprint, ongoing
 
 ---
 
@@ -432,22 +218,6 @@ Effort (hours):
 | **HIGH**     | Duplication causing divergence, broken links   | Fix this sprint   |
 | **MEDIUM**   | Inconsistency, unclear ownership              | Fix when in area  |
 | **LOW**      | Style issues, minor naming differences        | Nice to have      |
-
----
-
-## Quick Reference Checklist
-
-Before declaring any context area "clean":
-
-- [ ] Every data point has exactly one owner
-- [ ] No content is duplicated across data points
-- [ ] All cross-references resolve
-- [ ] Naming is consistent throughout
-- [ ] No orphaned content exists
-- [ ] Frontmatter follows standard schema
-- [ ] Last-reviewed dates are current
-- [ ] No stale TODOs older than 6 months
-- [ ] Document Index (`docs/document-index.md`) is up to date
 
 ---
 

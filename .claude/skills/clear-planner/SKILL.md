@@ -91,14 +91,7 @@ Parse the user's request:
 }
 ```
 
-**This is NON-NEGOTIABLE.** The manifest enables:
-
-- Self-awareness of where you are in the workflow
-- Resumability after interruptions
-- Audit trail of planning process
-- Proper gate tracking when user responds
-
-**See `references/planning-workflow-schema.md` for full schema.**
+**This is NON-NEGOTIABLE.** See `references/planning-workflow-schema.md` for full schema.
 
 ---
 
@@ -150,71 +143,26 @@ If the ecosystem-manager skill is available, invoke it for overlap detection and
 
 ### DOCUMENTATION Scenario
 
-Self-discovery approach:
-
-```
-DOCUMENTATION CONTEXT GATHERING
-
-  1. Discovery results
-  2. Related documentation identification
-  3. Cross-reference check
-  4. Alignment verification
-```
+Self-discovery: review discovery results, identify related docs, check cross-references, verify alignment.
 
 ---
 
 ## Step 5: Load Scenario Template
 
-**Load the appropriate template from:** `references/scenario-phases.md`
-
-Each template defines:
-
-- Phase structure
-- Required tasks per phase
-- Capabilities needed (agents/skills)
-- Recommended learnings capture phase
-
-**Templates available:**
-
-- `agenting` - Agent/skill creation workflow
-- `documentation` - Context documentation workflow
+Load the appropriate template from `references/scenario-phases.md` (defines phases, tasks, capabilities, and learnings capture). Templates: `agenting`, `documentation`.
 
 ---
 
 ## Step 6: Present Approach for Alignment
 
-**Before creating documents, present to user:**
-
-```
-APPROACH SUMMARY
-
-1. What I understand you want:
-   [Brief restatement of intent]
-
-2. Key discovery findings:
-   - Relevant agents/skills: [list]
-   - Potential overlaps: [any found]
-   - Applicable lessons: [relevant ones]
-
-3. Proposed approach:
-   - Scenario: [agenting/documentation]
-   - Phases: [high-level overview]
-   - Key concerns: [any risks or considerations]
-
-4. Does this align with your expectations?
-   - "Proceed" -> I'll create the detailed plan
-   - "Adjust [feedback]" -> I'll revise the approach
-```
+Present to user before creating documents: (1) restatement of intent, (2) key discovery findings (agents, overlaps, lessons), (3) proposed approach (scenario, phases, risks), (4) ask: "Proceed" or "Adjust"?
 
 ### Gate 1: Approach Alignment
 
-| Response      | Behavior                                             |
-| ------------- | ---------------------------------------------------- |
-| **"Proceed"** | Continue to Step 7 (Create Session & Artifacts)      |
-| **"Adjust"**  | Return to Step 4 (Gather Context) with user feedback |
-
-**WHY THIS GATE EXISTS:**
-Creating plan-manifest.json and implementation-plan.md takes time. If the approach is misaligned, that work is wasted. Get alignment first.
+| Response | Behavior |
+| --- | --- |
+| **"Proceed"** | Continue to Step 7 |
+| **"Adjust"** | Return to Step 4 with user feedback |
 
 **WAIT for user response before Step 7.**
 
@@ -268,63 +216,9 @@ Creating plan-manifest.json and implementation-plan.md takes time. If the approa
 
 ### implementation-plan.md
 
-```markdown
-# Implementation Plan: [Feature Name]
+Structure: Header (session ID, scenario, status) -> Discovery Results -> Problem Statement -> Proposed Solution -> Tasks by Phase (table per phase with ID/Task/Status) -> Artifacts (paths to session files) -> Next Actions (Approve/Modify/Cancel).
 
-**Session ID:** `{sessionId}`
-**Scenario:** {scenarioType}
-**Status:** AWAITING APPROVAL
-
----
-
-## Discovery Results
-
-### Ecosystem Analysis
-
-[Summary of agents/skills discovered, overlaps, gaps]
-
-### Relevant Lessons
-
-[Applicable lessons from find_lessons.py with brief description]
-
----
-
-## Problem Statement
-
-[Why this work is needed - user's intent restated]
-
-## Proposed Solution
-
-[High-level approach and key decisions]
-
----
-
-## Tasks by Phase
-
-### Phase 1: [Phase Name]
-
-| ID     | Task             | Status  |
-| ------ | ---------------- | ------- |
-| P1_001 | Task description | pending |
-
-[... more phases ...]
-
----
-
-## Artifacts
-
-- Planning Manifest: `.claude/quality/sessions/{id}/planning-manifest.json`
-- Plan Manifest: `.claude/quality/sessions/{id}/plan-manifest.json`
-- Implementation Plan: `.claude/quality/sessions/{id}/implementation-plan.md`
-
----
-
-## Next Actions
-
-- **"Approve"** -> Handoff to implementation
-- **"Modify [changes]"** -> Return to context gathering with plan
-- **"Cancel"** -> Stop planning
-```
+> For full template, see `references/plan-manifest-schema.md`
 
 ---
 
