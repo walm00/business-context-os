@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
     <img src="https://img.shields.io/badge/skills-8-blue" alt="8 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
-    <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
+    <img src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey" alt="CC BY-NC-SA 4.0 License">
     <img src="https://img.shields.io/badge/audience-non--technical-orange" alt="Non-technical Friendly">
   </p>
 </p>
@@ -388,9 +388,24 @@ Start with Tier 1. Move to Tier 2 when manual maintenance feels like overhead. E
 
 Contributions welcome. Whether you've found a better way to structure business context, built a useful skill, or improved the docs — open an issue or submit a PR.
 
+### Branch Strategy
+
+| Branch | Purpose | Who uses it |
+|--------|---------|-------------|
+| `main` | Stable releases — what users download | Everyone using BCOS |
+| `dev` | Active development — where contributions land | Contributors |
+
+**For contributors:** fork the repo, branch off `dev`, open your PR targeting `dev`. When `dev` is stable it gets squash-merged into `main` as a clean release.
+
+**Ideas for contributions:**
+- New skills (new maintenance workflows, context patterns)
+- Examples for specific industries or functions
+- Improvements to existing skills or methodology docs
+- Better templates for context data points
+
 ## 📄 License
 
-MIT. See [LICENSE](LICENSE).
+[CC BY-NC-SA 4.0](LICENSE) — Free to use, adapt, and share. Attribution required. You may not sell this work or any derivative of it. Using BCOS within your own organisation to manage internal business context is permitted.
 
 ---
 
