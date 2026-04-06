@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-04",
+  "lastUpdated": "2026-04-06",
   "references": {
     "methodology": {
       "clear-principles": "docs/methodology/clear-principles.md",
@@ -49,6 +49,11 @@
     },
     "agents": {
       "explore": ".claude/agents/explore/AGENT.md"
+    },
+    "scripts": {
+      "build-document-index": ".claude/scripts/build_document_index.py",
+      "find-lessons": ".claude/scripts/find_lessons.py",
+      "consolidate-lessons": ".claude/scripts/consolidate_lessons.py"
     }
   }
 }
