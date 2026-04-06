@@ -123,6 +123,7 @@ copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-schema.md" ".clau
 mkdir -p .claude/quality/sessions
 
 # Scripts
+copy_if_missing "$SCRIPT_DIR/.claude/scripts/build_document_index.py" ".claude/scripts/build_document_index.py"
 copy_if_missing "$SCRIPT_DIR/.claude/scripts/find_lessons.py" ".claude/scripts/find_lessons.py"
 copy_if_missing "$SCRIPT_DIR/.claude/scripts/consolidate_lessons.py" ".claude/scripts/consolidate_lessons.py"
 
@@ -140,6 +141,13 @@ echo ""
 # ─── Install docs/ ──────────────────────────────────────────────────
 
 echo -e "${BLUE}Installing docs/...${NC}"
+echo ""
+
+# Document folder zones (active / inbox / planned / archive)
+mkdir -p docs/_inbox docs/_planned docs/_archive
+echo -e "  ${GREEN}CREATE${NC}  docs/_inbox/ (raw material landing zone)"
+echo -e "  ${GREEN}CREATE${NC}  docs/_planned/ (polished ideas, not yet active)"
+echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo ""
 
 # Methodology

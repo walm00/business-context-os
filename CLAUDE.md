@@ -132,6 +132,17 @@ At the start of any context-related work, check for these files:
 
 Together these give you the full picture without reading every data point. Drill into specific data points only when you need detail.
 
+### Folder Structure
+
+| Location | What's there | Trust level |
+|----------|-------------|-------------|
+| `docs/*.md` | **Active context** — current business reality | High — act on this |
+| `docs/_inbox/` | Raw material — meeting notes, brain dumps | Low — needs processing |
+| `docs/_planned/` | Polished ideas — may or may not happen | Read, but not current reality |
+| `docs/_archive/` | Superseded docs — historical reference | Do not treat as current |
+
+**The folder IS the signal.** When you find a file in `_planned/`, you know it's an idea before opening it.
+
 ### Document Index
 
 Rebuild with: `python .claude/scripts/build_document_index.py`

@@ -87,7 +87,9 @@ Runs automatically as part of scenario FIXED END phases.
 
 | Location                      | Handling           |
 | ----------------------------- | ------------------ |
-| `_archived/`                  | SKIP entirely      |
+| `_archive/`                   | SKIP entirely      |
+| `_inbox/`                     | SKIP entirely      |
+| `_planned/`                   | Relaxed validation |
 | `.claude/quality/sessions/*/` | SKIP (historical)  |
 | Inside example blocks         | Relaxed validation |
 | Intentionally invalid         | SKIP if marked     |

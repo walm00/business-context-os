@@ -13,7 +13,7 @@
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
-    <img src="https://img.shields.io/badge/skills-8-blue" alt="8 Skills">
+    <img src="https://img.shields.io/badge/skills-9-blue" alt="9 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
     <img src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey" alt="CC BY-NC-SA 4.0 License">
     <img src="https://img.shields.io/badge/audience-non--technical-orange" alt="Non-technical Friendly">
