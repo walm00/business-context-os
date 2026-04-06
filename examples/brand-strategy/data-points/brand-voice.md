@@ -6,7 +6,6 @@ cluster: "Brand & Identity"
 version: "1.1.0"
 last-updated: "2026-03-15"
 status: "active"
-owner: "Content Lead"
 ```
 
 ---

@@ -32,7 +32,7 @@ Most organizations should start at Tier 1 and stay there until they genuinely ne
 ### What you get
 
 - **Organized context.** Every piece of business knowledge has a defined home.
-- **Clear ownership.** Each data point has one person responsible for accuracy.
+- **Clear ownership.** Each data point has explicit topic boundaries -- a defined DOMAIN and EXCLUSIVELY_OWNS list that prevent overlap and drift.
 - **Boundary protection.** EXCLUSIVELY_OWNS and STRICTLY_AVOIDS prevent content from drifting between data points.
 - **Consistent answers.** When someone asks "who is our audience?" or "what makes us different?" there is one trusted source.
 

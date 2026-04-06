@@ -182,7 +182,7 @@ The current `post_edit_frontmatter_check.py` hook always exits 0 and prints warn
 
 | Hook | Event | Matcher | What It Enforces |
 |------|-------|---------|-----------------|
-| `post_edit_frontmatter_check.py` | PostToolUse | Edit, Write | Required YAML frontmatter fields, valid status/type enums, non-blank owner |
+| `post_edit_frontmatter_check.py` | PostToolUse | Edit, Write | Required YAML frontmatter fields, valid status/type enums |
 
 ### Adding a New Hook
 

@@ -186,7 +186,7 @@ You do not need to fill in every section. Focus on these three:
 
 Write down which cluster each of your 3 data points belongs to.
 
-**3. Data Point Inventory** -- List your 3 data points, their cluster, and who owns each one. Ownership means: one person who is responsible for keeping it accurate. Not a committee. One name.
+**3. Data Point Inventory** -- List your 3 data points and their cluster. Ownership here means topic ownership -- what domain does each data point cover, defined via the Ownership Specification section (DOMAIN + EXCLUSIVELY_OWNS at minimum).
 
 ### That is your architecture
 
