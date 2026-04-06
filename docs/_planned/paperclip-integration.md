@@ -4,7 +4,6 @@ type: reference
 cluster: "Strategy & Operations"
 version: "1.1.0"
 status: draft
-owner: "Walm00"
 created: "2026-04-06"
 last-updated: "2026-04-06"
 relationships:
