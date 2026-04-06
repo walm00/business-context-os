@@ -35,6 +35,7 @@ SKIP_PATHS = {
 
 # Special directories — reported separately from managed docs
 INBOX_DIR = "docs/_inbox"
+PLANNED_DIR = "docs/_planned"
 ARCHIVE_DIR = "docs/_archive"
 
 REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "owner", "created", "last-updated"]
@@ -129,6 +130,12 @@ def is_inbox(filepath):
     return rel.startswith(INBOX_DIR) or ("/_inbox/" in rel)
 
 
+def is_planned(filepath):
+    """Check if file is in the _planned directory."""
+    rel = os.path.relpath(filepath).replace("\\", "/")
+    return rel.startswith(PLANNED_DIR) or ("/_planned/" in rel)
+
+
 def is_archive(filepath):
     """Check if file is in the _archive directory."""
     rel = os.path.relpath(filepath).replace("\\", "/")
@@ -141,6 +148,7 @@ def scan_documents(scan_dir):
     unmanaged = []
     incomplete = []
     inbox = []
+    planned = []
     archive = []
 
     pattern = os.path.join(scan_dir, "**", "*.md")
@@ -159,6 +167,19 @@ def scan_documents(scan_dir):
                 "path": os.path.relpath(filepath).replace("\\", "/"),
                 "size": size_str,
                 "modified": mtime,
+            })
+            continue
+
+        # Planned files — polished ideas, not yet active
+        if is_planned(filepath):
+            meta = extract_frontmatter(filepath)
+            size_str, mtime = get_file_info(filepath)
+            planned.append({
+                "path": os.path.relpath(filepath).replace("\\", "/"),
+                "name": meta.get("name", os.path.basename(filepath)) if meta else os.path.basename(filepath),
+                "size": size_str,
+                "modified": mtime,
+                "meta": meta,
             })
             continue
 
@@ -199,12 +220,12 @@ def scan_documents(scan_dir):
             incomplete.append(doc)
         managed.append(doc)
 
-    return managed, unmanaged, incomplete, inbox, archive
+    return managed, unmanaged, incomplete, inbox, planned, archive
 
 
 # --- Report Generation ---
 
-def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, archive=None):
+def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, planned=None, archive=None):
     """Generate the Document Index markdown with auto and user zones."""
     today = datetime.date.today().strftime("%Y-%m-%d")
     lines = []
@@ -290,24 +311,6 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
             lines.append(f"| {s} | {statuses[s]} |")
         lines.append("")
 
-    # --- Planned Documents (separated for visibility) ---
-    planned_docs = [d for d in managed if d["meta"].get("status") == "planned"]
-    if planned_docs:
-        lines.append("### Planned Documents")
-        lines.append("")
-        lines.append("These describe future intent, not current reality:")
-        lines.append("")
-        lines.append("| Document | Cluster | Owner | Last Updated |")
-        lines.append("|----------|---------|-------|-------------|")
-        for doc in sorted(planned_docs, key=lambda d: d["meta"].get("name", d["filename"])):
-            meta = doc["meta"]
-            name = meta.get("name", doc["filename"])
-            cluster = meta.get("cluster", "_Unassigned_")
-            owner = meta.get("owner", "MISSING")
-            updated = meta.get("last-updated", "MISSING")
-            lines.append(f"| [{name}]({doc['path']}) | {cluster} | {owner} | {updated} |")
-        lines.append("")
-
     lines.append("---")
     lines.append("")
 
@@ -389,6 +392,25 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
             lines.append(f"| {doc['path']} | {doc['size']} | {doc['modified']} |")
     else:
         lines.append("No files in `docs/_inbox/`. Drop meeting notes, raw dumps, or unprocessed material here.")
+    lines.append("")
+
+    # --- Planned (polished ideas) ---
+    if planned is None:
+        planned = []
+    lines.append("---")
+    lines.append("")
+    lines.append("## Planned")
+    lines.append("")
+    if planned:
+        lines.append("Polished ideas in `docs/_planned/` — documented but not yet active reality:")
+        lines.append("")
+        lines.append("| Document | Owner | Last Modified |")
+        lines.append("|----------|-------|--------------|")
+        for doc in planned:
+            owner = doc["meta"].get("owner", "—") if doc.get("meta") else "—"
+            lines.append(f"| [{doc['name']}]({doc['path']}) | {owner} | {doc['modified']} |")
+    else:
+        lines.append("No planned documents. Put polished ideas and future plans in `docs/_planned/`.")
     lines.append("")
 
     # --- Archive ---
@@ -480,8 +502,8 @@ def main():
     # Preserve user notes from existing file
     existing_notes = extract_user_notes(OUTPUT_FILE) if not dry_run else None
 
-    managed, unmanaged, incomplete, inbox, archive = scan_documents(scan_dir)
-    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, archive)
+    managed, unmanaged, incomplete, inbox, planned, archive = scan_documents(scan_dir)
+    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, planned, archive)
 
     if dry_run:
         print(report)
@@ -494,6 +516,7 @@ def main():
         print(f"  Unmanaged documents: {len(unmanaged)}")
         print(f"  Incomplete metadata: {len(incomplete)}")
         print(f"  Inbox items: {len(inbox)}")
+        print(f"  Planned items: {len(planned)}")
         print(f"  Archived items: {len(archive)}")
         if existing_notes:
             print(f"  User notes: preserved")

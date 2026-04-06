@@ -214,11 +214,16 @@ Also ask the user if they want to create `docs/current-state.md` now (using the 
 
 Create these directories if they don't exist:
 ```bash
-mkdir -p docs/_inbox docs/_archive
+mkdir -p docs/_inbox docs/_planned docs/_archive
 ```
 
-- `docs/_inbox/` — Landing zone for raw material (meeting notes, brain dumps, pasted content). No quality bar. `context-ingest` processes these into proper data points.
-- `docs/_archive/` — Superseded documents. Kept for reference, not active context. Never delete — archive instead.
+| Folder | Purpose |
+|--------|---------|
+| `docs/_inbox/` | Landing zone for raw material (meeting notes, brain dumps, pasted content). No quality bar. `context-ingest` processes these into proper data points. |
+| `docs/_planned/` | Polished ideas — documented concepts that may or may not happen. Future plans, expansion ideas, strategic initiatives not yet launched. |
+| `docs/_archive/` | Superseded documents. Kept for reference, not active context. Never delete — archive instead. |
+
+**Why folders?** When Claude searches for a keyword, the file path is the first thing it sees. `docs/_planned/enterprise-pricing.md` tells Claude "this is an idea, not reality" before the file is even opened. A metadata field buried in YAML is easy to miss.
 
 ### Phase 5: Recommend (2 min)
 

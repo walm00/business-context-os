@@ -80,7 +80,7 @@ Please specify scope.
    - `type` - valid value: context | process | policy | reference | playbook
    - `cluster` - present and non-empty
    - `version` - follows semantic versioning (x.y.z)
-   - `status` - valid value: draft | active | planned | under-review | archived
+   - `status` - valid value: draft | active | under-review | archived
    - `owner` - present, not "TBD" or blank
    - `created` - valid ISO date, immutable (should never change between versions)
    - `last-updated` - valid ISO date, must be >= created date
@@ -89,13 +89,15 @@ Please specify scope.
    - Missing frontmatter entirely = CRITICAL
    - Missing required fields = HIGH
    - Stale `last-updated` (>90 days for active docs with a review-cycle) = MEDIUM
-   - Stale `last-updated` for planned docs uses relaxed threshold: 180 days = MEDIUM
+   - Docs in `_planned/` use relaxed staleness: 180 days = MEDIUM
    - Missing optional fields = LOW (informational)
-   - Planned docs with incomplete cross-references = LOW (informational, not error)
+   - Docs in `_planned/` with incomplete cross-references = LOW (informational, not error)
 
-4. **Planned document maturity check:**
-   - Document with `status: planned` older than 6 months with complete content → flag: "Consider promoting to active (plan was implemented?) or archiving (plan abandoned?)"
-   - Active document that `depends-on` a planned document → flag: "Forward-looking dependency — note this isn't real yet"
+4. **Folder-based checks:**
+   - Document in `docs/_planned/` older than 6 months → flag: "Consider promoting to active (move to docs/ root) or discarding"
+   - Active document in `docs/` that `depends-on` a `_planned/` document → flag: "Forward-looking dependency — not yet real"
+   - Files in `docs/_inbox/` → skip audit entirely (raw material, no quality bar)
+   - Files in `docs/_archive/` → skip audit or report separately (historical, not active)
 
 4. **Search for patterns:**
    ```bash

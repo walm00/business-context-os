@@ -14,7 +14,7 @@ name: "Your Document Name"            # e.g., "Brand Identity", "Content Approva
 type: context                         # context | process | policy | reference | playbook
 cluster: "Parent Cluster Name"        # e.g., "Brand & Identity", "Operations"
 version: "1.0.0"                      # Bump on EVERY change (patch/minor/major)
-status: draft                         # draft | active | planned | under-review | archived
+status: draft                         # draft | active | under-review | archived
 owner: "Name or Role"                 # e.g., "Head of Marketing", "Ops Lead"
 created: "YYYY-MM-DD"                 # Set once, NEVER change
 last-updated: "YYYY-MM-DD"            # MUST update on every edit
@@ -28,7 +28,7 @@ last-updated: "YYYY-MM-DD"            # MUST update on every edit
 ---
 ```
 
-> **Tip:** Use `status: active` for documents describing current reality. Use `status: planned` for future intent (expansion plans, product ideas, strategic initiatives not yet launched). Use `status: draft` for raw material still being processed — these typically live in `docs/_inbox/`.
+> **Tip:** Active context lives in `docs/` root. Polished ideas/plans go in `docs/_planned/`. Raw material goes in `docs/_inbox/`. The folder tells Claude what it's looking at before the file is opened.
 
 ---
 

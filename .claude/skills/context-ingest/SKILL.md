@@ -80,7 +80,7 @@ If the content spans multiple types, split it and route each piece separately.
 | "We plan to...", "Next quarter we will...", "We're considering..." | `planned` — future intent |
 | "We used to...", "Previously...", "Before the pivot..." | May need `archived` |
 
-**Important:** Do not merge future-state content into an active document without discussing with the user. If someone says "we plan to add enterprise pricing", that goes into a planned document, not the active pricing doc.
+**Important:** Do not merge future-state content into an active document without discussing with the user. If someone says "we plan to add enterprise pricing", that belongs in `docs/_planned/enterprise-pricing.md`, not in the active pricing doc. When the plan becomes reality, move it to `docs/` root and build full cross-references.
 
 ### Step 3: Find the Owner
 

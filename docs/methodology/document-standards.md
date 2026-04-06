@@ -34,7 +34,7 @@ name: "Document Name"
 type: context                   # context | process | policy | reference | playbook
 cluster: "Parent Cluster"       # Which cluster this belongs to
 version: "1.0.0"               # Semantic versioning: major.minor.patch
-status: active                  # draft | active | planned | under-review | archived
+status: active                  # draft | active | under-review | archived
 owner: "Name or Role"          # The ONE person accountable for accuracy
 created: "2026-04-05"          # ISO date, set once, NEVER change
 last-updated: "2026-04-05"     # ISO date, MUST update on every change
@@ -88,17 +88,40 @@ confidentiality: internal             # public | internal | confidential | restr
 
 | Status | Meaning | When to Use |
 |--------|---------|-------------|
-| `draft` | Raw material, not yet reliable | Meeting notes, brain dumps, unprocessed input. Lives in `docs/_inbox/` until refined. |
+| `draft` | In progress, not yet reliable | New documents being written, content being refined |
 | `active` | Current, accurate, trustworthy | The default state for maintained docs. This IS reality today. |
-| `planned` | Future intent, not yet reality | Expansion plans, product ideas, strategic initiatives not yet launched. Reliable as a description of intent. |
 | `under-review` | Flagged for accuracy check | When a trigger event occurs or staleness detected |
-| `archived` | No longer current but preserved | Superseded docs. Move to `docs/_archive/`. Never delete -- archive instead. |
+| `archived` | No longer current but preserved | Superseded docs. Never delete -- archive instead. |
 
-**Which status? A quick test:**
-- Can someone act on this TODAY and it would be correct? → `active`
-- Does this describe something you INTEND to do but haven't yet? → `planned`
-- Is this raw material that still needs processing? → `draft` (put it in `docs/_inbox/`)
-- Is this outdated but worth keeping for reference? → `archived`
+### Document Locations (The Folder Structure)
+
+**The folder a document lives in tells Claude what it IS before the file is even opened.** This is the primary signal — more reliable than metadata fields because it's visible in every glob, grep, and file listing.
+
+```
+docs/
+├── *.md                    # ACTIVE CONTEXT — current reality, act on it
+├── _inbox/                 # RAW MATERIAL — meeting notes, brain dumps, unprocessed
+├── _planned/               # POLISHED IDEAS — documented but not yet real, may never be
+├── _archive/               # SUPERSEDED — was real once, kept for reference
+├── table-of-context.md     # Synthesis layer (stable, monthly)
+├── current-state.md        # Operations layer (fluid, weekly)
+└── document-index.md       # Auto-generated inventory
+```
+
+| Folder | What lives here | Quality bar | Claude should... |
+|--------|----------------|-------------|-----------------|
+| `docs/*.md` | Active context — current business reality | Full CLEAR compliance | Trust and act on this content |
+| `docs/_inbox/` | Raw dumps — meeting notes, transcripts, pasted content | None (no frontmatter required) | Process via `context-ingest`, not reference directly |
+| `docs/_planned/` | Polished ideas — defined concepts that may or may not happen | Frontmatter recommended, linking optional | Read but NOT treat as current reality |
+| `docs/_archive/` | Superseded docs — no longer current | As-was when archived | Reference for history only, not as current truth |
+
+**Why folders instead of a status field?** When Claude searches for "pricing" and finds `docs/_planned/enterprise-pricing.md`, the path itself signals "this is an idea, not reality" — before the file is even opened. A status field buried in YAML frontmatter is easy to miss after the content is already in context.
+
+**Moving documents between folders:**
+- `_inbox/ → docs/` — raw material refined into active context (via `context-ingest`)
+- `_inbox/ → _planned/` — raw idea polished into a documented concept
+- `_planned/ → docs/` — idea becomes reality (build full relationships and ownership spec)
+- `docs/ → _archive/` — superseded by newer version or no longer relevant
 
 ---
 
@@ -141,9 +164,9 @@ Every document must meet these checks to be considered healthy. This is what `co
 
 **Minimum to be "active":** Levels 1-3 must pass. Levels 4-5 are the ongoing maintenance standard.
 
-**Planned documents** follow the same quality bar as active documents. The content should be reliable as a description of intent, even though it's not yet reality. Planned docs get relaxed staleness thresholds (180 days vs 90) and linking requirements (incomplete cross-references are informational, not errors).
+**Documents in `docs/_planned/`** should have frontmatter but get relaxed rules: staleness threshold is 180 days (vs 90 for active), incomplete cross-references are informational (not errors), and linking is optional until promoted to active.
 
-**Draft documents** in `docs/_inbox/` don't need to meet any quality bar. They're raw material waiting to be processed by `context-ingest`.
+**Documents in `docs/_inbox/`** don't need to meet any quality bar. They're raw material waiting to be processed by `context-ingest`. No frontmatter required.
 
 ---
 
@@ -303,8 +326,9 @@ Never touch `created`. It's the document's birth certificate.
 2. Fill in all required frontmatter fields (`created` = today)
 3. Write DOMAIN and EXCLUSIVELY_OWNS at minimum
 4. Add STRICTLY_AVOIDS to prevent future overlap
-5. Set `status: draft` until content is complete (or drop raw material in `docs/_inbox/`)
-6. Change to `status: active` when ready for use, or `status: planned` if it describes future intent
+5. Set `status: draft` until content is complete
+6. Change to `status: active` when ready for use
+7. If it's a polished idea/plan that may not happen yet — put it in `docs/_planned/` instead of root `docs/`
 
 **Updating an existing document:**
 1. Make your changes
