@@ -114,6 +114,12 @@ Based on what you found in Phase 1, ask:
 - Has the competitive landscape shifted?
 - Have any processes changed without docs catching up?
 
+**About planned vs. active:**
+- Are any planned documents ready to become active? (Reality caught up — the plan was implemented)
+- Are any active documents that should be planned? (Reality shifted, this is now aspirational, not current)
+- Are there planned documents sitting >3 months without progress? (Stale plans = abandoned plans)
+- Is anything in `docs/_inbox/` that's been sitting unprocessed? (Raw material piling up)
+
 **About connections:**
 - Did recent changes create new relationships between data points that aren't documented?
 - Are there clusters that should exist but don't?
@@ -127,6 +133,7 @@ Without constraints, imagine:
 - If our biggest competitor changed strategy, how quickly could we update our context?
 - If a key team member left tomorrow, would their knowledge survive in our documentation?
 - What would our context architecture look like in 6 months if everything went well?
+- Look at your planned documents — are they still the right future? Has your direction changed enough that some plans should be archived?
 
 ### Phase 4: Capture and Update (5 min)
 
@@ -137,6 +144,8 @@ Without constraints, imagine:
 4. **Lessons**: What should be captured in lessons.json?
 
 **Update the context layers (offer to the user):**
+- **Planned documents** — Promote to active any plans that have been realized. Archive any plans that are no longer relevant.
+- **Inbox** — Process any raw material sitting in `docs/_inbox/`. Ingest or discard.
 - **table-of-context.md** — If the business picture shifted, update the relevant sections
 - **current-state.md** — Refresh "What Changed Recently" based on what was discovered
 - **Document Index** — Run `python .claude/scripts/build_document_index.py` if files changed

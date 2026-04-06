@@ -88,7 +88,7 @@ name: "Document Name"
 type: context              # context | process | policy | reference | playbook
 cluster: "Cluster Name"
 version: "1.0.0"           # Bump on EVERY change
-status: active             # draft | active | under-review | archived
+status: active             # draft | active | planned | under-review | archived
 owner: "Name or Role"
 created: "YYYY-MM-DD"      # Set once, NEVER change
 last-updated: "YYYY-MM-DD" # MUST update on every edit

@@ -80,6 +80,7 @@ For each document or knowledge source discovered, identify:
 | **Location** | File path |
 | **Type** | What kind of knowledge (brand, audience, product, process, technical, etc.) |
 | **Scope** | What topic does it cover? |
+| **Temporal State** | Is this current reality (`active`), future plans (`planned`), or raw material (`draft`)? |
 | **Freshness** | Last modified date (from git or file metadata) |
 | **Completeness** | Rough assessment: thorough, partial, stub, or outdated |
 | **Overlap** | Does this cover the same ground as another file? |
@@ -209,6 +210,16 @@ Mark anything uncertain with "[TO VERIFY]". This is a draft — the user refines
 
 Also ask the user if they want to create `docs/current-state.md` now (using the template). If yes, have a brief conversation about their role, this week's priorities, and what's changing.
 
+**Set up the directory structure:**
+
+Create these directories if they don't exist:
+```bash
+mkdir -p docs/_inbox docs/_archive
+```
+
+- `docs/_inbox/` — Landing zone for raw material (meeting notes, brain dumps, pasted content). No quality bar. `context-ingest` processes these into proper data points.
+- `docs/_archive/` — Superseded documents. Kept for reference, not active context. Never delete — archive instead.
+
 ### Phase 5: Recommend (2 min)
 
 Present findings to the user with:
@@ -218,6 +229,7 @@ Present findings to the user with:
 3. **Top 3 recommendations**: Which data points to create first and why
 4. **Overlaps**: Where the same info lives in multiple places (context rot already happening)
 5. **Table of Context**: "I created an initial draft — please review and correct"
+6. **Planned vs. Active**: Call out which discovered content represents current reality vs. future intent. Recommend appropriate status for each.
 
 ---
 
