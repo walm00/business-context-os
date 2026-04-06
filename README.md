@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
     <img src="https://img.shields.io/badge/skills-8-blue" alt="8 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
-    <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
+    <img src="https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey" alt="CC BY-NC-SA 4.0 License">
     <img src="https://img.shields.io/badge/audience-non--technical-orange" alt="Non-technical Friendly">
   </p>
 </p>
@@ -405,7 +405,7 @@ Contributions welcome. Whether you've found a better way to structure business c
 
 ## 📄 License
 
-MIT. See [LICENSE](LICENSE).
+[CC BY-NC-SA 4.0](LICENSE) — Free to use, adapt, and share. Attribution required. You may not sell this work or any derivative of it. Using BCOS within your own organisation to manage internal business context is permitted.
 
 ---
 
