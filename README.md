@@ -1,7 +1,7 @@
 <p align="center">
-  <h1 align="center">Business Context OS</h1>
+  <h1 align="center">CLEAR Context OS</h1>
   <p align="center">
-    <strong>CLEAR Context Engineering for Claude Code</strong><br>
+    <strong>Context Engineering for Claude Code</strong><br>
     Build your knowledge architecture. Keep it alive. Let it learn.
   </p>
   <p align="center">
@@ -24,7 +24,7 @@
 
 > Your AI had perfect context — two weeks ago. Since then your strategy shifted, your processes changed, you had three meetings that redefined your priorities, and your personal operating context evolved. But your AI is still working from the old picture.
 >
-> **Business Context OS** doesn't just organize your knowledge. It *engineers* it — with ownership boundaries that prevent drift, a self-learning system that gets smarter every session, and strategic reflection that catches what maintenance misses. Think of it as a **living wiki + memory system** that Claude Code maintains alongside you.
+> **CLEAR Context OS** doesn't just organize your knowledge. It *engineers* it — with ownership boundaries that prevent drift, a self-learning system that gets smarter every session, and strategic reflection that catches what maintenance misses. Think of it as a **living wiki + memory system** that Claude Code maintains alongside you.
 
 ---
 
@@ -51,7 +51,7 @@ It happens because:
 
 ## The Solution: CLEAR Context Engineering
 
-Business Context OS is a **complete system** — methodology, skills, templates, and automation — for building a knowledge architecture that stays accurate as everything around it changes. It works for business knowledge, personal operating context, SOPs, competitive intelligence, team processes — anything that needs to stay current.
+CLEAR Context OS is a **complete system** — methodology, skills, templates, and automation — for building a knowledge architecture that stays accurate as everything around it changes. It works for business knowledge, personal operating context, SOPs, competitive intelligence, team processes — anything that needs to stay current.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -483,7 +483,7 @@ If you want to understand HOW BCOS is built (not just how to use it), start with
 ---
 
 <p align="center">
-  <strong>Business Context OS</strong><br>
-  Built on the CLEAR methodology. Designed for Claude Code.<br>
-  Stop context rot. Start context engineering.
+  <strong>CLEAR Context OS</strong><br>
+  Context engineering for Claude Code.<br>
+  Stop context rot. Start building knowledge that lasts.
 </p>
