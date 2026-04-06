@@ -33,3 +33,6 @@ Desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# Private strategy docs (not for public repo)
+.private/
