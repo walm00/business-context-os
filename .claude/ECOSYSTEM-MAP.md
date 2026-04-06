@@ -59,6 +59,8 @@ This is your navigation hub for the Business Context OS ecosystem. Use this docu
 
 ## Discovery Scripts
 
+- **Rebuild Document Index:** `python .claude/scripts/build_document_index.py`
+- **Dry run (preview only):** `python .claude/scripts/build_document_index.py --dry-run`
 - **Find all agents:** `bash .claude/agents/agent-discovery/find_agents.sh`
 - **Find all skills:** `bash .claude/skills/skill-discovery/find_skills.sh`
 - **Search lessons:** `python .claude/scripts/find_lessons.py --tags #context`
