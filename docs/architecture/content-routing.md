@@ -18,27 +18,24 @@ For the full skill specification, see `.claude/skills/context-ingest/SKILL.md`.
 
 Every ingest begins with one question: **"What do you want to do with this?"**
 
-```
-                         New content arrives
-                               |
-                    "What do you want to do?"
-                               |
-            +--------+---------+---------+--------+
-            |        |         |         |        |
-        "Just     "It's an   "Inte-   "Not
-        save it"   idea"     grate    sure"
-            |        |       it"        |
-            v        v         |        v
-        _inbox/   _planned/    |    Claude reads,
-        (raw      (polished    |    summarizes,
-        dump,     concept,     |    recommends
-        done)     done)        |    a path
-                               |        |
-                               v    User decides
-                          Classify       |
-                          + Route   -----+
-                          + Integrate
-                          + Cross-ref
+```mermaid
+flowchart TD
+    A[New content arrives] --> B{"What do you want<br>to do with this?"}
+
+    B -->|"Just save it"| C[docs/_inbox/<br><i>Raw dump, done</i>]
+    B -->|"It's an idea"| D[docs/_planned/<br><i>Polished concept, done</i>]
+    B -->|"Integrate it"| E[Classify + Route]
+    B -->|"Not sure"| F[Claude reads,<br>summarizes,<br>recommends a path]
+
+    F -->|User decides| B
+
+    E --> G[Find owning data point]
+    G --> H[Integrate into active doc]
+    H --> I[Update cross-references]
+    I --> J[Rebuild Document Index]
+    J --> K{Offer next step}
+    K -->|"Run audit?"| L[context-audit]
+    K -->|"Update current-state?"| M[current-state.md]
 ```
 
 ### Path 1: Inbox Dump

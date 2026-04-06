@@ -82,22 +82,30 @@ BCOS has 10 skills organized into two tiers. Skills are instructions stored in `
 
 Skills form three natural chains:
 
-**The creation chain** -- how new knowledge enters and gets validated:
-```
-context-onboarding --> context-ingest --> context-audit
-     (discover)          (integrate)       (validate)
-```
+```mermaid
+graph LR
+    subgraph Creation Chain
+        onboarding[context-onboarding<br><i>discover</i>] --> ingest[context-ingest<br><i>integrate</i>] --> audit[context-audit<br><i>validate</i>]
+    end
 
-**The maintenance loop** -- how existing knowledge stays healthy:
-```
-daydream --> context-audit --> context-ingest
- (reflect)    (find gaps)      (fill gaps)
-```
+    subgraph Maintenance Loop
+        daydream[daydream<br><i>reflect</i>] --> audit2[context-audit<br><i>find gaps</i>] --> ingest2[context-ingest<br><i>fill gaps</i>]
+        ingest2 -.->|findings feed back| daydream
+    end
 
-**The planning chain** -- how structural changes get coordinated:
-```
-clear-planner --> ecosystem-manager
-  (plan work)     (modify the system)
+    subgraph Planning Chain
+        planner[clear-planner<br><i>plan work</i>] --> ecosystem[ecosystem-manager<br><i>modify system</i>]
+    end
+
+    core[core-discipline<br><i>always active</i>] -.->|enforces skill discovery| onboarding
+    core -.-> ingest
+    core -.-> audit
+    core -.-> daydream
+    core -.-> planner
+
+    todo[todo-utilities<br><i>pattern library</i>] -.->|patterns copied inline| onboarding
+    todo -.-> ingest
+    todo -.-> audit
 ```
 
 **core-discipline** sits across everything. It is not a step in a chain -- it is an always-active overlay that checks whether a relevant skill applies before any action is taken. It enforces the compounding rule (see below) and matches overhead to task size: small changes get no ceremony, significant changes get the full workflow.

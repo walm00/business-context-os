@@ -6,12 +6,13 @@ Context dies from neglect, drift, accumulation, ownership vacuums, and change bl
 
 ## The Core Loop
 
-```
-onboarding (day 1) --> daily use (ingest) --> weekly (audit) --> monthly (daydream) --> quarterly (deep review)
-                              ^                                                               |
-                              |                                                               |
-                              +---------------------------------------------------------------+
-                                         findings feed back into daily work
+```mermaid
+graph LR
+    A[Onboarding<br><i>day 1</i>] --> B[Daily use<br><i>context-ingest</i>]
+    B --> C[Weekly<br><i>context-audit</i>]
+    C --> D[Monthly<br><i>daydream</i>]
+    D --> E[Quarterly<br><i>deep review</i>]
+    E -->|"findings feed back<br>into daily work"| B
 ```
 
 Each pass through the loop catches what the previous layer missed. The cycle repeats indefinitely -- there is no "done" state for maintenance.
@@ -116,11 +117,12 @@ Business changes that should prompt immediate context review:
 
 Maintenance tasks that spawn follow-up work:
 
-```
-daydream finds stale docs -----------> flags for context-audit
-context-audit finds contradictions --> routes to context-ingest for resolution
-context-ingest finds no owner -------> recommends new data point creation
-lessons-consolidate finds gaps ------> suggests new lessons to capture
+```mermaid
+graph LR
+    A[daydream<br><i>finds stale docs</i>] -->|flags for| B[context-audit]
+    B -->|finds contradictions| C[context-ingest<br><i>resolves</i>]
+    C -->|finds no owner| D[New data point<br><i>recommended</i>]
+    E[lessons-consolidate<br><i>finds gaps</i>] -->|suggests| F[New lessons<br><i>to capture</i>]
 ```
 
 No maintenance task operates in isolation. Each one feeds the others.
