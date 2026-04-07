@@ -8,8 +8,9 @@ This is your navigation hub for the CLEAR Context OS ecosystem. Use this documen
 
 | Skill | Purpose | Tier |
 |-------|---------|------|
-| context-onboarding | Initial repo scan, produces Document Index | 1 |
+| context-onboarding | First-run onboarding: scans repo, drafts data points, sets up maintenance | 1 |
 | context-ingest | Integrate new sources into existing data points | 1 |
+| context-mine | Extract context from conversations, chat exports, meeting transcripts | 1 |
 | core-discipline | Bootstrap - proactive skill discovery | 1 |
 | doc-lint | Documentation quality validation | 1 |
 | clear-planner | Implementation planning with sessions | 2 |
@@ -41,7 +42,7 @@ This is your navigation hub for the CLEAR Context OS ecosystem. Use this documen
 | `.claude/agents/` | All agent definitions (AGENT.md files) |
 | `.claude/quality/ecosystem/` | Ecosystem config, state, and lessons |
 | `.claude/quality/sessions/` | Planning session artifacts |
-| `.claude/scripts/` | Utility scripts (lessons search, consolidation) |
+| `.claude/scripts/` | Utility scripts (index builder, pruning, cross-ref analysis, integration audit, lessons, updates) |
 | `.claude/hooks/` | Claude Code enforcement hooks |
 | `.claude/registries/` | Machine-readable indexes |
 | `docs/methodology/` | CLEAR methodology reference |
@@ -69,3 +70,9 @@ This is your navigation hub for the CLEAR Context OS ecosystem. Use this documen
 - **Find all skills:** `bash .claude/skills/skill-discovery/find_skills.sh`
 - **Search lessons:** `python .claude/scripts/find_lessons.py --tags #context`
 - **Analyze lessons:** `python .claude/scripts/consolidate_lessons.py`
+- **Cross-reference analysis:** `python .claude/scripts/analyze_crossrefs.py`
+- **Integration audit:** `python .claude/scripts/analyze_integration.py --staged`
+- **Generate wake-up context:** `python .claude/scripts/generate_wakeup_context.py`
+- **Prune old sessions:** `python .claude/scripts/prune_sessions.py`
+- **Prune old diary entries:** `python .claude/scripts/prune_diary.py`
+- **Update framework:** `python .claude/scripts/update.py`

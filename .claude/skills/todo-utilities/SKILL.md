@@ -50,9 +50,9 @@ The full pattern library with examples. Contains:
 4. **Workflow Gate** — User approval required before continuing
 5. **Long-Running Progress** — Show progress counts during bulk operations
 
-### See: `references/anti-patterns.md`
+### Anti-Patterns
 
-What NOT to do. Common mistakes that break user visibility.
+What NOT to do. Common mistakes that break user visibility:
 
 ---
 

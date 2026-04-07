@@ -175,8 +175,6 @@ business-context-os/
 *"Extract context from this Slack export"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🔎 Context Audit
@@ -185,6 +183,8 @@ business-context-os/
 *"Audit my context for CLEAR compliance"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 💭 Daydream
@@ -193,8 +193,6 @@ business-context-os/
 *"Let's daydream about our context architecture"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📋 Clear Planner
@@ -203,6 +201,8 @@ business-context-os/
 *"Plan the restructuring of our audience data points"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🏗️ Ecosystem Manager
@@ -211,8 +211,6 @@ business-context-os/
 *"I want to create a new skill — check for overlaps"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🧠 Lessons Consolidate
@@ -221,6 +219,8 @@ business-context-os/
 *"What have we learned?"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### ⚡ Core Discipline
@@ -229,8 +229,6 @@ business-context-os/
 *Always active — no invocation needed*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📄 Doc-Lint
@@ -238,8 +236,6 @@ business-context-os/
 
 *"Lint my documentation"*
 
-</td>
-<td>
 </td>
 </tr>
 <tr>
@@ -272,15 +268,15 @@ business-context-os/
 
 Context that isn't maintained rots. These tasks keep your knowledge alive:
 
-| Task | What Happens |
-|------|-------------|
-| **Document Index rebuild** | Refreshes file inventory, metadata health, cross-reference suggestions |
-| **Health check** | Quick CLEAR audit across active documents |
-| **Daydream** | Strategic reflection — what changed, what's stale, what's ready to activate |
-| **Deep audit + lessons** | Thorough audit, lessons consolidation, inbox processing |
-| **Architecture review** | Full review of context vs. reality |
+| Task | Schedule | What Happens |
+|------|----------|-------------|
+| **Index + health check** | Daily | Rebuild index, flag unmanaged docs, check boundaries and cross-references |
+| **Daydream + lessons** | Monday | Strategic reflection + lessons capture + session pruning |
+| **Mid-week daydream** | Wednesday | Deeper reflection on gaps, connections, and staleness |
+| **Deep audit + inbox** | Friday | Thorough cluster audit, lessons consolidation, inbox processing |
+| **Architecture review** | Monthly | Full architecture + ecosystem review with health score |
 
-Run them at whatever rhythm fits your pace. See [scheduling.md](docs/guides/scheduling.md) for ready-to-use prompts.
+All 5 are set up automatically during onboarding. See [scheduling.md](docs/guides/scheduling.md) for exact task definitions.
 
 ---
 

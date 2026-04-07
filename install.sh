@@ -171,6 +171,11 @@ copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-ch
 # Session diary (append-only, auto-pruned after 30 days)
 copy_if_missing "$SCRIPT_DIR/docs/.session-diary.md" "docs/.session-diary.md"
 
+# Architecture
+for f in "$SCRIPT_DIR"/docs/architecture/*.md; do
+    copy_if_missing "$f" "docs/architecture/$(basename "$f")"
+done
+
 # Methodology
 for f in "$SCRIPT_DIR"/docs/methodology/*.md; do
     copy_if_missing "$f" "docs/methodology/$(basename "$f")"
