@@ -233,6 +233,18 @@ docs/
 <td>
 </td>
 </tr>
+<tr>
+<td>
+
+#### ⛏️ Context Mine
+**Extract context from conversations.** Accepts Slack exports, meeting transcripts, chat logs. Pulls out decisions, discoveries, action items, preferences, and problems. Dumps structured results to `_inbox/` for processing via context-ingest.
+
+*"Extract context from this Slack export"*
+
+</td>
+<td>
+</td>
+</tr>
 </table>
 
 ### Enforcement & Automation
