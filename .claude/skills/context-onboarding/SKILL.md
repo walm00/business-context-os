@@ -94,28 +94,56 @@ While gathering info, figure out what kind of project this is. Don't ask directl
 
 ---
 
-## Step 2: Draft 3 Data Points
+## Step 2: Plan the Data Point Architecture
 
-Pick the 3 most important. For most businesses:
+**Don't limit to 3 data points.** Analyze ALL the content and plan however many data points are needed to capture everything properly. Nothing gets lost — only duplications and conflicts get resolved.
 
-1. **Brand Identity / Company Identity** — who they are
-2. **Target Audience** — who they serve
-3. **Value Proposition / Offering** — what they do and why it wins
+### 2a. Content inventory
 
-If the repo scan revealed contradictions or critical gaps, prioritize those instead:
-1. Contradictory content (same topic, different versions) — highest value
-2. Critical gaps (important topic, no docs)
-3. Scattered fragments (useful content spread across files)
+List every piece of content you found. For each item:
+- **Source** — where it came from (file, URL, user input)
+- **Topics covered** — what knowledge it contains
+- **Overlaps** — does it duplicate or contradict another source?
+- **Quality** — is it current, outdated, or a fragment?
 
-### Data point format
+### 2b. Plan the data points
 
-Create each as a file in `docs/`:
+Group the content inventory into logical data points. Each data point should:
+- Own one clear topic (no overlap with other data points)
+- Contain all the knowledge about that topic from all sources
+- Consolidate duplicates — pick the best version, merge the rest
+- Resolve contradictions — flag them for the user to decide
+
+Present the plan to the user:
+
+```
+Based on what I found, here's the data point structure I recommend:
+
+[Cluster Name]
+  1. [Data Point Name] — [what it covers] (sources: file1.md, website about page)
+  2. [Data Point Name] — [what it covers] (sources: pitch-deck.pdf, user input)
+
+[Cluster Name]
+  3. [Data Point Name] — [what it covers] (sources: readme.md, strategy-doc.md)
+  ...
+
+Conflicts found:
+  - [Topic]: file1.md says X, file2.md says Y — which is current?
+
+Nothing is lost. [N] sources → [M] data points. Want me to proceed or adjust the structure?
+```
+
+**Wait for approval before creating files.** The user needs to see the full plan and resolve any conflicts first.
+
+### 2c. Create the data points
+
+After the user approves the plan, create each data point in `docs/`:
 
 ```markdown
 ---
 name: "[Data Point Name]"
 type: context
-cluster: "[Best fit cluster from profile]"
+cluster: "[Cluster]"
 version: "1.0.0"
 status: draft
 created: "[today]"
@@ -138,7 +166,7 @@ last-updated: "[today]"
 
 ## Content
 
-[The actual business knowledge, synthesized from sources. Real content, not placeholders.]
+[Real content synthesized from sources. Not placeholders.]
 
 ## Context
 
@@ -147,22 +175,39 @@ last-updated: "[today]"
 
 **Pre-fill everything.** Draft real content from what you learned. The user edits — they don't write from scratch.
 
-**If drafting from existing repo docs:** do NOT move, rename, or reorganize existing files. Create new CLEAR data points alongside them.
+**If drafting from existing repo docs:** do NOT move, rename, or reorganize the original files yet. Create new CLEAR data points alongside them. The user decides when to archive the originals.
 
 ---
 
-## Step 3: Review
+## Step 3: Verify — Quality Check
 
-Show the user what you drafted:
+Before showing the user, verify the work yourself:
+
+1. **Nothing lost check** — for every source item in your content inventory, confirm it appears in at least one data point. List any gaps.
+2. **Ownership check** — every data point has a clear DOMAIN and EXCLUSIVELY_OWNS. No two data points claim the same topic.
+3. **Cross-reference check** — STRICTLY_AVOIDS entries point to real data points. Links resolve.
+4. **Content quality** — no placeholder text, no empty sections, no "TBD" entries. If you can't fill a section from sources, cut it.
+5. **Metadata** — all YAML frontmatter fields present and correct.
+
+Then present the results:
 
 ```
-Here are 3 data points based on [what you shared / what I found in the repo]:
+Here are [N] data points based on [what you shared / what I found]:
 
-1. [Name] — [one-line summary]
-2. [Name] — [one-line summary]
-3. [Name] — [one-line summary]
+[Cluster Name]
+  1. [Name] — [one-line summary]
+  2. [Name] — [one-line summary]
 
-Take a look — anything off or missing? I'll adjust whatever needs fixing.
+[Cluster Name]
+  3. [Name] — [one-line summary]
+  ...
+
+Coverage check:
+  - [X] sources processed → [Y] data points created
+  - [Z] conflicts resolved (list if any)
+  - No content was dropped
+
+Take a look — anything off, missing, or wrong? I'll adjust whatever needs fixing.
 ```
 
 After the user approves (with any corrections applied):
@@ -171,7 +216,22 @@ After the user approves (with any corrections applied):
 
 ---
 
-## Step 4: Update the Onboarding Checklist
+## Step 4: Archive Originals
+
+**Only after the user approves the new data points.** Never archive before approval.
+
+If there were existing source files in the repo (old docs, scattered markdown, inbox files):
+
+1. Show the user which original files are now fully captured in the new data points
+2. Ask: "These originals are now covered by the new data points. Want me to move them to _archive/?"
+3. If yes — move each file to `docs/_archive/` with a note in the file explaining what replaced it
+4. If no — leave them in place. The user may want to keep them around for now.
+
+**Never delete source files.** Archive only. The originals stay available for reference.
+
+---
+
+## Step 5: Update the Onboarding Checklist
 
 The checklist ships with install at `docs/.onboarding-checklist.md`. After data points are approved:
 
@@ -187,7 +247,7 @@ Want to keep going or pick it up next time?
 
 ---
 
-## Step 5: Set Up Scheduled Maintenance
+## Step 6: Set Up Scheduled Maintenance
 
 After data points and the document index are in place, the next checklist item is scheduled maintenance.
 
@@ -225,7 +285,7 @@ When ALL items are checked:
 
 ## Tips
 
-- **Don't try to formalize everything at once.** 3 data points. Add more when these feel stable.
+- **Capture everything, don't limit arbitrarily.** Create as many data points as the content demands. Better to have proper coverage than to lose information.
 - **Draft real content, not placeholders.** If you can't fill a section, cut it — don't leave it empty.
 - **Ask focused questions, not questionnaires.** 2-3 max.
 - **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.
