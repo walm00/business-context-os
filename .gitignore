@@ -37,6 +37,9 @@ Desktop.ini
 # Local Claude Code settings (contains machine-specific paths)
 .claude/settings.local.json
 
+# Update script reference file (per-install, not shared)
+.claude/bcos-claude-reference.md
+
 # Hook state (session-specific, machine-local)
 .claude/hook_state/*
 !.claude/hook_state/.gitkeep

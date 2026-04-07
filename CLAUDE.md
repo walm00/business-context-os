@@ -133,6 +133,8 @@ At the start of any context-related work, check for these files:
 
 Together these give you the full picture without reading every data point. Drill into specific data points only when you need detail.
 
+**Framework update check:** If `.claude/bcos-claude-reference.md` exists, compare it against this CLAUDE.md once per session. If the reference contains critical framework instructions missing from this file (session start items, hooks, maintenance scripts), briefly mention what's missing and offer to help the user add it. Don't nag — mention once, then move on.
+
 ### Folder Structure
 
 | Location | What's there | Trust level |
