@@ -86,11 +86,13 @@ cd /path/to/your/project
 bash /tmp/bcos/install.sh
 ```
 
-Then ask Claude:
+Then tell Claude about your business:
 
-> "Scan my repo and create a Document Index"
+> **Starting fresh?** "I want to set up my business context. Here's my website: [url]" — or share a pitch deck, LinkedIn page, or just describe what you do.
+>
+> **Already have docs?** "Scan my repo and show me what business context already exists."
 
-That's it. The `context-onboarding` skill scans your existing docs, maps what knowledge you already have, sets up your folder structure, and recommends which context data points to create first.
+Claude reads what you share, drafts your first 3 data points, and you review. **20-30 minutes to working context.** See the [Getting Started Guide](docs/guides/getting-started.md) for the full walkthrough.
 
 ---
 
@@ -378,6 +380,44 @@ Copy `.claude/`, `docs/`, and `examples/` into your project. Merge `CLAUDE.md` i
 ```bash
 bash .claude/skills/skill-discovery/find_skills.sh   # Should show: 10 skills
 bash .claude/agents/agent-discovery/find_agents.sh   # Should show: 1 agent
+```
+
+---
+
+## 🔄 Updating
+
+When a new version is released, pull the latest framework files without touching your business context.
+
+**If you cloned the repo (most common):**
+```bash
+git pull
+```
+
+**If you forked the repo:**
+```bash
+git fetch upstream
+git merge upstream/main
+```
+
+**After your first pull**, use the update script for all future updates — no git knowledge needed:
+
+```bash
+python .claude/scripts/update.py            # interactive, shows what changed
+python .claude/scripts/update.py --dry-run  # preview only, applies nothing
+python .claude/scripts/update.py --yes      # apply without confirmation prompt
+```
+
+The script updates only framework files (skills, agents, hooks, scripts, methodology docs, templates, examples). It **never touches**:
+
+- `docs/*.md` — your business context
+- `docs/_inbox/`, `_planned/`, `_archive/` — your working material
+- `.private/` — your private docs
+- `CLAUDE.md` — shown as a diff, you decide what to apply
+
+**Downloaded a zip instead of cloning?**
+```bash
+# Download the latest zip and extract it, then point the script at it:
+python .claude/scripts/update.py --local /path/to/extracted-zip
 ```
 
 ---

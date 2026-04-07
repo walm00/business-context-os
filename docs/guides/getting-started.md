@@ -1,190 +1,85 @@
 # Getting Started with CLEAR Context OS
 
-**Your Week 1 walkthrough. No technical background required.**
+**Install. Talk to Claude. Review what it drafts.**
 
 ---
 
-## What You'll Build
+## What You'll Have When You're Done
 
-By the end of this guide, you will have a **living context system** -- a structured, organized home for the business knowledge your team relies on every day.
+3 data points — single sources of truth for your most important business knowledge. Each has clear boundaries (what it covers, what it doesn't). Claude uses them to give you consistent, grounded answers.
 
-Instead of your brand story living in five different documents (each slightly different), your audience definition meaning something different to sales and marketing, or your value proposition being a moving target depending on who you ask -- you will have ONE trusted source for each piece of knowledge, with clear ownership and boundaries.
-
-This system grows with your business. It is not a one-time exercise. It is a practice that keeps your organizational knowledge accurate, consistent, and useful -- whether a person or an AI tool is looking for it.
-
-**Total time for this guide: about 1 hour.** Then 5 minutes per week to keep it alive.
+**Time: ~30 minutes.** Then 5 minutes per week to keep it current.
 
 ---
 
-## Prerequisites
+## Step 1: Install (2 minutes)
 
-You need two things:
-
-1. **Claude Code installed** on your computer
-2. **This repository cloned** to your local machine
-
-If you are not sure about either of these, ask your IT person or a technically inclined colleague for help with the initial setup. Once it is set up, you will not need technical skills to use the system.
-
----
-
-## Step 0 (Recommended): Let Claude Scan Your Repo First
-
-If you already have documents, READMEs, guides, or any business knowledge in your project, start here. Ask Claude:
-
-> "Scan my repo and create a Document Index -- show me what business context already exists."
-
-This invokes the **context-onboarding** skill, which will:
-1. Scan your repo for existing documentation and knowledge sources
-2. Classify what it finds by topic (brand, audience, product, strategy, etc.)
-3. Produce a **Document Index** at `docs/document-index.md`
-4. Recommend which data points to create first, based on what already exists
-
-**This step takes 5-15 minutes** and gives you a map before you start building. The recommendations from the scan feed directly into Step 2 below.
-
-If you are starting with a blank project and no existing docs, skip to Step 1.
-
----
-
-## Step 1: Understand Your Starting Point (10 minutes)
-
-Before creating anything, take 10 minutes to think about the context your team already relies on. If you ran Step 0, review your Document Index alongside these questions. If not, grab a notebook or open a blank document and answer these three questions.
-
-### Question 1: What context does your team rely on?
-
-Think about the documents, definitions, and knowledge that your team uses regularly. Common examples:
-
-- Company description or about page
-- Key processes or SOPs
-- Customer or audience profiles
-- Product or service descriptions
-- Strategic plans or OKRs
-- Competitive landscape or market context
-- Team structure or org context
-- Brand guidelines or messaging docs
-
-Write down everything that comes to mind. Do not filter. You are making an inventory.
-
-### Question 2: Which pieces get outdated fastest?
-
-Look at your list. Circle the ones that change most often or feel unreliable. These are your highest-priority candidates.
-
-Common answers:
-- Competitive information (market moves fast)
-- Process docs (workflows evolve but docs lag behind)
-- Strategic direction (pivots happen, docs don't follow)
-- Team context (people join, leave, change roles)
-- Customer profiles (evolve as you learn more)
-
-### Question 3: Where do people disagree about "the truth"?
-
-Think about recent moments when two people on your team gave different answers to the same question. Examples:
-
-- "Who is our target audience?" and marketing says one thing while sales says another
-- "What makes us different from [competitor]?" and the website says one thing while the pitch deck says another
-- "What is our brand voice?" and the social team has one interpretation while the email team has another
-
-These disagreements are the clearest signal that you need organized context. Write down 2-3 examples.
-
-**You now have a picture of your starting point.** Keep these notes -- you will use them in the next step.
-
----
-
-## Step 2: Define Your First 3 Data Points (30 minutes)
-
-A **data point** is a specific topic your business needs to know about. Think of it as one box in a filing cabinet -- it has a label, clear contents, and one person responsible for it.
-
-You will start with just three. Not ten. Not twenty. Three.
-
-### Pick your 3 most important data points
-
-Look at your notes from Step 1. Which three pieces of business knowledge are most critical? For most organizations, it is some combination of these:
-
-| If your biggest need is... | Start with these 3 |
-|---|---|
-| Brand consistency | Brand Identity, Brand Voice, Messaging |
-| Customer clarity | Target Audience, Value Proposition, Customer Pain Points |
-| Market positioning | Value Proposition, Competitive Landscape, Target Audience |
-| General foundation | Brand Identity, Target Audience, Value Proposition |
-
-**Not sure? Start with Brand Identity, Target Audience, and Value Proposition.** These three cover the most ground for any organization.
-
-### Create each data point
-
-For each of your 3 data points, copy the template at `docs/templates/context-data-point.md` and rename it. Use lowercase with dashes: `brand-identity.md`, `target-audience.md`, `value-proposition.md`.
-
-For each one, fill in just two things to start:
-
-**DOMAIN** -- What does this data point cover? Write one sentence.
-
-**EXCLUSIVELY_OWNS** -- What can ONLY be found here? Write 3-5 bullet points.
-
-That is it. Do not fill in every section of the template. Do not worry about relationships or boundaries yet. Start with what this data point IS and what it OWNS.
-
-### Example: Brand Identity
-
-Here is what a minimal first draft looks like:
-
+```bash
+# Clone BCOS into your project
+git clone https://github.com/walm00/business-context-os.git /tmp/bcos
+cd /path/to/your/project
+bash /tmp/bcos/install.sh
 ```
-DOMAIN: Core brand attributes, mission, vision, values, and brand story.
 
-EXCLUSIVELY_OWNS:
+Or click "Use this template" on GitHub to start a new project.
+
+---
+
+## Step 2: Tell Claude About Your Business
+
+Open Claude Code and say something like:
+
+> "Help me set up my business context."
+
+That's it. Claude will look at what's in your repo, ask what you can share, and figure out the best approach. You might:
+
+- **Share a URL** — your website, LinkedIn page, anything public
+- **Drop files in `docs/_inbox/`** — pitch decks, one-pagers, meeting notes
+- **Just describe it** — what you do, who you serve, what phase you're in
+- **Point to existing docs** — if you already have READMEs or docs with business content
+
+Claude reads whatever you give it, asks 2-3 follow-up questions if needed, and drafts 3 data points.
+
+**If your repo already has docs:** Claude will scan them, show you what it found, and draft data points from your existing content. Your files stay exactly where they are.
+
+---
+
+## Step 3: Review the Drafts (15 minutes)
+
+Claude presents 3 data points. For each, check:
+
+- **DOMAIN** — does the one-sentence description match what this covers?
+- **EXCLUSIVELY_OWNS** — is anything missing or misplaced?
+- **Content** — is it accurate?
+
+Don't aim for perfect. Aim for useful. You'll refine over time.
+
+### What a good data point looks like
+
+```markdown
+## Ownership Specification
+
+**DOMAIN:** Core brand attributes, mission, vision, values, and brand story.
+
+**EXCLUSIVELY_OWNS:**
 - Mission statement
 - Vision statement
-- Brand values (the 4 core values)
+- Brand values
 - Founding story
 - Brand personality traits
+
+**STRICTLY_AVOIDS:**
+- How the brand sounds in writing (see: brand-voice)
+- Customer-facing taglines and messages (see: messaging-framework)
 ```
 
-### Example: Target Audience
-
-```
-DOMAIN: Who we serve -- target customer profiles, segments, and qualification criteria.
-
-EXCLUSIVELY_OWNS:
-- Primary audience segment definition
-- Secondary audience segment definition
-- Company size and industry targeting criteria
-- Decision-maker roles we sell to
-- Geographic focus areas
-```
-
-### Example: Value Proposition
-
-```
-DOMAIN: Why customers choose us -- our key differentiators and the value we deliver.
-
-EXCLUSIVELY_OWNS:
-- Core value proposition statement
-- Key differentiators (what makes us different)
-- Customer-facing benefits
-- Proof points and evidence
-```
-
-**Spend about 10 minutes on each data point.** They do not need to be perfect. They need to exist. You will refine them over time.
+The Ownership Specification prevents drift. DOMAIN says what the document covers. EXCLUSIVELY_OWNS says what can only be found here. STRICTLY_AVOIDS says what belongs somewhere else.
 
 ---
 
-## Step 3: Set Up Your Architecture (15 minutes)
+## Step 4: Use It
 
-Now that you have your three data points, give them a home.
-
-### Copy the architecture canvas
-
-Copy the template at `docs/templates/context-architecture-canvas.md` and save it as your working architecture document.
-
-### Fill in the basics
-
-You do not need to fill in every section. Focus on these three:
-
-**1. Organization Overview** -- Write your company name, what you do, and who you serve. One sentence each.
-
-**2. Cluster Planning** -- A cluster is just a group of related data points. Your first three data points probably fit into 1-2 clusters. Common clusters:
-
-- **Brand & Identity** -- for brand identity, brand voice, messaging
-- **Audience & Market** -- for target audience, competitive landscape, market context
-- **Product & Value** -- for value proposition, product description, features
-
-Write down which cluster each of your 3 data points belongs to.
+Your context is live. From here:
 
 **3. Data Point Inventory** -- List your 3 data points and their cluster. Ownership here means topic ownership -- what domain does each data point cover, defined via the Ownership Specification section (DOMAIN + EXCLUSIVELY_OWNS at minimum).
 
@@ -237,20 +132,10 @@ Most weeks, the answer is "nothing changed" and you are done in 60 seconds.
 
 ## What's Next
 
-You now have the foundation of a living context system. From here, you have options:
+Stay here until it feels natural. No rush.
 
-- **Keep it simple.** Many organizations thrive with just the foundation -- organized data points, clear ownership, weekly maintenance. There is no pressure to do more.
+When you're ready:
 
-- **Add more data points.** When you feel confident that your first 3 are stable and well-maintained, add 2-3 more. See [defining-your-context.md](./defining-your-context.md) for detailed guidance on creating data points.
-
-- **Add boundaries.** When you notice content creeping between data points (your Target Audience starts absorbing messaging, your Brand Identity starts including product descriptions), add STRICTLY_AVOIDS boundaries. See [defining-your-context.md](./defining-your-context.md).
-
-- **Explore automation.** If you want Claude to help you audit, plan, and maintain your context, see [adoption-tiers.md](./adoption-tiers.md) for the incremental path from manual to automated.
-
-- **Learn maintenance practices.** To keep your context alive over months and years, see [maintenance-guide.md](./maintenance-guide.md).
-
-- **If this is all new to you,** start with [for-non-technical-users.md](./for-non-technical-users.md) for a plain-language explanation of every concept.
-
----
-
-**Remember: Start small. Use what you build. Grow when the need is real.**
+- **Add more data points** when a topic needs a clear home. See [defining-your-context.md](./defining-your-context.md).
+- **Add boundaries** (STRICTLY_AVOIDS) when content starts creeping between data points.
+- **Explore skills** when manual maintenance feels like overhead. See [adoption-tiers.md](./adoption-tiers.md).
