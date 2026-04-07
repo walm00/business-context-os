@@ -27,7 +27,7 @@ import sys
 # Configuration
 # ---------------------------------------------------------------------------
 
-REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "owner", "created", "last-updated"]
+REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "created", "last-updated"]
 VALID_STATUSES = {"draft", "active", "under-review", "archived"}
 VALID_TYPES = {"context", "process", "policy", "reference", "playbook"}
 
@@ -132,11 +132,6 @@ def validate_frontmatter(file_path: str) -> list[str]:
     doc_type = meta.get("type", "")
     if doc_type and doc_type not in VALID_TYPES:
         issues.append(f"INVALID TYPE in {file_path}: '{doc_type}' — must be one of: {', '.join(sorted(VALID_TYPES))}")
-
-    # Check owner isn't blank or TBD
-    owner = meta.get("owner", "")
-    if owner.lower() in ("", "tbd", "todo", "none"):
-        issues.append(f"MISSING OWNER in {file_path}: owner must be a specific person or role, not '{owner}'")
 
     return issues
 

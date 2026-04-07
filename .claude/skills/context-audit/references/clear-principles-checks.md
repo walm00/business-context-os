@@ -13,7 +13,7 @@ Each CLEAR principle maps to specific, verifiable checks. This reference provide
 
 ## C -- Contextual Ownership Checks
 
-**Principle:** Every piece of content has exactly one clear owner.
+**Principle:** Every piece of content has exactly one owning document — one source of truth for that topic.
 
 ### Checks
 
@@ -22,7 +22,7 @@ Each CLEAR principle maps to specific, verifiable checks. This reference provide
 | C-001 | Single owner per data point          | CRITICAL | Search for same concept defined in multiple files                    |
 | C-002 | Clear DOMAIN designation             | HIGH     | Each data point file declares what domain it owns                    |
 | C-003 | No orphaned content                  | MEDIUM   | Every section is referenced by at least one consumer                 |
-| C-004 | Owner is identifiable                | HIGH     | Can determine who/what is responsible for maintaining each data point |
+| C-004 | Ownership Specification exists       | HIGH     | Each data point has DOMAIN + EXCLUSIVELY_OWNS section defining its topic boundaries |
 | C-005 | Boundary documentation exists        | MEDIUM   | Each data point describes what it covers AND what it does not cover  |
 | C-006 | No cross-boundary reaching           | HIGH     | Data points do not modify or directly depend on another's internals  |
 | C-007 | Ownership transfers are documented   | LOW      | If ownership moved, there is a record of the transfer                |
@@ -185,7 +185,7 @@ Grep: "^---" # Find all files with frontmatter
 | ----- | ------------------------------------- | -------- | ---------------------------------------------------------------- |
 | R-001 | Clear, specific language              | MEDIUM   | No vague terms like "various factors" or "etc."                  |
 | R-002 | Self-documenting structure            | MEDIUM   | Data point purpose is clear from reading it                      |
-| R-003 | Proper maintenance documentation      | LOW      | Last-reviewed date, review cadence, owner contact                |
+| R-003 | Proper maintenance documentation      | LOW      | Last-reviewed date, review cadence documented                    |
 | R-004 | Reasonable data point size            | MEDIUM   | No single data point covers >3 distinct concepts                 |
 | R-005 | Examples provided where helpful       | LOW      | Complex concepts have illustrative examples                      |
 | R-006 | No jargon without definition          | LOW      | Domain-specific terms are defined on first use or in glossary    |
