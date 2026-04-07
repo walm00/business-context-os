@@ -71,8 +71,8 @@ Please specify scope.
 ```
 # For large scopes:
 Agent (Explore): "Read all .md files in [scope]. For each, extract YAML frontmatter
-and check: all 8 required fields present? status valid? last-updated within 90 days
-(180 days for _planned/)? owner not blank? Return a validation table."
+and check: all 7 required fields present? status valid? last-updated within 90 days
+(180 days for _planned/)? Return a validation table."
 ```
 
 For small scopes (< 20 files), scan directly:
@@ -92,7 +92,6 @@ For small scopes (< 20 files), scan directly:
    - `cluster` - present and non-empty
    - `version` - follows semantic versioning (x.y.z)
    - `status` - valid value: draft | active | under-review | archived
-   - `owner` - present, not "TBD" or blank
    - `created` - valid ISO date, immutable (should never change between versions)
    - `last-updated` - valid ISO date, must be >= created date
 

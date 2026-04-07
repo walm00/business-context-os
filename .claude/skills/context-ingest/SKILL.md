@@ -88,7 +88,6 @@ name: "[Concept Name]"
 type: context
 cluster: "[Best guess]"
 status: draft
-owner: "[User]"
 created: "[today]"
 last-updated: "[today]"
 ---
