@@ -168,9 +168,6 @@ echo ""
 # Onboarding checklist (self-removes when complete)
 copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-checklist.md"
 
-# Session diary (append-only, auto-pruned after 30 days)
-copy_if_missing "$SCRIPT_DIR/docs/.session-diary.md" "docs/.session-diary.md"
-
 # Methodology
 for f in "$SCRIPT_DIR"/docs/methodology/*.md; do
     copy_if_missing "$f" "docs/methodology/$(basename "$f")"
