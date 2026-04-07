@@ -8,7 +8,6 @@
     <a href="#-quick-start">Quick Start</a> &nbsp;&bull;&nbsp;
     <a href="#-how-it-works">How It Works</a> &nbsp;&bull;&nbsp;
     <a href="#-skills--agents">Skills & Agents</a> &nbsp;&bull;&nbsp;
-    <a href="#-installation">Installation</a> &nbsp;&bull;&nbsp;
     <a href="docs/guides/getting-started.md">Getting Started Guide</a>
   </p>
   <p align="center">
@@ -53,7 +52,7 @@ It happens because:
 
 ## The Solution: CLEAR Context Engineering
 
-CLEAR Context OS is a **complete system** — methodology, skills, templates, and automation — for building a knowledge architecture that stays accurate as everything around it changes. It works for business knowledge, personal operating context, SOPs, competitive intelligence, team processes — anything that needs to stay current.
+CLEAR Context OS is a **complete system** — methodology, skills, templates, and automation — for building a knowledge architecture that stays accurate as everything around it changes.
 
 | | Organize | Maintain | Learn |
 |---|---|---|---|
@@ -63,136 +62,80 @@ CLEAR Context OS is a **complete system** — methodology, skills, templates, an
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Option A: New project (easiest)
+**New project:**
 
-Click **"Use this template"** on GitHub. You get everything — skills, templates, hooks, folder zones. Open Claude Code and go.
+Click **"Use this template"** on GitHub. Open Claude Code and say:
 
-### Option B: Add to existing project
+> "I want to set up my business context. Here's my website: [url]"
+
+**Existing project:**
 
 ```bash
-git clone https://github.com/walm00/business-context-os.git /tmp/bcos
-cd /path/to/your/project
-bash /tmp/bcos/install.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/main/install.sh)
 ```
 
-### Option C: Just ask Claude
+Or tell Claude: *"Install CLEAR Context OS from https://github.com/walm00/business-context-os"*
 
-If you already have Claude Code open, paste this:
+**Already have docs?**
 
-> "Install CLEAR Context OS into this project. Clone https://github.com/walm00/business-context-os.git and run install.sh"
-
-Claude handles the rest.
-
-### Then what?
-
-**New project — no docs yet:**
-> "I want to set up my business context. Here's my website: [url]"
->
-> Or share a pitch deck, LinkedIn page, or just describe what you do.
-
-**Existing project — already have docs:**
 > "Scan my repo and show me what business context already exists."
 
-**Have docs scattered across folders:**
-> Copy everything into `docs/_inbox/` and ask: "Process my inbox — figure out what goes where."
+Or dump everything into `docs/_inbox/` and ask: *"Process my inbox — figure out what goes where."*
 
-Claude reads what you share, drafts your first 3 data points, and you review. **20-30 minutes to working context.** See the [Getting Started Guide](docs/guides/getting-started.md) for the full walkthrough.
+Claude drafts your first data points and you review. **20-30 minutes to working context.**
 
 ---
 
-## 🔧 How It Works
+## How It Works
 
 ### The CLEAR Methodology
 
-Five principles that prevent context rot. Each one addresses a specific failure mode:
+Five principles that prevent context rot:
 
 | Principle | What It Prevents | In Practice |
 |-----------|-----------------|-------------|
-| **C** — Contextual Ownership | "Which version is right?" confusion | Every document declares its DOMAIN — what it exclusively owns. Not a person-owner, but a topic-owner: one document, one source of truth for that subject. |
-| **L** — Linking | Copy-paste drift between docs | Reference the source, don't duplicate content. If pricing changes, you update ONE file — everything else links to it. |
-| **E** — Elimination | Outdated info and duplication piling up | Consolidate and centralise. Don't keep two versions "just in case." Like DRY in code — single source of truth. |
-| **A** — Alignment | Context that serves unknown purposes | Every document serves a clear function — if you can't explain what decisions it supports, it doesn't belong. |
-| **R** — Refinement | "Set and forget" decay | The structure (ownership, linking, metadata, scheduling) is what ENABLES systematic refinement. Without it, maintenance is ad-hoc guesswork. |
-
-### Document Types
-
-Any knowledge that needs to stay accurate — business, personal, operational, strategic:
-
-| Type | Examples |
-|------|---------|
-| 📋 **Context** | Company identity, value proposition, target audience, competitive positioning, investor narrative, personal operating context, team structure |
-| 📝 **Process** | Employee onboarding, content approval, sales handoff, release process, board reporting, vendor evaluation, personal workflows and SOPs |
-| 📏 **Policy** | Brand usage, data handling, pricing rules, expense approval, hiring criteria, IP protection, decision-making frameworks |
-| 📚 **Reference** | Glossary, tool inventory, vendor contacts, org chart, tech stack, key metrics definitions, personal contacts and resources |
-| 🎯 **Playbook** | Crisis comms, competitive response, fundraising, product launch, market entry, M&A integration, client engagement playbooks |
-
-### The Metadata Standard
-
-Every managed document has YAML frontmatter that enables automated tracking, auditing, and enforcement:
-
-```yaml
----
-name: "Company Value Proposition"
-type: context
-cluster: "Strategy & Positioning"
-version: "1.2.0"              # Bump on EVERY change
-status: active                 # draft | active | under-review | archived
-created: "2026-01-15"         # Set once, NEVER change
-last-updated: "2026-04-05"    # MUST update on every edit
----
-```
-
-**The rule:** Every edit = update `last-updated` + bump `version`. No exceptions. A PostToolUse hook automatically validates this when Claude edits your docs.
+| **C** — Contextual Ownership | "Which version is right?" | One document, one source of truth per topic |
+| **L** — Linking | Copy-paste drift | Reference the source, don't duplicate |
+| **E** — Elimination | Stale info piling up | Consolidate, don't keep two versions |
+| **A** — Alignment | Context without purpose | If it doesn't support decisions, it doesn't belong |
+| **R** — Refinement | "Set and forget" decay | Structured maintenance, not ad-hoc fixes |
 
 ### The Folder Structure
 
 ```
 docs/
-├── *.md                 # Active context — current reality. Claude trusts this.
-├── _inbox/              # Raw material — meeting notes, brain dumps. No quality bar.
-├── _planned/            # Polished ideas — may or may not happen. Not yet real.
-├── _archive/            # Superseded — kept for reference, not active.
-├── table-of-context.md  # Business synthesis (update when things change)
-├── current-state.md     # Operational priorities (update as often as needed)
-└── document-index.md    # Auto-generated inventory
+├── *.md           # Active context — current reality. Claude trusts this.
+├── _inbox/        # Raw material — meeting notes, brain dumps, session captures.
+├── _planned/      # Polished ideas — not yet real.
+├── _archive/      # Superseded — historical reference only.
 ```
 
-**The folder IS the signal.** When Claude finds `docs/_planned/enterprise-pricing.md`, it knows that's an idea — not reality — before opening the file.
+**The folder IS the signal.** Claude knows `_planned/` is an idea and `_archive/` is history before opening the file.
 
-### Ownership Specification
+### Document Types
 
-The core of what prevents drift. Every document declares what it owns and what it doesn't:
-
-```markdown
-DOMAIN: Customer-facing value statements and core differentiation framework
-
-EXCLUSIVELY_OWNS:
-- Primary value proposition statement
-- Key differentiators (why us vs. alternatives)
-- Benefit hierarchy (what matters most to customers)
-
-STRICTLY_AVOIDS:
-- Product feature details (see: product-overview)
-- Pricing and packaging (see: pricing-model)
-- Competitor analysis (see: competitive-positioning)
-```
-
-When two documents disagree, the ownership spec tells you which one is authoritative. No more "which version is right?"
+| Type | Examples |
+|------|---------|
+| 📋 **Context** | Company identity, value proposition, target audience, competitive positioning |
+| 📝 **Process** | Onboarding, sales handoff, content approval, release process |
+| 📏 **Policy** | Brand usage, pricing rules, data handling, decision frameworks |
+| 📚 **Reference** | Glossary, tool inventory, org chart, tech stack |
+| 🎯 **Playbook** | Crisis comms, competitive response, product launch, market entry |
 
 ---
 
-## 🛠️ Skills & Agents
+## Skills & Agents
 
-### 11 Skills for the Full Context Lifecycle
+### 11 Skills
 
 <table>
 <tr>
 <td width="50%">
 
 #### 🔍 Context Onboarding
-**First-run discovery.** Scans your repo, maps existing knowledge, produces a **Document Index**, sets up folder zones (`_inbox/`, `_planned/`, `_archive/`), recommends what to formalize first.
+**First-run discovery.** Scans your repo, maps what exists, recommends what to formalize first.
 
 *"Scan my repo and show me what context exists"*
 
@@ -200,7 +143,7 @@ When two documents disagree, the ownership spec tells you which one is authorita
 <td width="50%">
 
 #### 📥 Context Ingest
-**Single entry point for everything new.** YouTube link, meeting notes, article, brain dump — triage it: dump to inbox, park as an idea, or integrate into active docs. Claude reads, classifies, and routes.
+**Single entry point for everything new.** Meeting notes, articles, brain dumps — triage, classify, and route.
 
 *"Here's a document — figure out where it goes"*
 
@@ -209,82 +152,82 @@ When two documents disagree, the ownership spec tells you which one is authorita
 <tr>
 <td>
 
+#### ⛏️ Context Mine
+**Extract context from conversations.** Slack exports, meeting transcripts, chat logs — pulls out decisions, discoveries, and action items.
+
+*"Extract context from this Slack export"*
+
+</td>
+<td>
+
 #### 🔎 Context Audit
-**CLEAR compliance checking.** Scans documents for boundary violations, stale content, ownership gaps, duplication, naming drift. Metadata validation with severity levels and priority matrix.
+**CLEAR compliance checking.** Boundary violations, stale content, ownership gaps, duplication, naming drift.
 
 *"Audit my context for CLEAR compliance"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 💭 Daydream
-**Strategic reflection.** Steps back from daily work to ask bigger questions. What's missing? What's changed? What connections are we not seeing? Are any planned docs ready to become active?
+**Strategic reflection.** What's missing? What's changed? What connections are we not seeing?
 
 *"Let's daydream about our context architecture"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📋 Clear Planner
-**Structured planning with sessions.** 8-step workflow with approval gates. Session manifests track progress. Two scenarios: documentation + ecosystem work.
+**Structured planning.** 8-step workflow with approval gates and mandatory integration audits.
 
 *"Plan the restructuring of our audience data points"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🏗️ Ecosystem Manager
-**Keeps the tools in order too.** Overlap detection before creating new skills/agents. Ecosystem health audits. CLEAR discipline applied to the system itself.
+**Keeps the tools in order.** Overlap detection, ecosystem audits, integration checks before commits.
 
-*"I want to create a new skill — check for overlaps first"*
+*"I want to create a new skill — check for overlaps"*
+
+</td>
+<td>
+
+#### 🧠 Lessons Consolidate
+**Self-learning.** Captures what worked and what didn't. Merges overlaps, archives stale lessons.
+
+*"What have we learned?"*
 
 </td>
 </tr>
 <tr>
 <td>
 
-#### 🧠 Lessons Consolidate
-**Self-learning system.** Captures what worked and what didn't after every session. Consolidates over time — merges overlaps, archives stale lessons, fills gaps. Your system gets smarter.
-
-*"Run lessons consolidation — what have we learned?"*
-
-</td>
-<td>
-
 #### ⚡ Core Discipline
-**Always-on bootstrap.** If there's even a chance a skill applies, invoke it. Ensures the right skill fires at the right time. Enforces the compounding rule: every task produces answer + context updates.
+**Always-on bootstrap.** Ensures the right skill fires at the right time. Enforces the compounding rule.
 
 *Always active — no invocation needed*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📄 Doc-Lint
-**Structural validation.** Checks markdown syntax, heading hierarchy, broken cross-references, JSON structure. Knows about folder zones — skips `_inbox/` and `_archive/`.
+**Structural validation.** Markdown syntax, cross-references, JSON structure.
 
-*"Lint my documentation for structural issues"*
-
-</td>
-<td>
-
-#### 📐 Todo Utilities
-**Shared pattern library.** Not invoked directly — provides standard TodoWrite patterns (sequential, parallel, error recovery, workflow gates) that other skills copy inline for consistent progress tracking.
-
-*Referenced by other skills, not invoked*
+*"Lint my documentation"*
 
 </td>
 </tr>
 <tr>
 <td>
 
-#### ⛏️ Context Mine
-**Extract context from conversations.** Accepts Slack exports, meeting transcripts, chat logs. Pulls out decisions, discoveries, action items, preferences, and problems. Dumps structured results to `_inbox/` for processing via context-ingest.
+#### 📐 Todo Utilities
+**Shared patterns.** Standard progress tracking used by other skills internally.
 
-*"Extract context from this Slack export"*
+*Referenced by other skills, not invoked directly*
 
 </td>
 <td>
@@ -292,253 +235,66 @@ When two documents disagree, the ownership spec tells you which one is authorita
 </tr>
 </table>
 
-### 1 Agent
-
-| Agent | Purpose |
-|-------|---------|
-| 🔭 **Explore** | Fast read-only scanning. Skills delegate heavy file reading here to keep the main context window clean. Searches files, reads content, returns compact summaries. |
-
 ### Enforcement & Automation
 
 | Mechanism | What It Does |
 |-----------|-------------|
-| 🔒 **Frontmatter Hook** | Validates YAML frontmatter every time Claude edits a doc. Warns about missing fields, invalid status, invalid type. |
-| 💾 **Session Capture Hook** | Auto-saves session context every 15 messages to `_inbox/sessions/`. Captures decisions, discoveries, and follow-ups before they evaporate. |
-| 🚨 **PreCompact Hook** | Emergency save before context window compression. Ensures nothing is lost when Claude compacts. |
-| 📋 **Commit Check Hook** | After every git commit, flags ecosystem drift: new skills without registration, changed docs without lessons capture. |
-| 🔍 **Integration Audit** | Mandatory FIXED END step in planner. Scans for stale cross-references before committing. Catches the "6 skills need updating" problem automatically. |
-| 📜 **build_document_index.py** | Auto-generates Document Index with inventory, metadata health, cross-reference suggestions, and inbox/planned/archive sections. |
+| 🔒 **Frontmatter Hook** | Validates metadata every time Claude edits a doc |
+| 💾 **Session Capture** | Auto-saves context every 15 messages — decisions, discoveries, follow-ups |
+| 🚨 **PreCompact Save** | Emergency capture before context window compression |
+| 📋 **Commit Check** | Flags ecosystem drift after every git commit |
+| 🔍 **Integration Audit** | Scans for stale cross-references before shipping changes |
 
 ---
 
-## 📦 What's In The Box
+## Maintenance
 
-```
-business-context-os/
-│
-├── docs/
-│   ├── methodology/              # The CLEAR intellectual core
-│   │   ├── clear-principles.md       # 5 principles with rationale
-│   │   ├── context-architecture.md   # Knowledge structure + context window management
-│   │   ├── ownership-specification.md # The 6 keywords that prevent drift
-│   │   ├── document-standards.md     # Metadata, quality levels, versioning
-│   │   └── decision-framework.md     # When to act, when to wait
-│   │
-│   ├── guides/                   # How to use it
-│   │   ├── getting-started.md        # Week 1 walkthrough
-│   │   ├── defining-your-context.md  # Step-by-step data point creation
-│   │   ├── maintenance-guide.md      # Keeping context alive long-term
-│   │   ├── scheduling.md            # Automated recurring maintenance
-│   │   ├── migration-guide.md        # Moving from messy docs to CLEAR
-│   │   ├── adoption-tiers.md         # Incremental adoption path
-│   │   └── for-non-technical-users.md # Plain language, no jargon
-│   │
-│   ├── architecture/             # How it's built (for contributors)
-│   │   ├── system-design.md          # Full system overview with Mermaid diagrams
-│   │   ├── content-routing.md        # How content enters and flows
-│   │   ├── component-standards.md    # How to build new skills/agents/hooks
-│   │   ├── metadata-system.md        # All validation rules in one place
-│   │   └── maintenance-lifecycle.md  # Scheduled rhythms and trigger chains
-│   │
-│   ├── templates/                # Fill-in-the-blank starting points
-│   │   ├── context-data-point.md     # Single document template
-│   │   ├── context-cluster.md        # Group related documents
-│   │   ├── context-architecture-canvas.md  # Full architecture planning
-│   │   ├── table-of-context.md       # Business synthesis template
-│   │   ├── current-state.md          # Operational priorities template
-│   │   └── maintenance-checklist.md  # Weekly/monthly/quarterly checks
-│   │
-│   ├── _inbox/                   # Raw material landing zone
-│   │   └── sessions/             # Auto-captured session context (hooks)
-│   ├── _planned/                 # Polished ideas, not yet active
-│   └── _archive/                 # Superseded documents
-│
-├── .claude/
-│   ├── skills/                   # 11 skills (see above)
-│   ├── agents/                   # 1 agent (explore)
-│   ├── hooks/                    # 3 hooks: frontmatter check, commit check, session capture
-│   ├── quality/ecosystem/        # State, config, lessons (self-learning)
-│   ├── scripts/                  # Index builder, maintenance, cross-ref analysis
-│   └── registries/               # Entity registry, reference indexes
-│
-├── examples/
-│   └── brand-strategy/           # Complete worked example
-│       ├── context-architecture.md   # Architecture for a brand team
-│       └── data-points/             # 8 realistic data points (Acme Co)
-│
-├── CLAUDE.md                     # Claude Code instructions + session bootstrap
-├── install.sh                    # Installer for existing projects
-└── LICENSE                       # MIT
-```
+Context that isn't maintained rots. These tasks keep your knowledge alive:
+
+| Task | What Happens |
+|------|-------------|
+| **Document Index rebuild** | Refreshes file inventory, metadata health, cross-reference suggestions |
+| **Health check** | Quick CLEAR audit across active documents |
+| **Daydream** | Strategic reflection — what changed, what's stale, what's ready to activate |
+| **Deep audit + lessons** | Thorough audit, lessons consolidation, inbox processing |
+| **Architecture review** | Full review of context vs. reality |
+
+Run them at whatever rhythm fits your pace. See [scheduling.md](docs/guides/scheduling.md) for ready-to-use prompts.
 
 ---
 
-## 📥 Installation
+## Updating
 
-### Option A: New Project
-
-Click **"Use this template"** on GitHub. Everything is ready — folder zones, skills, templates, hooks.
-
-### Option B: Existing Project
+Framework updates are automatic. Your business context is never touched.
 
 ```bash
-# Clone BCOS
-git clone https://github.com/walm00/business-context-os.git /tmp/bcos
-
-# Go to YOUR project
-cd /path/to/your/project
-
-# Install (never overwrites existing files)
-bash /tmp/bcos/install.sh
+python .claude/scripts/update.py            # interactive
+python .claude/scripts/update.py --yes      # auto-apply
 ```
 
-The installer copies skills, agents, docs, templates, hooks, and scripts. Creates `_inbox/`, `_planned/`, `_archive/` folder zones. If you already have a `CLAUDE.md`, it saves a reference copy for manual merge.
-
-### Option C: Manual
-
-Copy `.claude/`, `docs/`, and `examples/` into your project. Merge `CLAUDE.md` into your existing one.
-
-### Verify
-
-```bash
-bash .claude/skills/skill-discovery/find_skills.sh   # Should show: 11 skills
-bash .claude/agents/agent-discovery/find_agents.sh   # Should show: 1 agent
-```
+The script updates skills, hooks, scripts, methodology docs, templates, and examples. Your `docs/`, `CLAUDE.md`, and `.private/` stay exactly as they are.
 
 ---
 
-## 🔄 Updating
+## Philosophy
 
-When a new version is released, pull the latest framework files without touching your business context.
+**Living systems, not one-time setups.** Your business changes. Your context should evolve with it — structurally, not chaotically.
 
-**If you cloned the repo (most common):**
-```bash
-git pull
-```
+**Self-learning.** The lessons system captures what works and what doesn't. Your context architecture gets smarter with every cycle.
 
-**If you forked the repo:**
-```bash
-git fetch upstream
-git merge upstream/main
-```
-
-**After your first pull**, use the update script for all future updates — no git knowledge needed:
-
-```bash
-python .claude/scripts/update.py            # interactive, shows what changed
-python .claude/scripts/update.py --dry-run  # preview only, applies nothing
-python .claude/scripts/update.py --yes      # apply without confirmation prompt
-```
-
-The script updates only framework files (skills, agents, hooks, scripts, methodology docs, templates, examples). It **never touches**:
-
-- `docs/*.md` — your business context
-- `docs/_inbox/`, `_planned/`, `_archive/` — your working material
-- `.private/` — your private docs
-- `CLAUDE.md` — shown as a diff, you decide what to apply
-
-**Downloaded a zip instead of cloning?**
-```bash
-# Download the latest zip and extract it, then point the script at it:
-python .claude/scripts/update.py --local /path/to/extracted-zip
-```
+**The same discipline everywhere.** CLEAR principles apply to the tools themselves. The `ecosystem-manager` keeps skills and agents as ordered as the documents.
 
 ---
 
-## ⏰ Scheduled Maintenance
+## Contributing
 
-Context that isn't maintained rots. Set up recurring tasks so Claude keeps your knowledge alive:
+Contributions welcome — open an issue or submit a PR targeting the `dev` branch.
 
-| Task | Frequency | What Happens |
-|------|-----------|-------------|
-| **Document Index rebuild** | Weekly | `build_document_index.py` refreshes file inventory and metadata health |
-| **Health check** | Weekly | Quick CLEAR audit across active documents |
-| **Daydream** | Bi-weekly | Strategic reflection — what changed, what's stale, what's ready to activate |
-| **Deep audit + lessons** | Monthly | Thorough audit, lessons consolidation, inbox processing |
-| **Architecture review** | Quarterly | Full review of context vs. reality, _planned/ triage |
-
-These frequencies adapt by phase. See [scheduling.md](docs/guides/scheduling.md) for phase-specific rhythms and ready-to-use prompts.
+The fastest contribution path: **lessons learned.** As you use the system, it captures insights in `lessons.json`. If you find something universal, contribute it back.
 
 ---
 
-## 🎯 Who Is This For?
-
-| Role | What You'll Manage |
-|------|-------------------|
-| **Founders & CEOs** | Company identity, investor narrative, strategic vision, decision frameworks — grounded in reality, not last quarter's deck |
-| **Solopreneurs & Indie Builders** | Personal operating context, SOPs, client processes, product positioning — your whole business in one place |
-| **Operations Leaders** | SOPs, process docs, vendor contracts, compliance policies — reflecting how work actually gets done |
-| **Strategy & Growth** | Market context, competitive positioning, partnership models, expansion playbooks |
-| **Marketing & Brand** | Brand voice, audience segments, messaging frameworks, campaign context |
-| **Agencies & Consultants** | Multiple client contexts without cross-contamination or staleness |
-| **Developers** | Project context, architecture decisions, team knowledge, onboarding docs — the non-code side of your codebase |
-
-**The system is role-agnostic.** CLEAR methodology works the same whether you're managing investor materials, personal SOPs, or team onboarding docs.
-
----
-
-## 🌱 Adoption Path
-
-| | Tier 1: Foundation | Tier 2: Skills |
-|--|-------------------|----------------|
-| **When** | Week 1 | Weeks 2-3 |
-| **What** | CLEAR methodology + data points + templates | Skills for planning, auditing, reflection, ingestion |
-| **Time** | 2-3 hours setup, 5 min/week | 1-2 hours setup, ongoing |
-| **You get** | Organized, owned, bounded context | Self-maintaining, self-learning context system |
-
-Start with Tier 1. Move to Tier 2 when manual maintenance feels like overhead. Extend with custom skills when you need more — the `ecosystem-manager` skill guides you through creating new tools.
-
----
-
-## 💡 Philosophy
-
-**Living systems, not one-time setups.** Your business changes. Your priorities change. Your knowledge evolves. Your AI context should evolve with it — structurally, not chaotically.
-
-**Order that maintains itself.** CLEAR doesn't just organize your documents. It creates a system where drift is caught early, duplication is centralised, and every piece of knowledge has a clear home.
-
-**Self-learning.** The lessons system captures what works and what doesn't. Your context architecture gets smarter with every maintenance cycle.
-
-**The same discipline everywhere.** The `ecosystem-manager` applies CLEAR principles to your skills and agents themselves. The tools stay as ordered as the documents.
-
----
-
-## 🤝 Contributing
-
-Contributions welcome. Whether you've found a better way to structure context, built a useful skill, or improved the docs — open an issue or submit a PR.
-
-### Branch Strategy
-
-| Branch | Purpose | Who uses it |
-|--------|---------|-------------|
-| `main` | Stable releases — what users download | Everyone using BCOS |
-| `dev` | Active development — where contributions land | Contributors |
-
-**For contributors:** fork the repo, branch off `dev`, open your PR targeting `dev`. When `dev` is stable it gets squash-merged into `main` as a clean release.
-
-### Contributing via Lessons
-
-The fastest way to improve BCOS is through **lessons learned**. As you use the system, it captures what works and what doesn't in `.claude/quality/ecosystem/lessons.json`. If you discover a pattern that would help everyone — a better way to structure a data point, a common mistake to avoid, a workflow improvement — you can contribute that lesson back.
-
-**How:**
-1. Use BCOS normally — lessons accumulate automatically
-2. Review your lessons: look for ones that are universal, not specific to your situation
-3. Open a PR with the lesson added to the repo's `lessons.json`
-4. Include context: what happened, why it matters, what the lesson changes
-
-This is the most natural contribution path — you're already generating insights by using the system.
-
-### Other Contributions
-
-- New skills (maintenance workflows, context patterns)
-- Examples for specific industries or functions
-- Improvements to existing skills or methodology docs
-- Better templates for context data points
-
-### For Contributors: Architecture Docs
-
-If you want to understand HOW BCOS is built (not just how to use it), start with `docs/architecture/system-design.md`. The architecture docs explain design decisions, the skill graph, component standards, and why things are built the way they are.
-
-## 📖 Origin
+## Origin
 
 CLEAR Context OS was created by **[Guntis Coders](https://github.com/walm00)** after two years of building and operating context systems in production — first for competitive intelligence work, then for broader business context management.
 
@@ -546,9 +302,7 @@ The **CLEAR methodology** (Contextual Ownership, Linking, Elimination, Alignment
 
 The **Table of Context** concept — a living synthesis of what your business IS, distinct from the file inventory — was first articulated in a [Medium article on business context engineering](https://medium.com/businessacademy-lv/what-is-the-table-of-contexts-and-why-does-it-matter-8ec2a9557e9f) and became a core architectural pattern.
 
-This isn't a theoretical framework. Every skill, every pattern, every architectural decision was tested in real-world use before being abstracted into this open-source package.
-
-## 📄 License
+## License
 
 [MIT](LICENSE) — Free to use, modify, distribute. No restrictions.
 
@@ -556,6 +310,5 @@ This isn't a theoretical framework. Every skill, every pattern, every architectu
 
 <p align="center">
   <strong>CLEAR Context OS</strong><br>
-  Context engineering for Claude Code.<br>
   Stop context rot. Start building knowledge that lasts.
 </p>

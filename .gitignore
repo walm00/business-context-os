@@ -51,5 +51,8 @@ __pycache__/
 # Auto-generated wake-up context (regenerated per user)
 docs/.wake-up-context.md
 
+# Private publish script (repo-specific config)
+.claude/scripts/publish.sh
+
 # Private strategy docs (not for public repo)
 .private/
