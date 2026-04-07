@@ -13,7 +13,7 @@
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
-    <img src="https://img.shields.io/badge/skills-10-blue" alt="10 Skills">
+    <img src="https://img.shields.io/badge/skills-11-blue" alt="11 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
     <img src="https://img.shields.io/badge/free-open--source-brightgreen" alt="Free & Open Source">
@@ -47,6 +47,8 @@ It happens because:
 
 **The cost:** Every decision based on stale context compounds the problem. You lose trust in AI and fall back to doing everything manually.
 
+**The misconception:** "Just give AI more data." But more data without structure creates more confusion, not less. Five files saying slightly different things about your pricing is worse than one file that's right. Context engineering isn't about volume — it's about accuracy, ownership, and maintenance.
+
 ---
 
 ## The Solution: CLEAR Context Engineering
@@ -58,7 +60,7 @@ CLEAR Context OS is a **complete system** — methodology, skills, templates, an
 │                                                                 │
 │   📋 METHODOLOGY        🛠️ SKILLS           🧠 SELF-LEARNING   │
 │                                                                 │
-│   CLEAR principles      10 Claude Code      Lessons system      │
+│   CLEAR principles      11 Claude Code      Lessons system      │
 │   Ownership spec        skills that         that captures       │
 │   Document standards    automate            insights every      │
 │   Decision framework    maintenance         session             │
@@ -179,7 +181,7 @@ When two documents disagree, the ownership spec tells you which one is authorita
 
 ## 🛠️ Skills & Agents
 
-### 10 Skills for the Full Context Lifecycle
+### 11 Skills for the Full Context Lifecycle
 
 <table>
 <tr>
@@ -272,6 +274,18 @@ When two documents disagree, the ownership spec tells you which one is authorita
 
 </td>
 </tr>
+<tr>
+<td>
+
+#### ⛏️ Context Mine
+**Extract context from conversations.** Accepts Slack exports, meeting transcripts, chat logs. Pulls out decisions, discoveries, action items, preferences, and problems. Dumps structured results to `_inbox/` for processing via context-ingest.
+
+*"Extract context from this Slack export"*
+
+</td>
+<td>
+</td>
+</tr>
 </table>
 
 ### 1 Agent
@@ -280,12 +294,16 @@ When two documents disagree, the ownership spec tells you which one is authorita
 |-------|---------|
 | 🔭 **Explore** | Fast read-only scanning. Skills delegate heavy file reading here to keep the main context window clean. Searches files, reads content, returns compact summaries. |
 
-### Enforcement
+### Enforcement & Automation
 
 | Mechanism | What It Does |
 |-----------|-------------|
-| 🔒 **Frontmatter Hook** | PostToolUse hook validates YAML frontmatter every time Claude edits a doc. Warns about missing fields, invalid status, invalid type. |
-| 📜 **build_document_index.py** | Python script auto-generates the Document Index with inventory, metadata health, and separate sections for inbox/planned/archive. |
+| 🔒 **Frontmatter Hook** | Validates YAML frontmatter every time Claude edits a doc. Warns about missing fields, invalid status, invalid type. |
+| 💾 **Session Capture Hook** | Auto-saves session context every 15 messages to `_inbox/sessions/`. Captures decisions, discoveries, and follow-ups before they evaporate. |
+| 🚨 **PreCompact Hook** | Emergency save before context window compression. Ensures nothing is lost when Claude compacts. |
+| 📋 **Commit Check Hook** | After every git commit, flags ecosystem drift: new skills without registration, changed docs without lessons capture. |
+| 🔍 **Integration Audit** | Mandatory FIXED END step in planner. Scans for stale cross-references before committing. Catches the "6 skills need updating" problem automatically. |
+| 📜 **build_document_index.py** | Auto-generates Document Index with inventory, metadata health, cross-reference suggestions, and inbox/planned/archive sections. |
 
 ---
 
@@ -327,16 +345,17 @@ business-context-os/
 │   │   └── maintenance-checklist.md  # Weekly/monthly/quarterly checks
 │   │
 │   ├── _inbox/                   # Raw material landing zone
+│   │   └── sessions/             # Auto-captured session context (hooks)
 │   ├── _planned/                 # Polished ideas, not yet active
 │   └── _archive/                 # Superseded documents
 │
 ├── .claude/
-│   ├── skills/                   # 10 skills (see above)
+│   ├── skills/                   # 11 skills (see above)
 │   ├── agents/                   # 1 agent (explore)
-│   ├── hooks/                    # Automated enforcement (frontmatter validation)
+│   ├── hooks/                    # 3 hooks: frontmatter check, commit check, session capture
 │   ├── quality/ecosystem/        # State, config, lessons (self-learning)
-│   ├── scripts/                  # Document index builder, lesson tools
-│   └── registries/               # Machine-readable indexes
+│   ├── scripts/                  # Index builder, maintenance, cross-ref analysis
+│   └── registries/               # Entity registry, reference indexes
 │
 ├── examples/
 │   └── brand-strategy/           # Complete worked example
@@ -378,7 +397,7 @@ Copy `.claude/`, `docs/`, and `examples/` into your project. Merge `CLAUDE.md` i
 ### Verify
 
 ```bash
-bash .claude/skills/skill-discovery/find_skills.sh   # Should show: 10 skills
+bash .claude/skills/skill-discovery/find_skills.sh   # Should show: 11 skills
 bash .claude/agents/agent-discovery/find_agents.sh   # Should show: 1 agent
 ```
 
