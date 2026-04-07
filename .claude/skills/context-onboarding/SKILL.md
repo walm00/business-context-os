@@ -187,6 +187,19 @@ Want to keep going or pick it up next time?
 
 ---
 
+## Step 5: Set Up Scheduled Maintenance
+
+After data points and the document index are in place, the next checklist item is scheduled maintenance.
+
+1. Read `docs/guides/scheduling.md` — it has exact task definitions (ID, cron, prompt) for all 5 tasks
+2. Create all 5 scheduled tasks using the scheduled tasks tool, copying each task's ID, schedule, description, and prompt exactly as defined
+3. Check off "Scheduled maintenance tasks created" in the onboarding checklist
+4. Tell the user: "Maintenance schedules are active — daily health checks, weekly reflections, monthly architecture review. You can adjust frequency anytime."
+
+**Don't skip this step.** Users who don't set up scheduled maintenance will hit context rot within weeks.
+
+---
+
 ## Checklist: Session-Start Behavior
 
 **This section is for Claude, not the user.**
