@@ -1,8 +1,9 @@
 ---
 name: context-onboarding
 description: |
-  First-run onboarding skill. Gets a new user from zero to 3 working data points.
+  First-run onboarding skill. Gets a new user from zero to a working context system.
   Claude figures out the right approach based on what the user shares — no paths to choose.
+  Creates a checklist that tracks setup progress across sessions and self-removes when done.
 
   WHEN TO USE:
   - "I want to set up my business context"
@@ -17,7 +18,7 @@ description: |
 
 ## Goal
 
-**3 working data points, user-approved, in under 30 minutes.**
+**Working context system, user-approved, in under 30 minutes.**
 
 Claude does the drafting. The user reviews and corrects. No questionnaires, no choices to make.
 
@@ -37,11 +38,11 @@ Claude figures out the approach from what the user says and what's in the repo. 
 | User drops files in `docs/_inbox/` | Read those files, treat them as source material, draft data points |
 | Mix of the above | Combine everything. Read the URLs AND scan the repo. More signal = better drafts. |
 
-**Don't overthink this.** Read whatever the user gives you, synthesize it, draft 3 data points.
+**Don't overthink this.** Read whatever the user gives you, synthesize it, draft data points.
 
 ---
 
-## Step 1: Gather Information
+## Step 1: Gather Information + Identify Profile
 
 Read everything available. Extract these five things:
 
@@ -64,6 +65,32 @@ Read everything available. Extract these five things:
 - Same topic in multiple files (contradiction risk)
 - Important topics with no docs at all (gaps)
 - Content that looks significantly outdated
+
+### Identify the project profile
+
+While gathering info, figure out what kind of project this is. Don't ask directly — infer from what you see:
+
+| Signal | Profile |
+|---|---|
+| Solo founder, freelancer, side project | **Personal / Small** |
+| Team, departments, multiple products | **Company / Large** |
+| Code repos, APIs, technical docs | **IT / Development** |
+| Campaigns, brand guides, content calendars | **Marketing / Brand** |
+| Pipelines, CRM mentions, deal stages | **Sales** |
+| Mix of the above | **Combination** (most common) |
+
+**Use the profile to pick sensible cluster names** for the data points you draft. Don't present this as a formal "profile assessment" to the user — just use it to make better choices:
+
+| Profile | Likely clusters |
+|---|---|
+| Personal / Small | Brand & Identity, Offering, Audience |
+| Company / Large | Brand & Identity, Audience & Market, Product & Value, Operations, Strategy |
+| IT / Development | Product & Architecture, Users & Market, Team & Process |
+| Marketing / Brand | Brand & Identity, Audience & Segments, Messaging & Content |
+| Sales | Value Proposition, Target Market, Sales Process |
+| Combination | Pick from above based on what matters most right now |
+
+**Start with 2-4 clusters max.** The user can add more later. Don't present a cluster taxonomy — just use the right cluster names in your drafted data points.
 
 ---
 
@@ -88,7 +115,7 @@ Create each as a file in `docs/`:
 ---
 name: "[Data Point Name]"
 type: context
-cluster: "[Best fit cluster]"
+cluster: "[Best fit cluster from profile]"
 version: "1.0.0"
 status: draft
 created: "[today]"
@@ -144,18 +171,75 @@ After the user approves (with any corrections applied):
 
 ---
 
-## After Setup
+## Step 4: Create the Onboarding Checklist
 
-Don't push next steps. Offer one:
+After data points are approved, create `docs/.onboarding-checklist.md`. This file tracks remaining setup across sessions.
+
+```markdown
+# Onboarding Checklist
+
+Progress tracker for CLEAR Context OS setup. Checked at session start.
+When all items are complete, this file and its CLAUDE.md reference self-remove.
+
+## Core Setup
+- [x] Initial data points created and approved
+- [ ] table-of-context.md created
+- [ ] current-state.md created
+- [ ] document-index.md generated (run: python .claude/scripts/build_document_index.py)
+
+## Maintenance Setup
+- [ ] Scheduled tasks configured (see Scheduling section below)
+- [ ] First context audit run
+
+## Scheduling
+
+Environment check:
+- Claude Code Desktop / Cowork → use `schedule` skill for cron-based tasks
+- Claude Code CLI → set up reminders externally (calendar, cron) or run manually
+
+Minimum scheduled tasks:
+- [ ] Weekly: document index rebuild
+- [ ] Weekly: quick health check
+- [ ] Monthly: lessons capture
+
+See docs/guides/scheduling.md for full options and cron expressions.
+```
+
+**Adapt the checklist to what's relevant.** If the project is personal/small, drop the monthly lessons capture. If they're already in Cowork, note that. Don't add items that don't apply.
+
+Then tell the user:
 
 ```
-Your context is set up. When things change in your business, just tell me and I'll update the right data point.
+I've created an onboarding checklist at docs/.onboarding-checklist.md.
+It tracks the remaining setup steps. I'll check it at the start of each session
+and work through what's left. Once everything's done, it cleans itself up.
+
+Want to keep going now, or pick this up next session?
 ```
 
-If the user asks "what else can I do?":
-- "Want me to check these 3 data points for consistency?"
-- "You could drop meeting notes or docs in `docs/_inbox/` and I'll process them into your context."
-- "A 5-minute weekly check keeps things current — just ask me 'anything changed this week?'"
+---
+
+## Checklist: Session-Start Behavior
+
+**This section is for Claude, not the user.**
+
+At session start, if `docs/.onboarding-checklist.md` exists:
+
+1. Read the file
+2. Find the first unchecked item
+3. Mention it briefly: "You still have [item] on your onboarding checklist. Want to do that now?"
+4. If the user says yes, do it. If no, move on to whatever they need.
+5. After completing any item, update the checklist file (check the box).
+
+**Don't nag.** One mention per session. If the user is focused on something else, respect that.
+
+### Self-Removal
+
+When ALL items are checked:
+
+1. Delete `docs/.onboarding-checklist.md`
+2. Remove the onboarding checklist reference from `CLAUDE.md` (the line under "Session Start: Read These First" that mentions the checklist)
+3. Tell the user: "Onboarding complete — checklist removed. Your context system is fully set up."
 
 ---
 
@@ -166,3 +250,4 @@ If the user asks "what else can I do?":
 - **Ask focused questions, not questionnaires.** 2-3 max.
 - **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.
 - **No jargon on first contact.** Say "data point" only after you've shown them one. Before that, say "a doc about your [topic]."
+- **Profile detection is silent.** Don't present a "project profile assessment" — just use it to make better cluster and data point choices.
