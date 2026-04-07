@@ -86,11 +86,13 @@ cd /path/to/your/project
 bash /tmp/bcos/install.sh
 ```
 
-Then ask Claude:
+Then tell Claude about your business:
 
-> "Scan my repo and create a Document Index"
+> **Starting fresh?** "I want to set up my business context. Here's my website: [url]" — or share a pitch deck, LinkedIn page, or just describe what you do.
+>
+> **Already have docs?** "Scan my repo and show me what business context already exists."
 
-That's it. The `context-onboarding` skill scans your existing docs, maps what knowledge you already have, sets up your folder structure, and recommends which context data points to create first.
+Claude reads what you share, drafts your first 3 data points, and you review. **20-30 minutes to working context.** See the [Getting Started Guide](docs/guides/getting-started.md) for the full walkthrough.
 
 ---
 

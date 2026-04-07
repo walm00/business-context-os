@@ -1,265 +1,220 @@
 ---
 name: context-onboarding
 description: |
-  First-run discovery skill. Scans an existing repo to discover what business context already exists,
-  produces a Document Index mapping all knowledge sources, and recommends which context data points
-  to create first. The starting point for adopting CLEAR Context OS in any project.
+  First-run onboarding skill. Gets a new user from zero to a working context system.
+  Claude figures out the right approach based on what the user shares — no paths to choose.
+  Creates a checklist that tracks setup progress across sessions and self-removes when done.
 
   WHEN TO USE:
-  - First time setting up BCOS in a project ("scan my repo and show me what context exists")
-  - Joining a new project and need to understand what's documented
-  - Periodic re-scan to find new undocumented knowledge
+  - "I want to set up my business context"
+  - "Here's my website / pitch deck / LinkedIn"
+  - "Scan my repo and show me what context exists"
+  - "What do I do next?" (after install)
+  - "Help me get started"
+  - First time adopting CLEAR Context OS in any project
 ---
 
 # Context Onboarding
 
-## Purpose
+## Goal
 
-**This skill IS:**
+**Working context system, user-approved, in under 30 minutes.**
 
-- The recommended FIRST STEP when adopting CLEAR Context OS
-- A discovery tool that scans your repo to find existing business context
-- The producer of your **Document Index** -- a living map of all knowledge sources
-- A recommender of which context data points to define first
-
-**This skill IS NOT:**
-
-- Creating data points for you (it maps what exists, you decide what to formalize)
-- A one-time tool (re-run it periodically to discover undocumented knowledge)
-- Required (you can skip this and follow the manual getting-started guide instead)
+Claude does the drafting. The user reviews and corrects. No questionnaires, no choices to make.
 
 ---
 
-## When to Use
+## How It Works
 
-- "I just added BCOS to my project -- where do I start?"
-- "Scan my repo and tell me what business context exists"
-- "What documentation do I already have?"
-- "Help me understand what's here before I create data points"
-- "I joined this project -- give me the lay of the land"
+Claude figures out the approach from what the user says and what's in the repo. Don't ask the user to "choose a path" — just start.
 
----
+### Signals → What to do
 
-## The Onboarding Process
+| What you see | What you do |
+|---|---|
+| User shares a URL, pitch deck, or describes their business | Gather from those sources, ask 2-3 follow-ups if needed, draft data points |
+| Repo already has docs/, README, markdown files with business content | Scan the repo, map what exists, draft data points from existing content |
+| User just says "help me get started" or "what do I do next?" | Quick-check the repo. If it has docs with business content, scan. If not, ask: "Tell me about your business — a website URL, a quick description, anything works." |
+| User drops files in `docs/_inbox/` | Read those files, treat them as source material, draft data points |
+| Mix of the above | Combine everything. Read the URLs AND scan the repo. More signal = better drafts. |
 
-### Phase 0: Run the Discovery Script
-
-Start with the automated scan:
-
-```bash
-python .claude/scripts/build_document_index.py
-```
-
-This generates `docs/document-index.md` with:
-- All documents that have YAML frontmatter (grouped by cluster, with metadata health)
-- All unmanaged documents (markdown files without frontmatter — candidates for formalization)
-
-Review the output, then continue with the manual scan below to catch what the script misses (knowledge in non-markdown files, config files, git history, etc.).
-
-### Phase 1: Deep Scan (5-10 min)
-
-Go beyond what the script found. Explore the repo for business context in non-obvious places.
-
-**Context window strategy:** For repos with 20+ documents, delegate the scanning to explore agents running in parallel. Keep the main window clean for synthesis.
-
-```
-# Launch up to 3 explore agents in parallel:
-Agent 1 (Explore): "Scan docs/ for all .md files. For each: path, frontmatter summary (name, type, cluster, status), first 3 content lines."
-Agent 2 (Explore): "Scan root-level files (README.md, CLAUDE.md) and .claude/memory/ for business context fragments. Summarize what you find."
-Agent 3 (Explore): "Check git log --oneline -50 for commits mentioning strategy, pricing, audience, brand, or market. Summarize."
-```
-
-For small repos (< 20 files), skip the agents and scan directly.
-
-**Step 1: Locate documentation**
-
-```
-Scan these locations (in order):
-1. README.md and root-level markdown files
-2. docs/ folder (all levels)
-3. CLAUDE.md and .claude/ folder
-4. .claude/memory/ (if exists)
-5. Any folder containing markdown, text, or documentation files
-```
-
-**Step 2: Classify what you find**
-
-For each document or knowledge source discovered, identify:
-
-| Field | What to Record |
-|-------|----------------|
-| **Location** | File path |
-| **Type** | What kind of knowledge (brand, audience, product, process, technical, etc.) |
-| **Scope** | What topic does it cover? |
-| **Temporal State** | Is this current reality (`active`), future plans (`planned`), or raw material (`draft`)? |
-| **Freshness** | Last modified date (from git or file metadata) |
-| **Completeness** | Rough assessment: thorough, partial, stub, or outdated |
-| **Overlap** | Does this cover the same ground as another file? |
-
-**Step 3: Check for implicit context**
-
-Look for business context that lives in non-obvious places:
-- Comments in CLAUDE.md about how the business works
-- Memory files (.claude/memory/) with business knowledge
-- Configuration files that reveal business decisions
-- Git commit messages that reference strategy or positioning
-- README sections that describe the product/audience
-
-### Phase 2: Map (5 min)
-
-Organize findings into the **Document Index**.
-
-Cluster discovered knowledge into natural groups (Company & Identity, Audience & Market, Product & Value, Operations & Process, Strategy & Growth, Technical).
-
-> For cluster definitions, see `docs/architecture/content-routing.md`
-
-**Identify gaps** -- is there a clear company description? Are key processes documented? Is strategic direction written down? Are audience definitions current? Is competitive context captured?
-
-### Phase 3: Produce Document Index (5 min)
-
-Create `docs/document-index.md`. Structure: Header (date, scanner, status) -> Knowledge Sources Found (table per cluster: Source, Location, Type, Freshness, Completeness, Notes) -> Coverage Assessment (table: Context Area, Status, Sources, Recommendation) -> Recommended First Data Points (Priority 1 and 2 with rationale) -> Overlap & Drift Detected (table: Topic, Found In, Issue) -> Next Steps.
-
-The `build_document_index.py` script generates the base structure. Enrich manually with gap analysis and recommendations.
-
-### Phase 4: Draft the Table of Context (5 min)
-
-Based on everything discovered, create an initial `docs/table-of-context.md` using the template at `docs/templates/table-of-context.md`.
-
-Synthesize from the scan:
-- **Who We Are** — piece together the company/project identity from README, about pages, existing docs
-- **What We Do** — extract the core offering from product docs, descriptions
-- **Who We Serve** — find audience definitions wherever they exist
-- **What Makes Us Different** — look for positioning, competitive, or differentiator content
-- **Current Phase** — infer from doc recency, project maturity, recent commits
-
-Mark anything uncertain with "[TO VERIFY]". This is a draft — the user refines it.
-
-Also ask the user if they want to create `docs/current-state.md` now (using the template). If yes, have a brief conversation about their role, this week's priorities, and what's changing.
-
-**Set up the directory structure:**
-
-Create these directories if they don't exist:
-```bash
-mkdir -p docs/_inbox docs/_planned docs/_archive
-```
-
-| Folder | Purpose |
-|--------|---------|
-| `docs/_inbox/` | Landing zone for raw material (meeting notes, brain dumps, pasted content). No quality bar. `context-ingest` processes these into proper data points. |
-| `docs/_planned/` | Polished ideas — documented concepts that may or may not happen. Future plans, expansion ideas, strategic initiatives not yet launched. |
-| `docs/_archive/` | Superseded documents. Kept for reference, not active context. Never delete — archive instead. |
-
-> For folder design rationale, see `docs/architecture/content-routing.md`
-
-### Phase 5: Recommend (2 min)
-
-Present findings to the user with:
-
-1. **Summary**: "I found X knowledge sources across Y clusters"
-2. **Key gaps**: What's missing that most organizations need
-3. **Top 3 recommendations**: Which data points to create first and why
-4. **Overlaps**: Where the same info lives in multiple places (context rot already happening)
-5. **Table of Context**: "I created an initial draft — please review and correct"
-6. **Planned vs. Active**: Call out which discovered content represents current reality vs. future intent. Recommend appropriate status for each.
+**Don't overthink this.** Read whatever the user gives you, synthesize it, draft data points.
 
 ---
 
-## Prioritization Logic
+## Step 1: Gather Information + Identify Profile
 
-When recommending which data points to create first, use this priority order:
+Read everything available. Extract these five things:
 
-1. **Contradictory content** -- same topic, different versions in different files (highest value to fix)
-2. **Scattered fragments** -- useful content spread across multiple files (consolidation opportunity)
-3. **Critical gaps** -- important business context with no documentation at all
-4. **Stale content** -- exists but significantly outdated
-5. **Already solid** -- good content that just needs CLEAR formalization
+1. **Who they are** — identity, mission, founding story
+2. **What they do** — core offering, product/service
+3. **Who they serve** — target audience, customer segments
+4. **What makes them different** — positioning, differentiators
+5. **What phase they're in** — startup, growth, mature, pivoting
+
+**Sources to read** (use whatever's available):
+- Website URL → use WebFetch
+- LinkedIn company page → use WebFetch
+- Pitch deck / one-pager in `docs/_inbox/` → read the file
+- Existing repo docs → scan with Glob + Read
+- What the user tells you directly
+
+**If something is unclear:** ask 2-3 focused follow-up questions. Not a questionnaire — just the gaps that matter most.
+
+**If scanning the repo:** also flag these:
+- Same topic in multiple files (contradiction risk)
+- Important topics with no docs at all (gaps)
+- Content that looks significantly outdated
+
+### Identify the project profile
+
+While gathering info, figure out what kind of project this is. Don't ask directly — infer from what you see:
+
+| Signal | Profile |
+|---|---|
+| Solo founder, freelancer, side project | **Personal / Small** |
+| Team, departments, multiple products | **Company / Large** |
+| Code repos, APIs, technical docs | **IT / Development** |
+| Campaigns, brand guides, content calendars | **Marketing / Brand** |
+| Pipelines, CRM mentions, deal stages | **Sales** |
+| Mix of the above | **Combination** (most common) |
+
+**Use the profile to pick sensible cluster names** for the data points you draft. Don't present this as a formal "profile assessment" to the user — just use it to make better choices:
+
+| Profile | Likely clusters |
+|---|---|
+| Personal / Small | Brand & Identity, Offering, Audience |
+| Company / Large | Brand & Identity, Audience & Market, Product & Value, Operations, Strategy |
+| IT / Development | Product & Architecture, Users & Market, Team & Process |
+| Marketing / Brand | Brand & Identity, Audience & Segments, Messaging & Content |
+| Sales | Value Proposition, Target Market, Sales Process |
+| Combination | Pick from above based on what matters most right now |
+
+**Start with 2-4 clusters max.** The user can add more later. Don't present a cluster taxonomy — just use the right cluster names in your drafted data points.
 
 ---
 
-## Re-running the Scan
+## Step 2: Draft 3 Data Points
 
-The Document Index is a **living document**. Re-run the scan:
+Pick the 3 most important. For most businesses:
 
-- After major project milestones (launches, rebrands, pivots)
-- When new team members join and create new docs
-- Monthly, as part of your maintenance rhythm
-- Whenever you suspect undocumented knowledge is accumulating
+1. **Brand Identity / Company Identity** — who they are
+2. **Target Audience** — who they serve
+3. **Value Proposition / Offering** — what they do and why it wins
 
-When re-running, compare against the existing Document Index to highlight:
-- New sources discovered since last scan
-- Sources that have been updated
-- Sources that have gone stale
-- New gaps that have appeared
+If the repo scan revealed contradictions or critical gaps, prioritize those instead:
+1. Contradictory content (same topic, different versions) — highest value
+2. Critical gaps (important topic, no docs)
+3. Scattered fragments (useful content spread across files)
+
+### Data point format
+
+Create each as a file in `docs/`:
+
+```markdown
+---
+name: "[Data Point Name]"
+type: context
+cluster: "[Best fit cluster from profile]"
+version: "1.0.0"
+status: draft
+created: "[today]"
+last-updated: "[today]"
+---
+
+# [Data Point Name]
+
+## Ownership Specification
+
+**DOMAIN:** [One sentence — what this covers]
+
+**EXCLUSIVELY_OWNS:**
+- [Item 1]
+- [Item 2]
+- [Item 3]
+
+**STRICTLY_AVOIDS:**
+- [Topic that belongs elsewhere] (see: [other-data-point])
+
+## Content
+
+[The actual business knowledge, synthesized from sources. Real content, not placeholders.]
+
+## Context
+
+[Why this matters. How to use it. Strategic implications.]
+```
+
+**Pre-fill everything.** Draft real content from what you learned. The user edits — they don't write from scratch.
+
+**If drafting from existing repo docs:** do NOT move, rename, or reorganize existing files. Create new CLEAR data points alongside them.
 
 ---
 
-## Automatic Handoffs
+## Step 3: Review
 
-After onboarding completes, **automatically offer the next steps** — don't wait for the user to know what to ask for:
-
-1. **→ context-audit** — "Want me to run a CLEAR audit on the data points we just created?"
-2. **→ context-ingest** — If `_inbox/` has files: "You have X items in the inbox. Want me to process them?"
-3. **→ Scheduling setup** — "Let's set up at least one recurring health check."
-
-These handoffs are **offered, not forced**. The user decides. But they should always be presented.
-
-### TodoWrite Progress Pattern
-
-Use TodoWrite to show progress during the multi-phase onboarding:
+Show the user what you drafted:
 
 ```
-TodoWrite([
-  { content: "Run document discovery script", status: "in_progress", activeForm: "Running discovery script" },
-  { content: "Deep scan for hidden context", status: "pending", activeForm: "Scanning for hidden context" },
-  { content: "Map and classify findings", status: "pending", activeForm: "Mapping findings" },
-  { content: "Draft Table of Context", status: "pending", activeForm: "Drafting Table of Context" },
-  { content: "Create folder structure", status: "pending", activeForm: "Creating folder structure" },
-  { content: "Present recommendations", status: "pending", activeForm: "Presenting recommendations" }
-])
+Here are 3 data points based on [what you shared / what I found in the repo]:
+
+1. [Name] — [one-line summary]
+2. [Name] — [one-line summary]
+3. [Name] — [one-line summary]
+
+Take a look — anything off or missing? I'll adjust whatever needs fixing.
 ```
 
-**Before each agent invocation:** mark the task `in_progress`.
-**After each agent returns:** mark it `completed` and advance.
-This keeps the user informed even when agents are working in isolated contexts.
-
-## Integration with Other Skills
-
-| Skill | How It Connects |
-|-------|----------------|
-| **Getting Started guide** | Document Index feeds directly into Step 2 (Define Your First 3 Data Points) |
-| **context-audit** | After data points exist, audit them for CLEAR compliance |
-| **context-ingest** | Process any raw material in `_inbox/` |
-| **daydream** | Use Document Index as input for strategic reflection |
-| **clear-planner** | Use Document Index to scope documentation work |
-| **ecosystem-manager** | Document Index can reveal need for new skills/agents |
+After the user approves (with any corrections applied):
+- Set status to `active` on approved data points
+- Create `docs/_inbox/`, `docs/_planned/`, `docs/_archive/` if they don't exist
 
 ---
 
-## Phase 5: Set Up Your Maintenance Rhythm
+## Step 4: Update the Onboarding Checklist
 
-After the initial scan and first data points are created, recommend a schedule.
+The checklist ships with install at `docs/.onboarding-checklist.md`. After data points are approved:
 
-**Ask the user:** "How would you describe your situation?"
+1. Check off "Initial data points created and approved"
+2. Tell the user what's left:
 
-| If they say... | Recommend |
-|----------------|-----------|
-| "Just getting started" / "New project" / "Few docs" | **Building rhythm:** daily Document Index rebuild, weekly health check |
-| "We have some docs, adding more regularly" | **Active rhythm:** weekly health check + ToC rebuild, bi-weekly daydream, monthly deep audit |
-| "Mature docs, not much changes" | **Steady rhythm:** bi-weekly health check, monthly daydream, quarterly review |
-| "It's a mess, need to consolidate" | **Migration rhythm:** daily ToC rebuild, health check every 2-3 days |
+```
+Data points are live. Your onboarding checklist (docs/.onboarding-checklist.md)
+tracks what's left to set up — I'll remind you once per session until it's done.
 
-Point them to `docs/guides/scheduling.md` for the full prompts and cron expressions.
-
-**Minimum recommended:** Set up at least the weekly health check + Document Index rebuild before ending the onboarding session. One scheduled task is better than zero.
+Want to keep going or pick it up next time?
+```
 
 ---
 
-> **Architecture docs:** For system design context, see [`docs/architecture/system-design.md`](../../docs/architecture/system-design.md) and [`docs/architecture/content-routing.md`](../../docs/architecture/content-routing.md)
+## Checklist: Session-Start Behavior
+
+**This section is for Claude, not the user.**
+
+CLAUDE.md tells Claude to read `docs/.onboarding-checklist.md` at session start. When reading it:
+
+1. Find the first unchecked item
+2. Mention it once: "Your onboarding checklist has [item] next. Want to do that now?"
+3. If the user says yes, do it. If no, move on.
+4. After completing any item, check the box in the file.
+
+**Don't nag.** One mention per session.
+
+### Self-Removal
+
+When ALL items are checked:
+
+1. Delete `docs/.onboarding-checklist.md`
+2. Remove the onboarding checklist line from CLAUDE.md (line 1 under "Session Start: Read These First")
+3. Tell the user: "Onboarding complete — checklist removed."
+
+---
 
 ## Tips
 
-- **Don't try to formalize everything at once.** The Document Index is a map, not a to-do list.
-- **Start with contradictions.** Where two files disagree is where CLEAR adds the most value.
-- **Include the team.** Share the Document Index -- others will spot knowledge you missed.
-- **Technical docs are context too.** Note them in the scan but don't prioritize formalizing them unless they contain business decisions.
-- **Git history is your friend.** Check when files were last modified to assess freshness.
+- **Don't try to formalize everything at once.** 3 data points. Add more when these feel stable.
+- **Draft real content, not placeholders.** If you can't fill a section, cut it — don't leave it empty.
+- **Ask focused questions, not questionnaires.** 2-3 max.
+- **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.
+- **No jargon on first contact.** Say "data point" only after you've shown them one. Before that, say "a doc about your [topic]."
+- **Profile detection is silent.** Don't present a "project profile assessment" — just use it to make better cluster and data point choices.
