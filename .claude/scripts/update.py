@@ -307,22 +307,34 @@ def main():
             else:
                 print(f"  .gitignore: already contains all upstream entries.")
 
-        # ---------------------------------------------------- CLAUDE.md reference
-        # CLAUDE.md is NEVER auto-edited. The script saves the upstream version
-        # as a reference file. Claude reads both at session start and suggests
-        # what critical framework instructions the user's CLAUDE.md is missing.
+        # ---------------------------------------------------- review CLAUDE.md
         for rel, upstream_path, local_path, status in review_files:
-            ref_path = str(local_root / ".claude" / "bcos-claude-reference.md")
-            os.makedirs(os.path.dirname(ref_path), exist_ok=True)
-            shutil.copy2(upstream_path, ref_path)
+            print()
+            print("  " + "─" * 58)
+            print(f"  REVIEW REQUIRED: {rel}")
+            print("  This file may contain your own customizations.")
+            print("  Upstream has changes. What would you like to do?")
+            print("  " + "─" * 58)
+            print()
+            print_diff(upstream_path, local_path, rel)
+            print()
+            print("  Options:")
+            print("    [k]  Keep your local version (skip — default)")
+            print("    [u]  Use upstream version (overwrites your local copy)")
+            print("    [s]  Save upstream version as CLAUDE.md.upstream")
+            print("         so you can review and merge manually")
+            print()
+            resp = input("  Choice [k/u/s]: ").strip().lower() or "k"
 
-            print()
-            print(f"  CLAUDE.md has upstream changes.")
-            print(f"  Your CLAUDE.md was NOT modified (safe).")
-            print(f"  Saved latest framework version to: .claude/bcos-claude-reference.md")
-            print()
-            print(f"  Next session, Claude will compare the two and suggest any")
-            print(f"  critical framework instructions your CLAUDE.md may be missing.")
+            if resp == "u":
+                shutil.copy2(upstream_path, local_path)
+                print(f"  Applied upstream {rel}.")
+            elif resp == "s":
+                aside = local_path + ".upstream"
+                shutil.copy2(upstream_path, aside)
+                print(f"  Saved to {rel}.upstream — merge manually when ready.")
+            else:
+                print(f"  Kept your local {rel}.")
 
         # -------------------------------------------------------------- done
         print()
