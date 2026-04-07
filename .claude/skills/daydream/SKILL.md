@@ -91,8 +91,33 @@ Compare against existing `docs/document-index.md`:
 
 **Step 5: Read the context layers**
 
-1. **`docs/current-state.md`** — "What Changed Recently" is the human's signal. Any active decisions resolved?
-2. **`docs/table-of-context.md`** — Does the business description still match given the changes found?
+1. **`docs/.wake-up-context.md`** — Quick orientation. If this doesn't exist, regenerate it:
+   ```bash
+   python .claude/scripts/generate_wakeup_context.py
+   ```
+2. **`docs/current-state.md`** — "What Changed Recently" is the human's signal. Any active decisions resolved?
+3. **`docs/table-of-context.md`** — Does the business description still match given the changes found?
+4. **`docs/.session-diary.md`** — Accumulated session notes. What themes repeat? What keeps coming up?
+
+**Step 5b: Run maintenance scripts**
+
+Daydream is the natural time to run periodic maintenance:
+
+```bash
+# Prune session captures older than 30 days
+python .claude/scripts/prune_sessions.py
+
+# Prune diary entries older than 30 days
+python .claude/scripts/prune_diary.py
+
+# Regenerate wake-up context with latest data
+python .claude/scripts/generate_wakeup_context.py
+
+# Check for undocumented cross-references
+python .claude/scripts/analyze_crossrefs.py
+```
+
+Report what was pruned and any suggested cross-references discovered.
 
 **Step 6: Record this run**
 

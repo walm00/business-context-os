@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "lastUpdated": "2026-04-07",
+  "description": "Entity registry for disambiguation. AI proposes additions, user reviews.",
+  "entities": {
+    "people": [],
+    "projects": [
+      {
+        "canonical": "CLEAR Context OS",
+        "aliases": ["BCOS", "business-context-os", "Context OS"],
+        "status": "active",
+        "context": "Living system for building and maintaining business context with Claude Code"
+      }
+    ],
+    "terms": [
+      {
+        "term": "Context rot",
+        "definition": "Gradual degradation of AI context over time without active maintenance",
+        "seeAlso": "docs/methodology/clear-principles.md"
+      },
+      {
+        "term": "Data point",
+        "definition": "A single managed document in the context architecture with defined ownership boundaries",
+        "seeAlso": "docs/methodology/context-architecture.md"
+      },
+      {
+        "term": "Ownership Specification",
+        "definition": "DOMAIN + EXCLUSIVELY_OWNS + STRICTLY_AVOIDS section defining what a data point covers",
+        "seeAlso": "docs/methodology/ownership-specification.md"
+      }
+    ]
+  }
+}
