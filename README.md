@@ -2,7 +2,7 @@
   <h1 align="center">CLEAR Context OS</h1>
   <p align="center">
     <strong>Context Engineering for Claude Code</strong><br>
-    Build your knowledge architecture. Keep it alive. Let it learn.
+    Organize what you know. Build what's missing. Keep it alive. Let it learn.
   </p>
   <p align="center">
     <a href="#-quick-start">Quick Start</a> &nbsp;&bull;&nbsp;
@@ -55,44 +55,48 @@ It happens because:
 
 CLEAR Context OS is a **complete system** — methodology, skills, templates, and automation — for building a knowledge architecture that stays accurate as everything around it changes. It works for business knowledge, personal operating context, SOPs, competitive intelligence, team processes — anything that needs to stay current.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│   📋 METHODOLOGY        🛠️ SKILLS           🧠 SELF-LEARNING   │
-│                                                                 │
-│   CLEAR principles      11 Claude Code      Lessons system      │
-│   Ownership spec        skills that         that captures       │
-│   Document standards    automate            insights every      │
-│   Decision framework    maintenance         session             │
-│                                                                 │
-│   ─────────────────────────────────────────────────────────     │
-│                                                                 │
-│   📄 TEMPLATES          🔍 ONBOARDING       💭 REFLECTION       │
-│                                                                 │
-│   Data point            Scans your repo     Daydream skill      │
-│   Cluster               Maps what exists    for strategic       │
-│   Architecture          Recommends what     "what if"           │
-│   Maintenance           to create first     thinking            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+| | Organize | Maintain | Learn |
+|---|---|---|---|
+| **What** | CLEAR methodology + ownership boundaries | 11 skills + 4 hooks that automate maintenance | Lessons system captures insights every session |
+| **How** | Every doc declares what it owns. No duplicates, no drift. | Session capture, integration audits, scheduled reviews | What worked, what didn't — your system gets smarter |
+| **You do** | Define your data points (Claude helps) | Review what Claude surfaces | Approve or reject captured lessons |
 
 ---
 
 ## 🚀 Quick Start
 
+### Option A: New project (easiest)
+
+Click **"Use this template"** on GitHub. You get everything — skills, templates, hooks, folder zones. Open Claude Code and go.
+
+### Option B: Add to existing project
+
 ```bash
-# Clone into your project
 git clone https://github.com/walm00/business-context-os.git /tmp/bcos
 cd /path/to/your/project
 bash /tmp/bcos/install.sh
 ```
 
-Then tell Claude about your business:
+### Option C: Just ask Claude
 
-> **Starting fresh?** "I want to set up my business context. Here's my website: [url]" — or share a pitch deck, LinkedIn page, or just describe what you do.
+If you already have Claude Code open, paste this:
+
+> "Install CLEAR Context OS into this project. Clone https://github.com/walm00/business-context-os.git and run install.sh"
+
+Claude handles the rest.
+
+### Then what?
+
+**New project — no docs yet:**
+> "I want to set up my business context. Here's my website: [url]"
 >
-> **Already have docs?** "Scan my repo and show me what business context already exists."
+> Or share a pitch deck, LinkedIn page, or just describe what you do.
+
+**Existing project — already have docs:**
+> "Scan my repo and show me what business context already exists."
+
+**Have docs scattered across folders:**
+> Copy everything into `docs/_inbox/` and ask: "Process my inbox — figure out what goes where."
 
 Claude reads what you share, drafts your first 3 data points, and you review. **20-30 minutes to working context.** See the [Getting Started Guide](docs/guides/getting-started.md) for the full walkthrough.
 
@@ -150,8 +154,8 @@ docs/
 ├── _inbox/              # Raw material — meeting notes, brain dumps. No quality bar.
 ├── _planned/            # Polished ideas — may or may not happen. Not yet real.
 ├── _archive/            # Superseded — kept for reference, not active.
-├── table-of-context.md  # Business synthesis (stable, monthly)
-├── current-state.md     # Operational priorities (fluid, weekly)
+├── table-of-context.md  # Business synthesis (update when things change)
+├── current-state.md     # Operational priorities (update as often as needed)
 └── document-index.md    # Auto-generated inventory
 ```
 
