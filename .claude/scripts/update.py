@@ -155,6 +155,71 @@ def print_diff(upstream_path: str, local_path: str, rel: str, max_lines: int = 6
         print(f"  ... ({len(diff) - max_lines} more lines — save as .upstream to review in full)")
 
 
+def merge_claude_md(upstream_path: str, local_path: str) -> dict:
+    """Smart-merge CLAUDE.md: keep user's project-specific sections, update framework sections.
+
+    Strategy: The upstream CLAUDE.md ends with a Version/Last Updated footer.
+    Everything after that footer in the local file is the user's project-specific content.
+    We take the upstream framework content and append the user's custom tail.
+
+    Returns dict with keys: 'action' (merged|saved|kept), 'details' (str).
+    """
+    with open(local_path, "r", encoding="utf-8", errors="replace") as f:
+        local_content = f.read()
+    with open(upstream_path, "r", encoding="utf-8", errors="replace") as f:
+        upstream_content = f.read()
+
+    # Find the framework footer in both files
+    # Pattern: **Version**: X.Y.Z followed by **Last Updated**: YYYY-MM-DD
+    import re
+    footer_re = re.compile(
+        r'(\*\*Version\*\*:\s*\d+\.\d+\.\d+\s*\n\*\*Last Updated\*\*:\s*\d{4}-\d{2}-\d{2})',
+        re.MULTILINE
+    )
+
+    local_match = footer_re.search(local_content)
+    upstream_match = footer_re.search(upstream_content)
+
+    if not upstream_match:
+        # Can't find framework footer in upstream — save alongside for manual merge
+        aside = local_path + ".upstream"
+        with open(aside, "w", encoding="utf-8") as f:
+            f.write(upstream_content)
+        return {"action": "saved", "details": "Could not identify framework boundary. Saved as CLAUDE.md.upstream for manual merge."}
+
+    # Get the upstream framework content (everything up to and including footer)
+    upstream_framework = upstream_content[:upstream_match.end()]
+
+    # Get the user's custom content (everything after the footer in local file)
+    user_custom = ""
+    if local_match:
+        user_custom = local_content[local_match.end():]
+    else:
+        # No footer found in local — check if there's content after the last ---
+        # This handles files that were customized before the footer convention existed
+        last_hr = local_content.rfind("\n---\n")
+        if last_hr > len(local_content) * 0.7:  # Only if it's near the end
+            user_custom = local_content[last_hr:]
+
+    if not user_custom.strip():
+        # No user customizations — just use upstream
+        with open(local_path, "w", encoding="utf-8") as f:
+            f.write(upstream_content)
+        return {"action": "merged", "details": "No project-specific sections found. Applied upstream version."}
+
+    # Merge: upstream framework + user custom tail
+    merged = upstream_framework + user_custom
+
+    # Ensure it ends with a newline
+    if not merged.endswith("\n"):
+        merged += "\n"
+
+    with open(local_path, "w", encoding="utf-8") as f:
+        f.write(merged)
+
+    return {"action": "merged", "details": "Updated framework sections, preserved your project-specific content."}
+
+
 def merge_gitignore(upstream_path: str, local_path: str) -> int:
     """Append upstream .gitignore entries not already present locally. Returns count added."""
     with open(local_path,   "r", encoding="utf-8") as f:
@@ -310,31 +375,41 @@ def main():
         # ---------------------------------------------------- review CLAUDE.md
         for rel, upstream_path, local_path, status in review_files:
             print()
-            print("  " + "─" * 58)
+            print("  " + "-" * 58)
             print(f"  REVIEW REQUIRED: {rel}")
-            print("  This file may contain your own customizations.")
-            print("  Upstream has changes. What would you like to do?")
-            print("  " + "─" * 58)
-            print()
-            print_diff(upstream_path, local_path, rel)
-            print()
-            print("  Options:")
-            print("    [k]  Keep your local version (skip — default)")
-            print("    [u]  Use upstream version (overwrites your local copy)")
-            print("    [s]  Save upstream version as CLAUDE.md.upstream")
-            print("         so you can review and merge manually")
-            print()
-            resp = input("  Choice [k/u/s]: ").strip().lower() or "k"
+            print("  " + "-" * 58)
 
-            if resp == "u":
-                shutil.copy2(upstream_path, local_path)
-                print(f"  Applied upstream {rel}.")
-            elif resp == "s":
-                aside = local_path + ".upstream"
-                shutil.copy2(upstream_path, aside)
-                print(f"  Saved to {rel}.upstream — merge manually when ready.")
+            if args.yes:
+                # Non-interactive: auto-merge (keep user sections, update framework)
+                result = merge_claude_md(upstream_path, local_path)
+                print(f"  CLAUDE.md: {result['details']}")
             else:
-                print(f"  Kept your local {rel}.")
+                print("  This file may contain your own customizations.")
+                print("  Upstream has changes. What would you like to do?")
+                print()
+                print_diff(upstream_path, local_path, rel)
+                print()
+                print("  Options:")
+                print("    [m]  Smart merge: update framework sections, keep your")
+                print("         project-specific content (recommended)")
+                print("    [k]  Keep your local version entirely (skip)")
+                print("    [u]  Use upstream version (overwrites your local copy)")
+                print("    [s]  Save upstream as CLAUDE.md.upstream for manual review")
+                print()
+                resp = input("  Choice [m/k/u/s] (default: m): ").strip().lower() or "m"
+
+                if resp == "m":
+                    result = merge_claude_md(upstream_path, local_path)
+                    print(f"  CLAUDE.md: {result['details']}")
+                elif resp == "u":
+                    shutil.copy2(upstream_path, local_path)
+                    print(f"  Applied upstream {rel}.")
+                elif resp == "s":
+                    aside = local_path + ".upstream"
+                    shutil.copy2(upstream_path, aside)
+                    print(f"  Saved to {rel}.upstream -- merge manually when ready.")
+                else:
+                    print(f"  Kept your local {rel}.")
 
         # -------------------------------------------------------------- done
         print()
