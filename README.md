@@ -384,6 +384,44 @@ bash .claude/agents/agent-discovery/find_agents.sh   # Should show: 1 agent
 
 ---
 
+## 🔄 Updating
+
+When a new version is released, pull the latest framework files without touching your business context.
+
+**If you cloned the repo (most common):**
+```bash
+git pull
+```
+
+**If you forked the repo:**
+```bash
+git fetch upstream
+git merge upstream/main
+```
+
+**After your first pull**, use the update script for all future updates — no git knowledge needed:
+
+```bash
+python .claude/scripts/update.py            # interactive, shows what changed
+python .claude/scripts/update.py --dry-run  # preview only, applies nothing
+python .claude/scripts/update.py --yes      # apply without confirmation prompt
+```
+
+The script updates only framework files (skills, agents, hooks, scripts, methodology docs, templates, examples). It **never touches**:
+
+- `docs/*.md` — your business context
+- `docs/_inbox/`, `_planned/`, `_archive/` — your working material
+- `.private/` — your private docs
+- `CLAUDE.md` — shown as a diff, you decide what to apply
+
+**Downloaded a zip instead of cloning?**
+```bash
+# Download the latest zip and extract it, then point the script at it:
+python .claude/scripts/update.py --local /path/to/extracted-zip
+```
+
+---
+
 ## ⏰ Scheduled Maintenance
 
 Context that isn't maintained rots. Set up recurring tasks so Claude keeps your knowledge alive:
