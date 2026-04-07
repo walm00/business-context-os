@@ -81,20 +81,6 @@ The Ownership Specification prevents drift. DOMAIN says what the document covers
 
 Your context is live. From here:
 
-### Fill in the basics
-
-You do not need to fill in every section. Focus on these three:
-
-**1. Organization Overview** -- Write your company name, what you do, and who you serve. One sentence each.
-
-**2. Cluster Planning** -- A cluster is just a group of related data points. Your first three data points probably fit into 1-2 clusters. Common clusters:
-
-- **Brand & Identity** -- for brand identity, brand voice, messaging
-- **Audience & Market** -- for target audience, competitive landscape, market context
-- **Product & Value** -- for value proposition, product description, features
-
-Write down which cluster each of your 3 data points belongs to.
-
 **3. Data Point Inventory** -- List your 3 data points and their cluster. Ownership here means topic ownership -- what domain does each data point cover, defined via the Ownership Specification section (DOMAIN + EXCLUSIVELY_OWNS at minimum).
 
 ### That is your architecture
