@@ -77,11 +77,26 @@ cd /path/to/your/project
 bash /tmp/bcos/install.sh
 ```
 
-Then tell Claude about your business:
+### Option C: Just ask Claude
 
-> **Starting fresh?** "I want to set up my business context. Here's my website: [url]" — or share a pitch deck, LinkedIn page, or just describe what you do.
+If you already have Claude Code open, paste this:
+
+> "Install CLEAR Context OS into this project. Clone https://github.com/walm00/business-context-os.git and run install.sh"
+
+Claude handles the rest.
+
+### Then what?
+
+**New project — no docs yet:**
+> "I want to set up my business context. Here's my website: [url]"
 >
-> **Already have docs?** "Scan my repo and show me what business context already exists."
+> Or share a pitch deck, LinkedIn page, or just describe what you do.
+
+**Existing project — already have docs:**
+> "Scan my repo and show me what business context already exists."
+
+**Have docs scattered across folders:**
+> Copy everything into `docs/_inbox/` and ask: "Process my inbox — figure out what goes where."
 
 Claude reads what you share, drafts your first 3 data points, and you review. **20-30 minutes to working context.** See the [Getting Started Guide](docs/guides/getting-started.md) for the full walkthrough.
 
