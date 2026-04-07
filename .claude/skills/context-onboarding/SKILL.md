@@ -171,50 +171,18 @@ After the user approves (with any corrections applied):
 
 ---
 
-## Step 4: Create the Onboarding Checklist
+## Step 4: Update the Onboarding Checklist
 
-After data points are approved, create `docs/.onboarding-checklist.md`. This file tracks remaining setup across sessions.
+The checklist ships with install at `docs/.onboarding-checklist.md`. After data points are approved:
 
-```markdown
-# Onboarding Checklist
-
-Progress tracker for CLEAR Context OS setup. Checked at session start.
-When all items are complete, this file and its CLAUDE.md reference self-remove.
-
-## Core Setup
-- [x] Initial data points created and approved
-- [ ] table-of-context.md created
-- [ ] current-state.md created
-- [ ] document-index.md generated (run: python .claude/scripts/build_document_index.py)
-
-## Maintenance Setup
-- [ ] Scheduled tasks configured (see Scheduling section below)
-- [ ] First context audit run
-
-## Scheduling
-
-Environment check:
-- Claude Code Desktop / Cowork → use `schedule` skill for cron-based tasks
-- Claude Code CLI → set up reminders externally (calendar, cron) or run manually
-
-Minimum scheduled tasks:
-- [ ] Weekly: document index rebuild
-- [ ] Weekly: quick health check
-- [ ] Monthly: lessons capture
-
-See docs/guides/scheduling.md for full options and cron expressions.
-```
-
-**Adapt the checklist to what's relevant.** If the project is personal/small, drop the monthly lessons capture. If they're already in Cowork, note that. Don't add items that don't apply.
-
-Then tell the user:
+1. Check off "Initial data points created and approved"
+2. Tell the user what's left:
 
 ```
-I've created an onboarding checklist at docs/.onboarding-checklist.md.
-It tracks the remaining setup steps. I'll check it at the start of each session
-and work through what's left. Once everything's done, it cleans itself up.
+Data points are live. Your onboarding checklist (docs/.onboarding-checklist.md)
+tracks what's left to set up — I'll remind you once per session until it's done.
 
-Want to keep going now, or pick this up next session?
+Want to keep going or pick it up next time?
 ```
 
 ---
@@ -223,23 +191,22 @@ Want to keep going now, or pick this up next session?
 
 **This section is for Claude, not the user.**
 
-At session start, if `docs/.onboarding-checklist.md` exists:
+CLAUDE.md tells Claude to read `docs/.onboarding-checklist.md` at session start. When reading it:
 
-1. Read the file
-2. Find the first unchecked item
-3. Mention it briefly: "You still have [item] on your onboarding checklist. Want to do that now?"
-4. If the user says yes, do it. If no, move on to whatever they need.
-5. After completing any item, update the checklist file (check the box).
+1. Find the first unchecked item
+2. Mention it once: "Your onboarding checklist has [item] next. Want to do that now?"
+3. If the user says yes, do it. If no, move on.
+4. After completing any item, check the box in the file.
 
-**Don't nag.** One mention per session. If the user is focused on something else, respect that.
+**Don't nag.** One mention per session.
 
 ### Self-Removal
 
 When ALL items are checked:
 
 1. Delete `docs/.onboarding-checklist.md`
-2. Remove the onboarding checklist reference from `CLAUDE.md` (the line under "Session Start: Read These First" that mentions the checklist)
-3. Tell the user: "Onboarding complete — checklist removed. Your context system is fully set up."
+2. Remove the onboarding checklist line from CLAUDE.md (line 1 under "Session Start: Read These First")
+3. Tell the user: "Onboarding complete — checklist removed."
 
 ---
 

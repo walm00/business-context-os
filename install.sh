@@ -150,6 +150,9 @@ echo -e "  ${GREEN}CREATE${NC}  docs/_planned/ (polished ideas, not yet active)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo ""
 
+# Onboarding checklist (self-removes when complete)
+copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-checklist.md"
+
 # Methodology
 for f in "$SCRIPT_DIR"/docs/methodology/*.md; do
     copy_if_missing "$f" "docs/methodology/$(basename "$f")"
