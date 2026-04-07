@@ -122,13 +122,27 @@ copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons.json" ".claude/qu
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-schema.md" ".claude/quality/ecosystem/lessons-schema.md"
 mkdir -p .claude/quality/sessions
 
+# Hooks
+for f in "$SCRIPT_DIR"/.claude/hooks/*; do
+    if [ -f "$f" ]; then
+        copy_if_missing "$f" ".claude/hooks/$(basename "$f")"
+    fi
+done
+
 # Scripts
-copy_if_missing "$SCRIPT_DIR/.claude/scripts/build_document_index.py" ".claude/scripts/build_document_index.py"
-copy_if_missing "$SCRIPT_DIR/.claude/scripts/find_lessons.py" ".claude/scripts/find_lessons.py"
-copy_if_missing "$SCRIPT_DIR/.claude/scripts/consolidate_lessons.py" ".claude/scripts/consolidate_lessons.py"
+for f in "$SCRIPT_DIR"/.claude/scripts/*.py; do
+    if [ -f "$f" ]; then
+        copy_if_missing "$f" ".claude/scripts/$(basename "$f")"
+    fi
+done
+
+# Hook state directory (gitignored, machine-local)
+mkdir -p .claude/hook_state
+touch .claude/hook_state/.gitkeep
 
 # Registries
 copy_if_missing "$SCRIPT_DIR/.claude/registries/reference-index.json" ".claude/registries/reference-index.json"
+copy_if_missing "$SCRIPT_DIR/.claude/registries/entities.json" ".claude/registries/entities.json"
 
 # Ecosystem map
 copy_if_missing "$SCRIPT_DIR/.claude/ECOSYSTEM-MAP.md" ".claude/ECOSYSTEM-MAP.md"
@@ -144,8 +158,9 @@ echo -e "${BLUE}Installing docs/...${NC}"
 echo ""
 
 # Document folder zones (active / inbox / planned / archive)
-mkdir -p docs/_inbox docs/_planned docs/_archive
+mkdir -p docs/_inbox docs/_inbox/sessions docs/_planned docs/_archive
 echo -e "  ${GREEN}CREATE${NC}  docs/_inbox/ (raw material landing zone)"
+echo -e "  ${GREEN}CREATE${NC}  docs/_inbox/sessions/ (auto-captured session context)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_planned/ (polished ideas, not yet active)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo ""
@@ -208,6 +223,8 @@ fi
 
 chmod +x .claude/agents/agent-discovery/find_agents.sh 2>/dev/null || true
 chmod +x .claude/skills/skill-discovery/find_skills.sh 2>/dev/null || true
+chmod +x .claude/hooks/auto_save_session.sh 2>/dev/null || true
+chmod +x .claude/hooks/precompact_save.sh 2>/dev/null || true
 
 # ─── Summary ────────────────────────────────────────────────────────
 

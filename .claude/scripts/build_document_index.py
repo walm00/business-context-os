@@ -431,6 +431,40 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
         lines.append("No archived documents. Move superseded docs to `docs/_archive/` instead of deleting them.")
     lines.append("")
 
+    # --- Cross-Reference Suggestions ---
+    lines.append("## Suggested Cross-References")
+    lines.append("")
+    lines.append("Documents with high keyword overlap that are not yet formally linked.")
+    lines.append("Review these and add explicit relationships where appropriate.")
+    lines.append("")
+
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, os.path.join(os.path.dirname(__file__), "analyze_crossrefs.py"), "--json"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            import json as _json
+            suggestions = _json.loads(result.stdout)
+            if suggestions:
+                lines.append("| Document A | Document B | Overlap | Shared Terms |")
+                lines.append("|-----------|-----------|---------|-------------|")
+                for s in suggestions[:10]:  # Top 10 suggestions
+                    shared = ", ".join(s["shared_terms"][:5])
+                    lines.append(
+                        f"| {s['doc_a']['name']} | {s['doc_b']['name']} "
+                        f"| {s['overlap']:.0%} | {shared} |"
+                    )
+            else:
+                lines.append("No undocumented cross-references found. All related documents are properly linked.")
+        else:
+            lines.append("*Cross-reference analysis unavailable. Run `python .claude/scripts/analyze_crossrefs.py` manually.*")
+    except Exception:
+        lines.append("*Cross-reference analysis unavailable.*")
+
+    lines.append("")
+
     # === END AUTO-GENERATED ZONE ===
     lines.append(AUTO_END)
     lines.append("")

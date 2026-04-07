@@ -114,13 +114,45 @@ When creating new components, ensure:
 
 ---
 
-## Post-Change Checklist
+## Integration Audit (Invoked by clear-planner FIXED END)
 
-After any ecosystem change:
+This is the MANDATORY audit step for AGENTING scenarios. Run it before committing.
+
+### Step 1: Mechanical scan
+
+```bash
+python .claude/scripts/analyze_integration.py --uncommitted
+```
+
+This script finds:
+- Existing skills/agents/hooks that reference changed file paths
+- Coverage gaps in install.sh, settings.json, state.json, .gitignore
+
+### Step 2: AI review of scan results
+
+For each flagged file, answer:
+1. Does this skill/agent need to know about the new component? (Not all references are actionable)
+2. What specific section needs updating and why?
+3. Is this a blocking issue (must fix before commit) or a follow-up?
+
+### Step 3: Fix blocking issues
+
+Add fix tasks to the plan and execute them before committing.
+
+---
+
+## Post-Change Checklist (MANDATORY for AGENTING FIXED END)
+
+After any ecosystem change — this is not optional:
 
 - [ ] Discovery scripts find the new/modified component
 - [ ] state.json updated with current inventory
 - [ ] No naming conflicts
+- [ ] **Existing skills checked for stale references to new paths**
+- [ ] **Existing hooks checked for missing patterns**
+- [ ] **install.sh installs new files**
+- [ ] **.gitignore covers new generated/state paths**
+- [ ] **settings.json registers new hooks**
 - [ ] Cross-references resolve
 - [ ] ECOSYSTEM-MAP.md updated if needed
 - [ ] reference-index.json updated if new reference docs added

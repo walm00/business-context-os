@@ -256,24 +256,30 @@ Do not proceed with execution until user explicitly says "Approve".
 
 ---
 
-## Recommended Final Phase (All Scenarios)
+## Mandatory Final Phase (All Scenarios)
 
-Every plan SHOULD include a learnings capture step:
+Every AGENTING plan **MUST** include an integration audit + ecosystem state update + learnings capture phase.
+Every DOCUMENTATION plan **MUST** include a reference check + learnings capture phase.
 
-| Phase             | Purpose                   | How                     |
-| ----------------- | ------------------------- | ----------------------- |
-| Learnings Capture | Session learnings         | ecosystem-manager skill |
+These are defined in the scenario FIXED END (see `references/scenario-phases.md`) and are **non-negotiable**.
 
-After significant work, capture what was learned for the institutional knowledge base.
+| Phase               | Purpose                              | How                                                       | Mandatory?          |
+| ------------------- | ------------------------------------ | --------------------------------------------------------- | ------------------- |
+| Integration Audit   | Detect stale references in ecosystem | `python .claude/scripts/analyze_integration.py --staged` + AI review | **YES** (AGENTING)  |
+| Ecosystem State     | Keep inventory accurate              | Run discovery scripts, update state.json                  | **YES** (AGENTING)  |
+| Reference Check     | Verify skill/hook path references    | `python .claude/scripts/analyze_integration.py --staged`  | **YES** (DOCUMENTATION) |
+| Learnings Capture   | Institutional knowledge              | ecosystem-manager skill                                   | **YES** (all)       |
+
+**Why this is mandatory:** Without integration audits, new components ship with stale cross-references in existing skills. The ecosystem drifts silently. The cost of fixing it later is 3-5x higher than catching it in the FIXED END.
 
 ---
 
 ## Scenario-Specific Requirements
 
-| Scenario          | Key Requirement              |
-| ----------------- | ---------------------------- |
-| **AGENTING**      | Check for ecosystem overlaps |
-| **DOCUMENTATION** | Verify cross-references      |
+| Scenario          | Key Requirement                                                    |
+| ----------------- | ------------------------------------------------------------------ |
+| **AGENTING**      | Check for ecosystem overlaps + run integration audit before commit |
+| **DOCUMENTATION** | Verify cross-references + check skill/hook path references         |
 
 ---
 

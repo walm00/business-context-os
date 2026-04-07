@@ -70,9 +70,11 @@ Please specify scope.
 
 ```
 # For large scopes:
-Agent (Explore): "Read all .md files in [scope]. For each, extract YAML frontmatter
-and check: all 7 required fields present? status valid? last-updated within 90 days
-(180 days for _planned/)? Return a validation table."
+Agent (Explore): "Read all .md files in [scope]. Skip dot-prefixed files
+(.session-diary.md, .wake-up-context.md, .onboarding-checklist.md) — these are
+conventions, not managed data points. For each remaining file, extract YAML
+frontmatter and check: all 7 required fields present? status valid? last-updated
+within 90 days (180 days for _planned/)? Return a validation table."
 ```
 
 For small scopes (< 20 files), scan directly:
@@ -217,6 +219,27 @@ Produce a report with these sections:
 | **HIGH**     | Duplication causing divergence, broken links   | Fix this sprint   |
 | **MEDIUM**   | Inconsistency, unclear ownership              | Fix when in area  |
 | **LOW**      | Style issues, minor naming differences        | Nice to have      |
+
+---
+
+## Archive Compression Convention
+
+When archiving a document (moving to `docs/_archive/`), also append a compressed summary line to `docs/_archive/index.md`:
+
+```markdown
+## Archive Index
+
+| Date | Document | Summary |
+|------|----------|---------|
+| 2026-04-07 | pricing-strategy-v1.md | Original flat-rate pricing model. Superseded by usage-based model in v2. |
+```
+
+**Who does what:**
+- AI writes the 1-line summary (requires understanding the document)
+- The append to `_archive/index.md` is a simple file write (mechanical)
+- If `_archive/index.md` doesn't exist, create it with the table header
+
+This ensures archived documents remain discoverable without reading full files.
 
 ---
 

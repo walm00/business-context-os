@@ -30,12 +30,26 @@ Desktop.ini
 .settings/
 .classpath
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Temporary files
 *.tmp
 *.temp
 
 # Local Claude Code settings (contains machine-specific paths)
 .claude/settings.local.json
+
+# Update script reference file (per-install, not shared)
+.claude/bcos-claude-reference.md
+
+# Hook state (session-specific, machine-local)
+.claude/hook_state/*
+!.claude/hook_state/.gitkeep
+
+# Auto-generated wake-up context (regenerated per user)
+docs/.wake-up-context.md
 
 # Private strategy docs (not for public repo)
 .private/
