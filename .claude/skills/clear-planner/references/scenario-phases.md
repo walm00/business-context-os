@@ -93,9 +93,37 @@ Based on request, include tasks like:
 
 | ID     | Task                          | Capability                     | Invocation | Note            |
 | ------ | ----------------------------- | ------------------------------ | ---------- | --------------- |
-| Px_001 | Run JSON structure validation | doc-lint | `inline`   | If JSON files   |
-| Px_002 | Run markdown quality check    | doc-lint | `inline`   | MD040, links    |
-| Px_003 | Capture learnings             | ecosystem-manager              | `skill`    | **RECOMMENDED** |
+| Px_001 | Run JSON structure validation | doc-lint                       | `inline`   | If JSON files   |
+| Px_002 | Run markdown quality check    | doc-lint                       | `inline`   | MD040, links    |
+| Px_003 | Run integration audit         | ecosystem-manager              | `inline`   | **MANDATORY**   |
+| Px_004 | Update ecosystem state        | ecosystem-manager              | `inline`   | **MANDATORY**   |
+| Px_005 | Capture learnings             | ecosystem-manager              | `skill`    | **MANDATORY**   |
+
+**Px_003 Integration Audit** — the step that was missing. Run BEFORE committing:
+
+```bash
+# Mechanical scan: what might be affected?
+python .claude/scripts/analyze_integration.py --staged
+```
+
+Then apply AI reasoning to the script's output:
+
+1. **Existing skills/agents**: For each, check if it references, consumes, or produces anything that overlaps with the new/changed files. If yes, flag which section needs updating and why.
+2. **install.sh**: Does it install the new files? If not, add them.
+3. **settings.json**: If new hooks were created, are they registered?
+4. **.gitignore**: Do new generated/state paths need ignoring?
+5. **state.json**: Does the ecosystem inventory match reality?
+
+**Output**: Table of `file → needs update → why`. If gaps found, add fix tasks to the plan and execute them BEFORE committing. Do NOT skip this step.
+
+**Px_004 Update Ecosystem State**:
+
+```bash
+bash .claude/agents/agent-discovery/find_agents.sh
+bash .claude/skills/skill-discovery/find_skills.sh
+```
+
+Compare output against `.claude/quality/ecosystem/state.json`. Update counts, lists, and `lastUpdated`.
 
 ---
 
@@ -121,11 +149,20 @@ Based on request, include tasks like:
 
 ### FIXED END
 
-| ID     | Task                        | Capability                     | Invocation | Note            |
-| ------ | --------------------------- | ------------------------------ | ---------- | --------------- |
-| Px_001 | Run markdown quality check  | doc-lint | `inline`   | MD040, links    |
-| Px_002 | Verify cross-references     | doc-lint | `inline`   | Internal links  |
-| Px_003 | Capture learnings           | ecosystem-manager              | `skill`    | **RECOMMENDED** |
+| ID     | Task                                      | Capability                     | Invocation | Note            |
+| ------ | ----------------------------------------- | ------------------------------ | ---------- | --------------- |
+| Px_001 | Run markdown quality check                | doc-lint                       | `inline`   | MD040, links    |
+| Px_002 | Verify cross-references                   | doc-lint                       | `inline`   | Internal links  |
+| Px_003 | Check skill/hook references to changed paths | ecosystem-manager           | `inline`   | **MANDATORY**   |
+| Px_004 | Capture learnings                         | ecosystem-manager              | `skill`    | **MANDATORY**   |
+
+**Px_003 Reference Check** — verify that skills/hooks referencing changed doc paths still work:
+
+```bash
+python .claude/scripts/analyze_integration.py --staged
+```
+
+If the script flags skills that reference renamed/moved/deleted doc paths, fix them before committing.
 
 ---
 

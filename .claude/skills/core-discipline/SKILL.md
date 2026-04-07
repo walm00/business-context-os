@@ -56,6 +56,7 @@ The point is not to invoke every skill every time. The point is to not miss the 
 | ---------------------- | ----------------------------------- |
 | `context-onboarding`   | First setup, scanning existing repo |
 | `context-ingest`       | Integrating new sources into data points |
+| `context-mine`         | Extracting context from chat exports, meeting transcripts |
 | `context-audit`        | Auditing context architecture       |
 | `clear-planner`        | Planning changes                    |
 | `daydream`             | Stepping back to reflect            |

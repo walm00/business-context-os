@@ -1,5 +1,31 @@
 {
   "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/auto_save_session.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking session capture checkpoint..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/precompact_save.sh\"",
+            "timeout": 10,
+            "statusMessage": "Emergency save before context compaction..."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit",
@@ -20,6 +46,17 @@
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
             "timeout": 10,
             "statusMessage": "Checking frontmatter compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_commit_context_check.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking commit for context capture opportunities..."
           }
         ]
       }

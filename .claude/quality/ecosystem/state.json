@@ -1,20 +1,22 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-04",
+  "lastUpdated": "2026-04-07",
   "lastAudit": null,
   "inventory": {
     "skills": {
-      "total": 9,
+      "total": 11,
       "list": [
         "context-onboarding",
         "context-ingest",
+        "context-mine",
         "core-discipline",
         "doc-lint",
         "clear-planner",
         "context-audit",
         "daydream",
         "ecosystem-manager",
-        "lessons-consolidate"
+        "lessons-consolidate",
+        "todo-utilities"
       ],
       "overlayCapable": [
         "core-discipline"
