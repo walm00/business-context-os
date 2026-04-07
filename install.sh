@@ -150,6 +150,9 @@ echo -e "  ${GREEN}CREATE${NC}  docs/_planned/ (polished ideas, not yet active)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo ""
 
+# Onboarding checklist (self-removes when complete)
+copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-checklist.md"
+
 # Methodology
 for f in "$SCRIPT_DIR"/docs/methodology/*.md; do
     copy_if_missing "$f" "docs/methodology/$(basename "$f")"
@@ -216,18 +219,14 @@ echo "  Files copied:  $COPIED"
 echo "  Files skipped: $SKIPPED (already existed)"
 echo "  Dirs created:  $CREATED_DIRS"
 echo ""
-echo -e "${BLUE}Next steps:${NC}"
+echo -e "${BLUE}Next step:${NC}"
 echo ""
-echo "  1. If you have an existing CLAUDE.md, merge BCOS sections from:"
-echo "     .claude/bcos-claude-reference.md"
+echo "  Open Claude Code and say: \"Help me get started with my business context.\""
+echo "  Claude will figure out the rest."
 echo ""
-echo "  2. Run the onboarding scan:"
-echo "     Ask Claude: \"Scan my repo and create a Document Index\""
+if [ "$SKIPPED" -gt 0 ]; then
+echo -e "  ${YELLOW}NOTE:${NC} Some files were skipped (already existed)."
+echo "  If you have an existing CLAUDE.md, merge the BCOS sections from:"
+echo "  .claude/bcos-claude-reference.md"
 echo ""
-echo "  3. Or follow the getting started guide:"
-echo "     docs/guides/getting-started.md"
-echo ""
-echo "  4. Verify installation:"
-echo "     bash .claude/agents/agent-discovery/find_agents.sh"
-echo "     bash .claude/skills/skill-discovery/find_skills.sh"
-echo ""
+fi
