@@ -102,14 +102,31 @@ Five principles that prevent context rot:
 | **A** — Alignment | Context without purpose | If it doesn't support decisions, it doesn't belong |
 | **R** — Refinement | "Set and forget" decay | Structured maintenance, not ad-hoc fixes |
 
-### The Folder Structure
+### What's In The Box
 
 ```
-docs/
-├── *.md           # Active context — current reality. Claude trusts this.
-├── _inbox/        # Raw material — meeting notes, brain dumps, session captures.
-├── _planned/      # Polished ideas — not yet real.
-├── _archive/      # Superseded — historical reference only.
+business-context-os/
+│
+├── docs/
+│   ├── *.md                     # Your active context — current reality
+│   ├── _inbox/                  # Raw material + auto-captured sessions
+│   ├── _planned/                # Ideas — not yet real
+│   ├── _archive/                # Superseded — historical reference
+│   ├── methodology/             # CLEAR principles, ownership spec, standards
+│   ├── guides/                  # Getting started, maintenance, migration
+│   ├── architecture/            # System design (for contributors)
+│   └── templates/               # Data point, cluster, architecture templates
+│
+├── .claude/
+│   ├── skills/                  # 11 skills (see below)
+│   ├── agents/                  # 1 agent (explore)
+│   ├── hooks/                   # Frontmatter check, session capture, commit check
+│   ├── scripts/                 # Index builder, update, pruning, cross-ref analysis
+│   └── registries/              # Entity registry, reference indexes
+│
+├── examples/brand-strategy/     # Complete worked example (8 data points)
+├── CLAUDE.md                    # Claude Code instructions (lean — ~500 tokens)
+└── install.sh                   # One-command installer
 ```
 
 **The folder IS the signal.** Claude knows `_planned/` is an idea and `_archive/` is history before opening the file.
@@ -158,6 +175,8 @@ docs/
 *"Extract context from this Slack export"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🔎 Context Audit
@@ -166,8 +185,6 @@ docs/
 *"Audit my context for CLEAR compliance"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 💭 Daydream
@@ -176,6 +193,8 @@ docs/
 *"Let's daydream about our context architecture"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 📋 Clear Planner
@@ -184,8 +203,6 @@ docs/
 *"Plan the restructuring of our audience data points"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🏗️ Ecosystem Manager
@@ -194,6 +211,8 @@ docs/
 *"I want to create a new skill — check for overlaps"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🧠 Lessons Consolidate
@@ -202,8 +221,6 @@ docs/
 *"What have we learned?"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### ⚡ Core Discipline
@@ -212,6 +229,8 @@ docs/
 *Always active — no invocation needed*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 📄 Doc-Lint
@@ -219,6 +238,8 @@ docs/
 
 *"Lint my documentation"*
 
+</td>
+<td>
 </td>
 </tr>
 <tr>
@@ -228,18 +249,6 @@ docs/
 **Shared patterns.** Standard progress tracking used by other skills internally.
 
 *Referenced by other skills, not invoked directly*
-
-</td>
-<td>
-</td>
-</tr>
-<tr>
-<td>
-
-#### ⛏️ Context Mine
-**Extract context from conversations.** Accepts Slack exports, meeting transcripts, chat logs. Pulls out decisions, discoveries, action items, preferences, and problems. Dumps structured results to `_inbox/` for processing via context-ingest.
-
-*"Extract context from this Slack export"*
 
 </td>
 <td>
