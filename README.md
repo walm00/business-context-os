@@ -175,6 +175,8 @@ business-context-os/
 *"Extract context from this Slack export"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🔎 Context Audit
@@ -183,8 +185,6 @@ business-context-os/
 *"Audit my context for CLEAR compliance"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 💭 Daydream
@@ -193,6 +193,8 @@ business-context-os/
 *"Let's daydream about our context architecture"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 📋 Clear Planner
@@ -201,8 +203,6 @@ business-context-os/
 *"Plan the restructuring of our audience data points"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🏗️ Ecosystem Manager
@@ -211,6 +211,8 @@ business-context-os/
 *"I want to create a new skill — check for overlaps"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🧠 Lessons Consolidate
@@ -219,8 +221,6 @@ business-context-os/
 *"What have we learned?"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### ⚡ Core Discipline
@@ -229,6 +229,8 @@ business-context-os/
 *Always active — no invocation needed*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 📄 Doc-Lint
@@ -236,6 +238,8 @@ business-context-os/
 
 *"Lint my documentation"*
 
+</td>
+<td>
 </td>
 </tr>
 <tr>
