@@ -6,7 +6,40 @@ If you want to get started right away, go to [getting-started.md](./getting-star
 
 ---
 
-## Key Concepts
+## Key Concepts in Plain English
+
+### Data Point
+
+**What it is:** A specific topic your business needs to know about.
+
+**Analogy:** Think of a filing cabinet. Each drawer has a label: "Brand," "Customers," "Product," "Competition." A data point is like one of those drawers -- it has a clear label, it contains specific information, and one person is responsible for keeping it organized and current.
+
+**Examples:**
+- "Brand Identity" -- everything about who your company is: mission, values, story
+- "Target Audience" -- everything about who your customers are: segments, demographics, what they look like
+- "Value Proposition" -- everything about why customers choose you: differentiators, benefits, proof
+
+### Ownership
+
+**What it is:** Each data point has clear boundaries about what it covers and what it does not.
+
+**Analogy:** Think of departments in a company. Marketing handles marketing, sales handles sales, and they coordinate but do not do each other's jobs. Ownership works the same way -- each data point has a defined DOMAIN (what it covers) and an EXCLUSIVELY_OWNS list (what can ONLY be found here). There is no ambiguity about where a piece of information belongs.
+
+**Why it matters:** When a topic has no clear home, it ends up duplicated across multiple documents. The copies diverge over time. Eventually they actively mislead people because they describe different versions of reality.
+
+### Boundaries
+
+**What it is:** Clear rules about what goes where. Like departments in a company -- marketing handles marketing, sales handles sales, and they coordinate but do not do each other's jobs.
+
+**Analogy:** Imagine if every department started writing their own version of the company description. Marketing writes one for the website. Sales writes one for proposals. HR writes one for job postings. Six months later, all three are slightly different. Boundaries prevent this by saying: "The company description lives in Brand Identity. Everyone else references it."
+
+**The two most important boundary rules:**
+- **EXCLUSIVELY_OWNS** -- What ONLY this data point contains. You will find this information here and nowhere else.
+- **STRICTLY_AVOIDS** -- What this data point does NOT contain, even if it seems related. With a note about where to find it instead.
+
+### Architecture
+
+**What it is:** The map showing how all your topics connect.
 
 | Concept | What it is | Analogy |
 |---------|-----------|---------|

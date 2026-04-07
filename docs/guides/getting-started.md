@@ -81,9 +81,52 @@ The Ownership Specification prevents drift. DOMAIN says what the document covers
 
 Your context is live. From here:
 
-- **Ask Claude things** — "What does my Target Audience say about our primary segment?"
-- **When something changes, update one file** — changed your pricing? Update Value Proposition. One place, one update.
-- **Weekly: did anything change?** If yes, update the data point. If no, done. Most weeks: 60 seconds.
+**3. Data Point Inventory** -- List your 3 data points and their cluster. Ownership here means topic ownership -- what domain does each data point cover, defined via the Ownership Specification section (DOMAIN + EXCLUSIVELY_OWNS at minimum).
+
+### That is your architecture
+
+It is intentionally simple. A small, well-maintained architecture is worth far more than a large, neglected one. You will add to it over time.
+
+---
+
+## Step 4: Start Using It (Ongoing)
+
+Your context system is only valuable if you actually use it. Here is how.
+
+### Tell Claude about your context
+
+When you start a Claude Code conversation, point Claude to your context architecture. You can say things like:
+
+- "My business context is organized in docs/. Brand Identity is the authority on our mission, values, and brand story."
+- "When I ask about our target audience, use the Target Audience data point as the source of truth."
+- "Before writing any messaging, check the Value Proposition data point for our key differentiators."
+
+Claude will use your data points as the authoritative source, giving you consistent answers grounded in your actual business knowledge.
+
+### When something changes, update the owning data point
+
+This is the most important habit to build. When something changes in your business:
+
+1. Identify which data point owns that information
+2. Update that data point
+3. Done
+
+Examples:
+- Revised your mission statement? Update Brand Identity.
+- Discovered a new customer segment? Update Target Audience.
+- Changed your pricing model? Update Value Proposition.
+
+The key insight: **update ONE place, and everything that references it stays current.**
+
+### Weekly check-in (5 minutes)
+
+Set a recurring 5-minute calendar reminder. Every week, ask yourself:
+
+- Did anything happen this week that affects any of my data points?
+- If yes: update the relevant data point
+- If no: done
+
+Most weeks, the answer is "nothing changed" and you are done in 60 seconds.
 
 ---
 
