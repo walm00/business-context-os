@@ -44,13 +44,23 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 ## Step 1: Gather Information + Identify Profile
 
-Read everything available. Extract these five things:
+Read everything available. Extract knowledge across all these areas (not all will apply):
 
+**Business identity:**
 1. **Who they are** — identity, mission, founding story
 2. **What they do** — core offering, product/service
 3. **Who they serve** — target audience, customer segments
 4. **What makes them different** — positioning, differentiators
 5. **What phase they're in** — startup, growth, mature, pivoting
+
+**Operations & processes:**
+6. **How they work** — workflows, SOPs, approval chains, team processes
+7. **What rules they follow** — brand guidelines, pricing rules, decision frameworks, policies
+8. **What they reference** — glossaries, tool inventories, org charts, tech stacks, contact lists
+
+**Strategy & playbooks:**
+9. **How they respond** — crisis comms, competitive response, launch playbooks, market entry plans
+10. **What they've learned** — past decisions, post-mortems, strategic pivots
 
 **Sources to read** (use whatever's available):
 - Website URL → use WebFetch
@@ -90,7 +100,7 @@ While gathering info, figure out what kind of project this is. Don't ask directl
 | Sales | Value Proposition, Target Market, Sales Process |
 | Combination | Pick from above based on what matters most right now |
 
-**Start with 2-4 clusters max.** The user can add more later. Don't present a cluster taxonomy — just use the right cluster names in your drafted data points.
+**Use as many clusters as the content demands.** Don't limit arbitrarily — if the user has content spanning 6 areas, use 6 clusters. Don't present a cluster taxonomy to the user — just use the right cluster names in your drafted data points.
 
 ---
 
@@ -98,13 +108,32 @@ While gathering info, figure out what kind of project this is. Don't ask directl
 
 **Don't limit to 3 data points.** Analyze ALL the content and plan however many data points are needed to capture everything properly. Nothing gets lost — only duplications and conflicts get resolved.
 
-### 2a. Content inventory
+### 2a. Content inventory + classification
 
 List every piece of content you found. For each item:
 - **Source** — where it came from (file, URL, user input)
 - **Topics covered** — what knowledge it contains
+- **Document type** — classify using the guide below
 - **Overlaps** — does it duplicate or contradict another source?
 - **Quality** — is it current, outdated, or a fragment?
+
+**Type classification guide:**
+
+| If content... | Type | Signal |
+|---|---|---|
+| Describes what something IS (identity, market, audience, positioning) | **context** | Answers "what is" questions |
+| Describes how to DO something (steps, workflows, SOPs, checklists) | **process** | Answers "how to" questions |
+| Defines rules, standards, or constraints (brand rules, pricing policy, approval criteria) | **policy** | Answers "must / must not" questions |
+| Is lookup/reference data (glossary, org chart, tool list, tech stack, contacts) | **reference** | Answers "what's the..." factual lookups |
+| Is a situational response guide (crisis plan, launch playbook, competitive response) | **playbook** | Answers "what do we do when..." questions |
+
+**Edge cases:**
+- Brand guidelines with rules → **policy** (it constrains behavior)
+- Brand identity describing who we are → **context** (it describes reality)
+- Onboarding doc with steps → **process** (it's a workflow)
+- Onboarding overview describing the team → **context** (it's knowledge)
+- Templates that define a standard → **reference** (they're lookup material)
+- If one source mixes types → split it into separate data points by type
 
 ### 2b. Plan the data points
 
@@ -120,17 +149,19 @@ Present the plan to the user:
 Based on what I found, here's the data point structure I recommend:
 
 [Cluster Name]
-  1. [Data Point Name] — [what it covers] (sources: file1.md, website about page)
-  2. [Data Point Name] — [what it covers] (sources: pitch-deck.pdf, user input)
+  1. [Data Point Name] (context) — [what it covers] (sources: file1.md, website)
+  2. [Data Point Name] (process) — [what it covers] (sources: sop-doc.md)
 
 [Cluster Name]
-  3. [Data Point Name] — [what it covers] (sources: readme.md, strategy-doc.md)
+  3. [Data Point Name] (policy) — [what it covers] (sources: brand-guidelines.pdf)
+  4. [Data Point Name] (reference) — [what it covers] (sources: tech-stack.md)
   ...
 
 Conflicts found:
   - [Topic]: file1.md says X, file2.md says Y — which is current?
 
-Nothing is lost. [N] sources → [M] data points. Want me to proceed or adjust the structure?
+Nothing is lost. [N] sources → [M] data points ([X] context, [Y] process, [Z] policy...).
+Want me to proceed or adjust the structure?
 ```
 
 **Wait for approval before creating files.** The user needs to see the full plan and resolve any conflicts first.
@@ -142,7 +173,7 @@ After the user approves the plan, create each data point in `docs/`:
 ```markdown
 ---
 name: "[Data Point Name]"
-type: context
+type: "[classified type]"          # context | process | policy | reference | playbook
 cluster: "[Cluster]"
 version: "1.0.0"
 status: draft

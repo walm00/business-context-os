@@ -268,15 +268,15 @@ business-context-os/
 
 Context that isn't maintained rots. These tasks keep your knowledge alive:
 
-| Task | What Happens |
-|------|-------------|
-| **Document Index rebuild** | Refreshes file inventory, metadata health, cross-reference suggestions |
-| **Health check** | Quick CLEAR audit across active documents |
-| **Daydream** | Strategic reflection — what changed, what's stale, what's ready to activate |
-| **Deep audit + lessons** | Thorough audit, lessons consolidation, inbox processing |
-| **Architecture review** | Full review of context vs. reality |
+| Task | Schedule | What Happens |
+|------|----------|-------------|
+| **Index + health check** | Daily | Rebuild index, flag unmanaged docs, check boundaries and cross-references |
+| **Daydream + lessons** | Monday | Strategic reflection + lessons capture + session pruning |
+| **Mid-week daydream** | Wednesday | Deeper reflection on gaps, connections, and staleness |
+| **Deep audit + inbox** | Friday | Thorough cluster audit, lessons consolidation, inbox processing |
+| **Architecture review** | Monthly | Full architecture + ecosystem review with health score |
 
-Run them at whatever rhythm fits your pace. See [scheduling.md](docs/guides/scheduling.md) for ready-to-use prompts.
+All 5 are set up automatically during onboarding. See [scheduling.md](docs/guides/scheduling.md) for exact task definitions.
 
 ---
 
