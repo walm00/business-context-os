@@ -2,6 +2,9 @@
 .claude/quality/sessions/*
 !.claude/quality/sessions/.gitkeep
 
+# Lessons (user-specific, accumulates over time — starter template ships instead)
+.claude/quality/ecosystem/lessons.json
+
 # Dependencies
 node_modules/
 

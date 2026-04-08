@@ -118,7 +118,7 @@ done
 # Quality infrastructure
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/config.json" ".claude/quality/ecosystem/config.json"
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/state.json" ".claude/quality/ecosystem/state.json"
-copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons.json" ".claude/quality/ecosystem/lessons.json"
+copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-starter.json" ".claude/quality/ecosystem/lessons.json"
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-schema.md" ".claude/quality/ecosystem/lessons-schema.md"
 mkdir -p .claude/quality/sessions
 

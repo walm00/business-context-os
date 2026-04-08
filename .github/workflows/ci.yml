@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  validate-json:
+    name: Validate JSON
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate all JSON files
+        run: |
+          failed=0
+          for f in \
+            .claude/quality/ecosystem/state.json \
+            .claude/quality/ecosystem/lessons.json \
+            .claude/registries/reference-index.json \
+            .claude/registries/entities.json \
+            .claude/settings.json; do
+            if [ -f "$f" ]; then
+              if ! python3 -m json.tool "$f" > /dev/null 2>&1; then
+                echo "FAIL: $f is not valid JSON"
+                failed=1
+              else
+                echo "OK:   $f"
+              fi
+            else
+              echo "SKIP: $f (not found)"
+            fi
+          done
+          exit $failed
+
+  validate-frontmatter:
+    name: Validate Frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check YAML frontmatter
+        run: python3 .github/scripts/validate_frontmatter.py
+
+  validate-references:
+    name: Validate References
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check file path references
+        run: python3 .github/scripts/validate_references.py
+
+  validate-ecosystem:
+    name: Validate Ecosystem
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check ecosystem integration
+        run: python3 .claude/scripts/analyze_integration.py --ci

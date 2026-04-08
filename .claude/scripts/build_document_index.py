@@ -75,6 +75,26 @@ def extract_frontmatter(filepath):
     return data if data else None
 
 
+DOMAIN_RE = re.compile(r'\*\*DOMAIN:\*\*\s*(.+)', re.IGNORECASE)
+
+
+def extract_domain(filepath):
+    """Extract the DOMAIN one-liner from the Ownership Specification section."""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except (IOError, UnicodeDecodeError):
+        return None
+
+    match = DOMAIN_RE.search(content)
+    if match:
+        domain = match.group(1).strip()
+        # Clean up markdown formatting remnants
+        domain = domain.strip('*').strip()
+        return domain if domain else None
+    return None
+
+
 def get_file_info(filepath):
     """Get file size and last modified date."""
     try:
@@ -210,11 +230,14 @@ def scan_documents(scan_dir):
         missing = [f for f in REQUIRED_FIELDS if f not in meta]
         rel_path = os.path.relpath(filepath).replace("\\", "/")
 
+        domain = extract_domain(filepath)
+
         doc = {
             "path": rel_path,
             "filename": os.path.basename(filepath),
             "meta": meta,
             "missing_fields": missing,
+            "domain": domain,
         }
 
         if missing:
@@ -324,16 +347,16 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
             docs = clusters[cluster_name]
             lines.append(f"### {cluster_name}")
             lines.append("")
-            lines.append("| Document | Type | Version | Status | Last Updated |")
-            lines.append("|----------|------|---------|--------|-------------|")
+            lines.append("| Document | Domain | Type | Status | Updated |")
+            lines.append("|----------|--------|------|--------|---------|")
             for doc in sorted(docs, key=lambda d: d["meta"].get("name", d["filename"])):
                 meta = doc["meta"]
                 name = meta.get("name", doc["filename"])
-                doc_type = meta.get("type", "MISSING")
-                version = meta.get("version", "MISSING")
-                status = meta.get("status", "MISSING")
-                updated = meta.get("last-updated", "MISSING")
-                lines.append(f"| [{name}]({doc['path']}) | {doc_type} | {version} | {status} | {updated} |")
+                domain = doc.get("domain", "") or ""
+                doc_type = meta.get("type", "—")
+                status = meta.get("status", "—")
+                updated = meta.get("last-updated", "—")
+                lines.append(f"| [{name}]({doc['path']}) | {domain} | {doc_type} | {status} | {updated} |")
             lines.append("")
 
         lines.append("---")

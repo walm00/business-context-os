@@ -288,7 +288,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Analyze integration gaps for new/changed files."
     )
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group()
     group.add_argument("--staged", action="store_true",
                        help="Analyze git staged files")
     group.add_argument("--uncommitted", action="store_true",
@@ -297,17 +297,33 @@ def main():
                        help="Analyze specific files")
     parser.add_argument("--json", action="store_true",
                         help="Output as JSON")
+    parser.add_argument("--ci", action="store_true",
+                        help="CI mode: scan all ecosystem files, exit 1 if gaps found")
     args = parser.parse_args()
 
     project_root = str(Path(__file__).resolve().parent.parent.parent)
 
-    # Get changed files
-    if args.staged:
+    # CI mode: scan all skills, hooks, scripts as "changed" to check full coverage
+    if args.ci:
+        changed = []
+        for scan_dir in [".claude/skills", ".claude/hooks", ".claude/scripts", ".claude/agents"]:
+            full_dir = os.path.join(project_root, scan_dir)
+            if not os.path.isdir(full_dir):
+                continue
+            for dirpath, _, filenames in os.walk(full_dir):
+                for fname in filenames:
+                    full_path = os.path.join(dirpath, fname)
+                    rel = os.path.relpath(full_path, project_root).replace("\\", "/")
+                    changed.append(rel)
+    elif args.staged:
         changed = get_staged_files(project_root)
     elif args.uncommitted:
         changed = get_uncommitted_files(project_root)
-    else:
+    elif args.files:
         changed = [f.replace("\\", "/") for f in args.files]
+    else:
+        print("No changed files to analyze.")
+        sys.exit(0)
 
     if not changed:
         print("No changed files to analyze.")
@@ -395,6 +411,10 @@ def main():
             print(f"\n  No coverage gaps found.")
 
         print()
+
+    # CI mode: exit 1 if coverage gaps found
+    if args.ci and all_gaps:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
