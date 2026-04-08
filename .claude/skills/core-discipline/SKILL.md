@@ -92,6 +92,6 @@ After any synthesis, analysis, or research:
 
 **Why:** Without this rule, knowledge evaporates into chat history. With it, every conversation makes the context architecture richer. The system compounds.
 
-> **Quality bar for all updates:** see [`docs/methodology/document-standards.md`](../../docs/methodology/document-standards.md) — required fields, valid types/statuses, ownership specification rules.
+> **Quality bar for all updates:** see [`docs/_bcos-framework/methodology/document-standards.md`](../../docs/_bcos-framework/methodology/document-standards.md) — required fields, valid types/statuses, ownership specification rules.
 >
-> **Architecture docs:** For system design context, see [`docs/architecture/system-design.md`](../../docs/architecture/system-design.md)
+> **Architecture docs:** For system design context, see [`docs/_bcos-framework/architecture/system-design.md`](../../docs/_bcos-framework/architecture/system-design.md)

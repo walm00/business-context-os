@@ -27,10 +27,10 @@ OUTPUT_FILE = "docs/document-index.md"
 
 # Skip these paths (BCOS framework files, not user content)
 SKIP_PATHS = {
-    "docs/methodology",
-    "docs/guides",
-    "docs/templates",
-    "docs/architecture",
+    "docs/_bcos-framework/methodology",
+    "docs/_bcos-framework/guides",
+    "docs/_bcos-framework/templates",
+    "docs/_bcos-framework/architecture",
     "docs/document-index.md",
 }
 
@@ -178,6 +178,7 @@ def scan_documents(scan_dir):
     inbox = []
     planned = []
     archive = []
+    misplaced = []  # Files in custom (non-framework) subdirectories
 
     pattern = os.path.join(scan_dir, "**", "*.md")
     files = sorted(glob.glob(pattern, recursive=True))
@@ -227,6 +228,27 @@ def scan_documents(scan_dir):
         if is_collection(filepath):
             continue
 
+        # Check for files in unexpected subdirectories (cluster folders are NOT allowed)
+        rel = os.path.relpath(filepath, scan_dir).replace("\\", "/")
+        parts = rel.split("/")
+        if len(parts) > 1:
+            # File is in a subdirectory — check if it's a known one
+            subdir = parts[0]
+            known_subdirs = {"_inbox", "_planned", "_archive", "_collections",
+                             "_bcos-framework",
+                             "methodology", "guides", "templates", "architecture",
+                             "examples"}
+            if subdir not in known_subdirs and not subdir.startswith("."):
+                size_str, mtime = get_file_info(filepath)
+                misplaced.append({
+                    "path": os.path.relpath(filepath).replace("\\", "/"),
+                    "subdir": subdir,
+                    "size": size_str,
+                    "modified": mtime,
+                })
+                # Still index it as managed (it exists), but flag it
+                # Fall through to normal processing below
+
         meta = extract_frontmatter(filepath)
 
         if meta is None:
@@ -255,12 +277,12 @@ def scan_documents(scan_dir):
             incomplete.append(doc)
         managed.append(doc)
 
-    return managed, unmanaged, incomplete, inbox, planned, archive
+    return managed, unmanaged, incomplete, inbox, planned, archive, misplaced
 
 
 # --- Report Generation ---
 
-def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, planned=None, archive=None):
+def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, planned=None, archive=None, misplaced=None):
     """Generate the Document Index markdown with auto and user zones."""
     today = datetime.date.today().strftime("%Y-%m-%d")
     lines = []
@@ -312,7 +334,7 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
     else:
         lines.append("No managed documents found. Create data points in `docs/` with YAML frontmatter to get started.")
         lines.append("")
-        lines.append("See `docs/templates/context-data-point.md` for the template.")
+        lines.append("See `docs/_bcos-framework/templates/context-data-point.md` for the template.")
 
     lines.append("")
 
@@ -409,6 +431,22 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
     else:
         lines.append("All documents have YAML frontmatter. No unmanaged files detected.")
     lines.append("")
+
+    # --- Misplaced Documents ---
+    if misplaced is None:
+        misplaced = []
+    if misplaced:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Custom Subdirectories")
+        lines.append("")
+        lines.append("Files found in custom subdirectories of `docs/`. The recommended pattern is flat in `docs/` root with `cluster` frontmatter for grouping. Custom subdirectories work but are not managed by the framework.")
+        lines.append("")
+        lines.append("| File | Folder | Note |")
+        lines.append("|------|--------|------|")
+        for doc in misplaced:
+            lines.append(f"| {doc['path']} | {doc['subdir']}/ | Consider moving to `docs/` root, or keep if intentional |")
+        lines.append("")
 
     # --- Inbox (raw material) ---
     if inbox is None:
@@ -570,8 +608,8 @@ def main():
     # Preserve user notes from existing file
     existing_notes = extract_user_notes(OUTPUT_FILE) if not dry_run else None
 
-    managed, unmanaged, incomplete, inbox, planned, archive = scan_documents(scan_dir)
-    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, planned, archive)
+    managed, unmanaged, incomplete, inbox, planned, archive, misplaced = scan_documents(scan_dir)
+    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, planned, archive, misplaced)
 
     if dry_run:
         print(report)
@@ -586,6 +624,8 @@ def main():
         print(f"  Inbox items: {len(inbox)}")
         print(f"  Planned items: {len(planned)}")
         print(f"  Archived items: {len(archive)}")
+        if misplaced:
+            print(f"  Note: {len(misplaced)} file(s) in custom subdirectories (recommended: flat in docs/ root)")
         if existing_notes:
             print(f"  User notes: preserved")
         else:

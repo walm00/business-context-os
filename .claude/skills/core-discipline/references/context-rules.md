@@ -39,17 +39,17 @@ last-updated: "YYYY-MM-DD" # MUST update on every edit
 ---
 ```
 
-Full spec: `docs/methodology/document-standards.md`
+Full spec: `docs/_bcos-framework/methodology/document-standards.md`
 
 ## Key Navigation
 
 | Area | Location | Purpose |
 |------|----------|---------|
-| Methodology | `docs/methodology/` | CLEAR principles, refinement guides |
-| Guides | `docs/guides/` | Getting started, adoption, workflows |
+| Methodology | `docs/_bcos-framework/methodology/` | CLEAR principles, refinement guides |
+| Guides | `docs/_bcos-framework/guides/` | Getting started, adoption, workflows |
 | Skills | `.claude/skills/` | Context management skills |
 | Agents | `.claude/agents/` | Automated workflow agents |
-| Templates | `docs/templates/` | Data point, cluster, architecture templates |
+| Templates | `docs/_bcos-framework/templates/` | Data point, cluster, architecture templates |
 
 ## Common Workflows
 

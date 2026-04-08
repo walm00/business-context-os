@@ -213,4 +213,4 @@ python .claude/scripts/analyze_integration.py --ci   # Ecosystem wiring (install
 - Lessons schema: `.claude/quality/ecosystem/lessons-schema.md`
 - Ecosystem map: `.claude/ECOSYSTEM-MAP.md`
 
-> **Architecture docs:** For component standards, see [`docs/architecture/component-standards.md`](../../docs/architecture/component-standards.md)
+> **Architecture docs:** For component standards, see [`docs/_bcos-framework/architecture/component-standards.md`](../../docs/_bcos-framework/architecture/component-standards.md)

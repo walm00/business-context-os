@@ -29,13 +29,11 @@ MIN_SHARED_TERMS  = 3     # Minimum shared significant terms
 
 # Skip these — not user content or not worth comparing
 SKIP_PATHS = {
-    "docs/methodology",
-    "docs/guides",
-    "docs/templates",
-    "docs/architecture",
+    "docs/_bcos-framework",
     "docs/_inbox",
     "docs/_archive",
     "docs/_planned",
+    "docs/_collections",
     "docs/document-index.md",
 }
 

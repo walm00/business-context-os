@@ -27,7 +27,7 @@ The fastest way to improve CLEAR Context OS is through lessons learned. As you u
 
 ### Skills
 
-New skills for context workflows. Follow the skill anatomy in `docs/architecture/component-standards.md`:
+New skills for context workflows. Follow the skill anatomy in `docs/_bcos-framework/architecture/component-standards.md`:
 - YAML frontmatter with name, description, WHEN TO USE
 - Purpose section (IS / IS NOT)
 - Numbered workflow steps
@@ -60,7 +60,7 @@ PRs are reviewed for CLEAR compliance, consistency with existing patterns, and c
 
 ## Architecture Docs
 
-If you want to understand HOW the system is built before contributing, start with `docs/architecture/system-design.md`. The architecture docs explain design decisions, the skill graph, and component standards.
+If you want to understand HOW the system is built before contributing, start with `docs/_bcos-framework/architecture/system-design.md`. The architecture docs explain design decisions, the skill graph, and component standards.
 
 ## Questions?
 

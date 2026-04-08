@@ -8,7 +8,7 @@
     <a href="#-quick-start">Quick Start</a> &nbsp;&bull;&nbsp;
     <a href="#-how-it-works">How It Works</a> &nbsp;&bull;&nbsp;
     <a href="#-skills--agents">Skills & Agents</a> &nbsp;&bull;&nbsp;
-    <a href="docs/guides/getting-started.md">Getting Started Guide</a>
+    <a href="docs/_bcos-framework/guides/getting-started.md">Getting Started Guide</a>
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
@@ -115,10 +115,11 @@ business-context-os/
 │   ├── _planned/                # Ideas — not yet real
 │   ├── _archive/                # Superseded — historical reference
 │   ├── _collections/            # High-volume files — transcripts, reports, invoices
-│   ├── methodology/             # CLEAR principles, ownership spec, standards
-│   ├── guides/                  # Getting started, maintenance, migration
-│   ├── architecture/            # System design (for contributors)
-│   └── templates/               # Data point, cluster, architecture templates
+│   ├── _bcos-framework/
+│   │   ├── methodology/         # CLEAR principles, ownership spec, standards
+│   │   ├── guides/              # Getting started, maintenance, migration
+│   │   ├── architecture/        # System design (for contributors)
+│   │   └── templates/           # Data point, cluster, architecture templates
 │
 ├── .claude/
 │   ├── skills/                  # 11 skills (see below)
@@ -286,7 +287,7 @@ Context that isn't maintained rots. These tasks keep your knowledge alive:
 | **Deep audit + inbox** | Friday | Thorough cluster audit, lessons consolidation, inbox processing |
 | **Architecture review** | Monthly | Full architecture + ecosystem review with health score |
 
-All 5 are set up automatically during onboarding. See [scheduling.md](docs/guides/scheduling.md) for exact task definitions.
+All 5 are set up automatically during onboarding. See [scheduling.md](docs/_bcos-framework/guides/scheduling.md) for exact task definitions.
 
 ---
 

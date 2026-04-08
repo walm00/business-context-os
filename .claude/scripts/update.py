@@ -39,10 +39,10 @@ FRAMEWORK_DIRS = [
     ".claude/hooks",
     ".claude/scripts",
     ".claude/skills",
-    "docs/architecture",
-    "docs/guides",
-    "docs/methodology",
-    "docs/templates",
+    "docs/_bcos-framework/architecture",
+    "docs/_bcos-framework/guides",
+    "docs/_bcos-framework/methodology",
+    "docs/_bcos-framework/templates",
     "examples",
 ]
 
@@ -180,6 +180,106 @@ def merge_gitignore(upstream_path: str, local_path: str) -> int:
     return len(new_entries)
 
 
+def merge_settings_json(upstream_path: str, local_path: str) -> int:
+    """Merge upstream settings.json hooks into local. Additive only — never removes user hooks.
+    Returns count of new hook entries added."""
+    import json as _json
+
+    with open(upstream_path, "r", encoding="utf-8") as f:
+        upstream = _json.load(f)
+    if os.path.exists(local_path):
+        with open(local_path, "r", encoding="utf-8") as f:
+            local = _json.load(f)
+    else:
+        local = {}
+
+    if "hooks" not in upstream:
+        return 0
+    if "hooks" not in local:
+        local["hooks"] = {}
+
+    added = 0
+    for event, matchers in upstream.get("hooks", {}).items():
+        if event not in local["hooks"]:
+            local["hooks"][event] = matchers
+            added += len(matchers)
+            continue
+
+        # For each matcher group in upstream, check if local has it
+        local_commands = set()
+        for matcher_group in local["hooks"][event]:
+            for hook in matcher_group.get("hooks", []):
+                local_commands.add(hook.get("command", ""))
+
+        for matcher_group in matchers:
+            for hook in matcher_group.get("hooks", []):
+                cmd = hook.get("command", "")
+                if cmd and cmd not in local_commands:
+                    # New hook — add the whole matcher group
+                    local["hooks"][event].append(matcher_group)
+                    added += 1
+                    break  # one add per matcher group
+
+    if added > 0:
+        with open(local_path, "w", encoding="utf-8") as f:
+            _json.dump(local, f, indent=2)
+            f.write("\n")
+
+    return added
+
+
+def ensure_convention_infrastructure(project_root: str, upstream_root: str) -> list:
+    """Create convention directories and files that hooks/scripts depend on.
+    Returns list of what was created."""
+    created = []
+
+    # Directories that must exist
+    convention_dirs = [
+        "docs/_inbox/sessions",
+        "docs/_collections",
+        ".claude/hook_state",
+        ".private",
+    ]
+    for d in convention_dirs:
+        full = os.path.join(project_root, d)
+        if not os.path.isdir(full):
+            os.makedirs(full, exist_ok=True)
+            created.append(f"  + {d}/")
+
+    # Files that should exist (copy from upstream if missing)
+    convention_files = [
+        "docs/.session-diary.md",
+        "docs/.onboarding-checklist.md",
+    ]
+    for f in convention_files:
+        local_path = os.path.join(project_root, f)
+        upstream_path = os.path.join(upstream_root, f)
+        if not os.path.exists(local_path) and os.path.exists(upstream_path):
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            shutil.copy2(upstream_path, local_path)
+            created.append(f"  + {f}")
+
+    # Private starter templates (copy if missing, never overwrite)
+    private_starter_dir = os.path.join(upstream_root, "docs", "_bcos-framework", "templates", "private-starter")
+    if os.path.isdir(private_starter_dir):
+        for fname in os.listdir(private_starter_dir):
+            if not fname.endswith(".md"):
+                continue
+            src = os.path.join(private_starter_dir, fname)
+            dst = os.path.join(project_root, ".private", fname)
+            if not os.path.exists(dst):
+                shutil.copy2(src, dst)
+                created.append(f"  + .private/{fname}")
+
+    # Gitkeep files
+    for d in [".claude/hook_state"]:
+        gitkeep = os.path.join(project_root, d, ".gitkeep")
+        if not os.path.exists(gitkeep):
+            Path(gitkeep).touch()
+
+    return created
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -300,6 +400,23 @@ def main():
         if applied:
             print(f"  Applied {applied} file(s).")
 
+        # --------- self-relaunch if update.py itself was updated
+        self_updated = any(
+            rel == ".claude/scripts/update.py"
+            for rel, _, _ in new_files + modified_files
+        )
+        if self_updated:
+            print()
+            print("  Update script itself was updated. Re-launching new version...")
+            print()
+            import subprocess as _sp
+            new_args = [sys.executable, str(local_root / ".claude" / "scripts" / "update.py"), "--yes"]
+            if args.local:
+                new_args.extend(["--local", args.local])
+            result = _sp.run(new_args, cwd=str(local_root))
+            sys.exit(result.returncode)
+            # subprocess runs the new version — we exit after it finishes
+
         # ---------------------------------------------------- merge .gitignore
         for rel, upstream_path, local_path, _ in merge_files:
             added = merge_gitignore(upstream_path, local_path)
@@ -307,6 +424,58 @@ def main():
                 print(f"  .gitignore: merged {added} new entr{'y' if added == 1 else 'ies'} from upstream.")
             else:
                 print(f"  .gitignore: already contains all upstream entries.")
+
+        # ------------------------------------------------ merge settings.json
+        upstream_settings = os.path.join(upstream_root, ".claude", "settings.json")
+        local_settings = str(local_root / ".claude" / "settings.json")
+        if os.path.exists(upstream_settings):
+            hooks_added = merge_settings_json(upstream_settings, local_settings)
+            if hooks_added:
+                print(f"  settings.json: merged {hooks_added} new hook(s) from upstream.")
+            else:
+                print(f"  settings.json: all upstream hooks already registered.")
+
+        # ----------------------------------------- convention infrastructure
+        infra_created = ensure_convention_infrastructure(str(local_root), upstream_root)
+        if infra_created:
+            print(f"  Convention infrastructure:")
+            for item in infra_created:
+                print(item)
+
+        # --------------------------------- migrate old framework doc locations
+        # v1.2.0 moved docs/architecture etc. to docs/_bcos-framework/
+        OLD_TO_NEW = [
+            ("docs/architecture", "docs/_bcos-framework/architecture"),
+            ("docs/guides", "docs/_bcos-framework/guides"),
+            ("docs/methodology", "docs/_bcos-framework/methodology"),
+            ("docs/templates", "docs/_bcos-framework/templates"),
+        ]
+        migrated = 0
+        for old_dir, new_dir in OLD_TO_NEW:
+            old_path = os.path.join(str(local_root), old_dir)
+            new_path = os.path.join(str(local_root), new_dir)
+            if os.path.isdir(old_path) and os.path.isdir(new_path):
+                # New location already has files from this update — safe to remove old
+                try:
+                    shutil.rmtree(old_path)
+                    migrated += 1
+                except OSError:
+                    pass
+        if migrated:
+            print(f"  Migrated {migrated} old framework folder(s) to docs/_bcos-framework/")
+
+        # ----------------------------------------- regenerate wake-up context
+        wakeup_script = str(local_root / ".claude" / "scripts" / "generate_wakeup_context.py")
+        toc_exists = (local_root / "docs" / "table-of-context.md").is_file()
+        cs_exists = (local_root / "docs" / "current-state.md").is_file()
+        if os.path.exists(wakeup_script) and (toc_exists or cs_exists):
+            try:
+                import subprocess
+                subprocess.run([sys.executable, wakeup_script], cwd=str(local_root),
+                               capture_output=True, timeout=15)
+                print(f"  Wake-up context regenerated.")
+            except Exception:
+                print(f"  Wake-up context: could not regenerate (non-critical).")
 
         # ---------------------------------------------------- CLAUDE.md reference
         # CLAUDE.md is NEVER auto-edited. The script saves the upstream version

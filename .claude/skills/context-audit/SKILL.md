@@ -80,7 +80,7 @@ For small scopes (< 20 files), scan directly:
 
 2. **Check YAML frontmatter on every document:**
 
-   Required fields (see `docs/methodology/document-standards.md`):
+   Required fields (see `docs/_bcos-framework/methodology/document-standards.md`):
    - `name` - present and non-empty
    - `type` - valid value: context | process | policy | reference | playbook
    - `cluster` - present and non-empty
@@ -117,7 +117,7 @@ For small scopes (< 20 files), scan directly:
 
 **SAFETY RULE:** When duplication is found, consolidate into the owning document first, then clean up the duplicate. Never delete without ensuring content lives in its authoritative home.
 
-> For background on consolidation principles, see `docs/methodology/document-standards.md`
+> For background on consolidation principles, see `docs/_bcos-framework/methodology/document-standards.md`
 
 Run all five audit categories against the scoped files.
 
@@ -251,12 +251,12 @@ If the script isn't available or the Document Index needs enrichment beyond what
 
 ---
 
-> **Architecture docs:** For metadata validation rules, see [`docs/architecture/metadata-system.md`](../../docs/architecture/metadata-system.md)
+> **Architecture docs:** For metadata validation rules, see [`docs/_bcos-framework/architecture/metadata-system.md`](../../docs/_bcos-framework/architecture/metadata-system.md)
 
 ## References
 
 - `references/clear-principles-checks.md` - Detailed CLEAR compliance checks
-- `docs/methodology/clear-principles.md` - CLEAR methodology overview
-- `docs/architecture/content-routing.md` - Content routing paths (6 paths including collections and external references)
+- `docs/_bcos-framework/methodology/clear-principles.md` - CLEAR methodology overview
+- `docs/_bcos-framework/architecture/content-routing.md` - Content routing paths (6 paths including collections and external references)
 - `.claude/skills/doc-lint/SKILL.md` - For markdown syntax validation
 - `.claude/skills/ecosystem-manager/SKILL.md` - For ecosystem health auditing

@@ -166,6 +166,14 @@ echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_collections/ (high-volume files — transcripts, reports)"
 echo ""
 
+# Private folder (gitignored — local-only context)
+mkdir -p .private
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/templates/private-starter/*.md; do
+    copy_if_missing "$f" ".private/$(basename "$f")"
+done
+echo -e "  ${GREEN}CREATE${NC}  .private/ (local-only context — gitignored, never shared)"
+echo ""
+
 # Onboarding checklist (self-removes when complete)
 copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-checklist.md"
 
@@ -173,23 +181,23 @@ copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-ch
 copy_if_missing "$SCRIPT_DIR/docs/.session-diary.md" "docs/.session-diary.md"
 
 # Architecture
-for f in "$SCRIPT_DIR"/docs/architecture/*.md; do
-    copy_if_missing "$f" "docs/architecture/$(basename "$f")"
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/architecture/*.md; do
+    copy_if_missing "$f" "docs/_bcos-framework/architecture/$(basename "$f")"
 done
 
 # Methodology
-for f in "$SCRIPT_DIR"/docs/methodology/*.md; do
-    copy_if_missing "$f" "docs/methodology/$(basename "$f")"
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/methodology/*.md; do
+    copy_if_missing "$f" "docs/_bcos-framework/methodology/$(basename "$f")"
 done
 
 # Guides
-for f in "$SCRIPT_DIR"/docs/guides/*.md; do
-    copy_if_missing "$f" "docs/guides/$(basename "$f")"
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/guides/*.md; do
+    copy_if_missing "$f" "docs/_bcos-framework/guides/$(basename "$f")"
 done
 
 # Templates
-for f in "$SCRIPT_DIR"/docs/templates/*.md; do
-    copy_if_missing "$f" "docs/templates/$(basename "$f")"
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/templates/*.md; do
+    copy_if_missing "$f" "docs/_bcos-framework/templates/$(basename "$f")"
 done
 
 echo ""

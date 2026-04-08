@@ -195,6 +195,6 @@ Px_002: Run markdown quality check    -> doc-lint (markdown category)
 
 ## Related Documents
 
-- `docs/methodology/document-standards.md` - The standards this skill validates against (required fields, valid types, valid statuses)
+- `docs/_bcos-framework/methodology/document-standards.md` - The standards this skill validates against (required fields, valid types, valid statuses)
 - `.claude/skills/context-audit/SKILL.md` - For content quality auditing
 - `.claude/skills/clear-planner/references/scenario-phases.md` - FIXED END integration
