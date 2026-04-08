@@ -3,20 +3,20 @@
   "lastUpdated": "2026-04-08",
   "references": {
     "methodology": {
-      "clear-principles": "docs/methodology/clear-principles.md",
-      "context-architecture": "docs/methodology/context-architecture.md",
-      "ownership-specification": "docs/methodology/ownership-specification.md",
-      "decision-framework": "docs/methodology/decision-framework.md",
-      "document-standards": "docs/methodology/document-standards.md"
+      "clear-principles": "docs/_bcos-framework/methodology/clear-principles.md",
+      "context-architecture": "docs/_bcos-framework/methodology/context-architecture.md",
+      "ownership-specification": "docs/_bcos-framework/methodology/ownership-specification.md",
+      "decision-framework": "docs/_bcos-framework/methodology/decision-framework.md",
+      "document-standards": "docs/_bcos-framework/methodology/document-standards.md"
     },
     "guides": {
-      "getting-started": "docs/guides/getting-started.md",
-      "defining-your-context": "docs/guides/defining-your-context.md",
-      "maintenance-guide": "docs/guides/maintenance-guide.md",
-      "adoption-tiers": "docs/guides/adoption-tiers.md",
-      "for-non-technical-users": "docs/guides/for-non-technical-users.md",
-      "scheduling": "docs/guides/scheduling.md",
-      "migration-guide": "docs/guides/migration-guide.md"
+      "getting-started": "docs/_bcos-framework/guides/getting-started.md",
+      "defining-your-context": "docs/_bcos-framework/guides/defining-your-context.md",
+      "maintenance-guide": "docs/_bcos-framework/guides/maintenance-guide.md",
+      "adoption-tiers": "docs/_bcos-framework/guides/adoption-tiers.md",
+      "for-non-technical-users": "docs/_bcos-framework/guides/for-non-technical-users.md",
+      "scheduling": "docs/_bcos-framework/guides/scheduling.md",
+      "migration-guide": "docs/_bcos-framework/guides/migration-guide.md"
     },
     "skills-references": {
       "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",
@@ -30,19 +30,19 @@
       "todo-utilities/todo-patterns": ".claude/skills/todo-utilities/references/todo-patterns.md"
     },
     "architecture": {
-      "system-design": "docs/architecture/system-design.md",
-      "content-routing": "docs/architecture/content-routing.md",
-      "component-standards": "docs/architecture/component-standards.md",
-      "metadata-system": "docs/architecture/metadata-system.md",
-      "maintenance-lifecycle": "docs/architecture/maintenance-lifecycle.md"
+      "system-design": "docs/_bcos-framework/architecture/system-design.md",
+      "content-routing": "docs/_bcos-framework/architecture/content-routing.md",
+      "component-standards": "docs/_bcos-framework/architecture/component-standards.md",
+      "metadata-system": "docs/_bcos-framework/architecture/metadata-system.md",
+      "maintenance-lifecycle": "docs/_bcos-framework/architecture/maintenance-lifecycle.md"
     },
     "templates": {
-      "context-data-point": "docs/templates/context-data-point.md",
-      "context-cluster": "docs/templates/context-cluster.md",
-      "context-architecture-canvas": "docs/templates/context-architecture-canvas.md",
-      "maintenance-checklist": "docs/templates/maintenance-checklist.md",
-      "table-of-context": "docs/templates/table-of-context.md",
-      "current-state": "docs/templates/current-state.md"
+      "context-data-point": "docs/_bcos-framework/templates/context-data-point.md",
+      "context-cluster": "docs/_bcos-framework/templates/context-cluster.md",
+      "context-architecture-canvas": "docs/_bcos-framework/templates/context-architecture-canvas.md",
+      "maintenance-checklist": "docs/_bcos-framework/templates/maintenance-checklist.md",
+      "table-of-context": "docs/_bcos-framework/templates/table-of-context.md",
+      "current-state": "docs/_bcos-framework/templates/current-state.md"
     },
     "skills": {
       "context-onboarding": ".claude/skills/context-onboarding/SKILL.md",

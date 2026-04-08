@@ -16,17 +16,17 @@
       {
         "term": "Context rot",
         "definition": "Gradual degradation of AI context over time without active maintenance",
-        "seeAlso": "docs/methodology/clear-principles.md"
+        "seeAlso": "docs/_bcos-framework/methodology/clear-principles.md"
       },
       {
         "term": "Data point",
         "definition": "A single managed document in the context architecture with defined ownership boundaries",
-        "seeAlso": "docs/methodology/context-architecture.md"
+        "seeAlso": "docs/_bcos-framework/methodology/context-architecture.md"
       },
       {
         "term": "Ownership Specification",
         "definition": "DOMAIN + EXCLUSIVELY_OWNS + STRICTLY_AVOIDS section defining what a data point covers",
-        "seeAlso": "docs/methodology/ownership-specification.md"
+        "seeAlso": "docs/_bcos-framework/methodology/ownership-specification.md"
       }
     ]
   }

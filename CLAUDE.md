@@ -57,7 +57,7 @@ These apply when editing any file in `docs/`:
 - Touch the `created` date — it's immutable
 - Add content without checking which document OWNS that topic
 
-For full standards: `docs/methodology/document-standards.md`
+For full standards: `docs/_bcos-framework/methodology/document-standards.md`
 
 ---
 

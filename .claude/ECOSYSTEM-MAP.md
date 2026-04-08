@@ -45,20 +45,33 @@ This is your navigation hub for the CLEAR Context OS ecosystem. Use this documen
 | `.claude/scripts/` | Utility scripts (index builder, pruning, cross-ref analysis, integration audit, lessons, updates) |
 | `.claude/hooks/` | Claude Code enforcement hooks |
 | `.claude/registries/` | Machine-readable indexes |
-| `docs/methodology/` | CLEAR methodology reference |
-| `docs/guides/` | User-facing guides |
-| `docs/templates/` | Data point and cluster templates |
-| `docs/architecture/` | Developer/contributor architecture docs |
+| `docs/_bcos-framework/methodology/` | CLEAR methodology reference |
+| `docs/_bcos-framework/guides/` | User-facing guides |
+| `docs/_bcos-framework/templates/` | Data point and cluster templates |
+| `docs/_bcos-framework/architecture/` | Developer/contributor architecture docs |
 
 ---
 
 ## Where Do I Start?
 
-1. **New to CLEAR Context OS?** Start with [Getting Started](docs/guides/getting-started.md)
-2. **Defining your context?** See [Defining Your Context](docs/guides/defining-your-context.md)
-3. **Maintaining existing context?** See [Maintenance Guide](docs/guides/maintenance-guide.md)
-4. **Looking for a template?** Check [docs/templates/](docs/templates/)
-5. **Understanding the methodology?** Read [CLEAR Principles](docs/methodology/clear-principles.md)
+1. **New to CLEAR Context OS?** Start with [Getting Started](docs/_bcos-framework/guides/getting-started.md)
+2. **Defining your context?** See [Defining Your Context](docs/_bcos-framework/guides/defining-your-context.md)
+3. **Maintaining existing context?** See [Maintenance Guide](docs/_bcos-framework/guides/maintenance-guide.md)
+4. **Looking for a template?** Check [docs/_bcos-framework/templates/](docs/_bcos-framework/templates/)
+5. **Understanding the methodology?** Read [CLEAR Principles](docs/_bcos-framework/methodology/clear-principles.md)
+
+---
+
+## CI Checks (GitHub Actions)
+
+Automated checks run on every push and PR. Defined in `.github/workflows/ci.yml`.
+
+| Job | What it validates | Run locally |
+|-----|-------------------|-------------|
+| **validate-json** | All JSON files parse correctly | `python -m json.tool .claude/quality/ecosystem/state.json` |
+| **validate-frontmatter** | YAML frontmatter on all managed markdown | `python .github/scripts/validate_frontmatter.py` |
+| **validate-references** | All registry paths resolve, state.json accuracy | `python .github/scripts/validate_references.py` |
+| **validate-ecosystem** | Ecosystem wiring (install.sh, settings.json coverage) | `python .claude/scripts/analyze_integration.py --ci` |
 
 ---
 

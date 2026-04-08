@@ -50,7 +50,7 @@ Scope to `docs/` only — exclude `.claude/`, sessions, agents, skills, and fram
 
 ```bash
 # Only user documents — NOT agents, skills, sessions, or framework docs
-git log --since="{last_daydream_date}" --name-only --pretty=format:"%h %s (%ar)" -- docs/ ':!docs/methodology/' ':!docs/guides/' ':!docs/templates/'
+git log --since="{last_daydream_date}" --name-only --pretty=format:"%h %s (%ar)" -- docs/ ':!docs/_bcos-framework/methodology/' ':!docs/_bcos-framework/guides/' ':!docs/_bcos-framework/templates/'
 ```
 
 This shows ONLY changes to user-created content: data points, table-of-context.md, current-state.md, document-index.md, and any other user docs. Ignores all BCOS framework files and .claude/ internals.
@@ -212,7 +212,7 @@ There is no formal template. Daydreaming is deliberately unstructured. The value
 
 ---
 
-> **Architecture docs:** For maintenance lifecycle context, see [`docs/architecture/maintenance-lifecycle.md`](../../docs/architecture/maintenance-lifecycle.md)
+> **Architecture docs:** For maintenance lifecycle context, see [`docs/_bcos-framework/architecture/maintenance-lifecycle.md`](../../docs/_bcos-framework/architecture/maintenance-lifecycle.md)
 
 ## Tips
 

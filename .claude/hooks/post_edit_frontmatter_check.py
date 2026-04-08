@@ -33,9 +33,7 @@ VALID_TYPES = {"context", "process", "policy", "reference", "playbook"}
 
 # Skip these paths — not user content
 SKIP_PATHS = [
-    "docs/methodology/",
-    "docs/guides/",
-    "docs/templates/",
+    "docs/_bcos-framework/",
     "docs/_inbox/",
     "docs/_archive/",
     "docs/_collections/",
@@ -160,7 +158,7 @@ def main():
             "⚠️  FRONTMATTER CHECK — issues found after editing:",
             *[f"  • {issue}" for issue in issues],
             "",
-            "Fix these before committing. See docs/methodology/document-standards.md for requirements.",
+            "Fix these before committing. See docs/_bcos-framework/methodology/document-standards.md for requirements.",
         ])
         print(warning, file=sys.stderr)
 

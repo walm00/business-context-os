@@ -34,7 +34,7 @@ Claude figures out the approach from what the user says and what's in the repo. 
 |---|---|
 | User shares a URL, pitch deck, or describes their business | Gather from those sources, ask 2-3 follow-ups if needed |
 | Repo already has docs/, README, markdown files with business content | Scan the repo, map what exists |
-| User drops files in `docs/_inbox/` | Read those files as source material |
+| User drops files in `docs/_inbox/` | Read those files — but STILL ask if there's more before proceeding |
 | User has MCP connectors (Google Drive, Notion, etc.) | Ask what to look at — don't fetch everything |
 | User just says "help me get started" or "what do I do next?" | Quick-check repo, check for MCP connectors, then ask where their knowledge lives |
 | Mix of the above | Combine all available sources |
@@ -45,7 +45,17 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 **Before reading anything, find out where the knowledge lives.**
 
-If the user hasn't already told you, **use the `AskUserQuestion` tool:**
+**ALWAYS use the `AskUserQuestion` tool — even if files already exist in `_inbox/`:**
+
+If files are already in `_inbox/`, acknowledge them first ("I can see X files in your inbox"), then ask:
+
+- Question: "I found [N] files in your inbox. Anything else to include before I start? Website URL, Google Drive docs, other materials?"
+- Options:
+  - **That's everything** (proceed with what's in the inbox)
+  - **Here's more** (I'll share URLs, drop more files, or point you to a connected system)
+  - **Check my connected systems too** (Google Drive, Notion, Confluence via MCP)
+
+If NO files in `_inbox/`, ask:
 
 - Question: "Where does your business knowledge live right now?"
 - Options:
@@ -73,6 +83,9 @@ Based on the answer:
 - Never rename source files — originals keep their name
 - Never delete anything — archive only, after user approval
 - Create alongside, not instead of — new data points coexist with originals
+- **NEVER create folders not defined in the architecture.** Valid folders are:
+  `docs/` (active), `_inbox/`, `_planned/`, `_archive/`, `_collections/`, `_collections/[type]/`
+  If content doesn't fit these, ask the user — don't invent new folders
 
 ---
 
@@ -192,7 +205,9 @@ Group the content inventory into logical data points. Each data point should:
 - Consolidate duplicates — pick the best version, merge the rest
 - Resolve contradictions — flag them for the user to decide
 
-Present the plan to the user:
+Present the plan to the user, then **STOP and use the `AskUserQuestion` tool before creating any files.**
+
+Show the plan:
 
 ```
 Based on what I found, here's the data point structure I recommend:
@@ -214,11 +229,11 @@ Conflicts found:
 Nothing is lost. [N] sources → [M] data points + [E] external references.
 ```
 
-**Then use the `AskUserQuestion` tool:**
+**MANDATORY — use `AskUserQuestion` tool immediately after showing the plan. Do NOT type the options as text:**
 - Question: "Does this structure look right?"
 - Options: **Proceed** (create the data points) / **Adjust** (tell me what to change)
 
-**Wait for approval before creating files.** The user needs to see the full plan and resolve any conflicts first.
+**Wait for the user's response before creating any files.**
 
 ### 2c. Create the data points
 
@@ -352,6 +367,7 @@ last-updated: "[today]"
 ```
 
 **General rules for all modes:**
+- **Default to flat in `docs/` root** — use `cluster` frontmatter for grouping, not folders. Example: `docs/brand-identity.md` not `docs/brand-identity/brand-identity.md`. If the user explicitly requests subdirectories for organization, that's fine — but don't create them unprompted
 - Do NOT move, rename, or reorganize original source files
 - Create new CLEAR data points alongside originals — user decides when to archive
 - Pre-fill everything — user edits, they don't write from scratch
@@ -381,13 +397,12 @@ Here are [N] data points based on [what you shared / what I found]:
   3. [Name] — [one-line summary]
   ...
 
-Coverage check:
-  - [X] sources processed → [Y] data points created
-  - [Z] conflicts resolved (list if any)
-  - No content was dropped
-
-Take a look — anything off, missing, or wrong? I'll adjust whatever needs fixing.
+Coverage: [X] sources → [Y] data points. No content dropped.
 ```
+
+**MANDATORY — use `AskUserQuestion` tool immediately after showing results. Do NOT type the options as text:**
+- Question: "Everything look right? Ready to activate these data points?"
+- Options: **Activate** (set all to active, run index + wake-up) / **Adjust** (tell me what to fix)
 
 After the user approves (with any corrections applied):
 - Set status to `active` on approved data points
@@ -431,7 +446,7 @@ Want to keep going or pick it up next time?
 **After the user is set up, let them know about ongoing tools:**
 - **New content in the future:** use `context-ingest` to add, classify, and route new material
 - **First quality check:** recommend running `context-audit` to verify the fresh architecture
-- **Architecture reference:** the content routing logic is defined in `docs/architecture/content-routing.md` (6 routing paths)
+- **Architecture reference:** the content routing logic is defined in `docs/_bcos-framework/architecture/content-routing.md` (6 routing paths)
 
 ---
 
@@ -439,7 +454,7 @@ Want to keep going or pick it up next time?
 
 After data points and the document index are in place, the next checklist item is scheduled maintenance.
 
-1. Read `docs/guides/scheduling.md` — it has exact task definitions (ID, cron, prompt) for all 5 tasks
+1. Read `docs/_bcos-framework/guides/scheduling.md` — it has exact task definitions (ID, cron, prompt) for all 5 tasks
 2. Create all 5 scheduled tasks using the scheduled tasks tool, copying each task's ID, schedule, description, and prompt exactly as defined
 3. Check off "Scheduled maintenance tasks created" in the onboarding checklist
 4. Tell the user: "Maintenance schedules are active — daily health checks, weekly reflections, monthly architecture review. You can adjust frequency anytime."
