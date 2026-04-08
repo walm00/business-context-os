@@ -110,6 +110,8 @@ For small scopes (< 20 files), scan directly:
    - Active document in `docs/` that `depends-on` a `_planned/` document → flag: "Forward-looking dependency — not yet real"
    - Files in `docs/_inbox/` → skip audit entirely (raw material, no quality bar)
    - Files in `docs/_archive/` → skip audit or report separately (historical, not active)
+   - Files in `docs/_collections/` → skip full CLEAR audit (no frontmatter required), but verify collection indexes are current if they exist
+   - External reference data points (type: reference with an "External Source" section) → verify the source description is complete, don't try to validate external paths
 
 4. **Search for patterns:**
    ```bash
@@ -263,5 +265,6 @@ If the script isn't available or the Document Index needs enrichment beyond what
 
 - `references/clear-principles-checks.md` - Detailed CLEAR compliance checks
 - `docs/methodology/clear-principles.md` - CLEAR methodology overview
+- `docs/architecture/content-routing.md` - Content routing paths (6 paths including collections and external references)
 - `.claude/skills/doc-lint/SKILL.md` - For markdown syntax validation
 - `.claude/skills/ecosystem-manager/SKILL.md` - For ecosystem health auditing

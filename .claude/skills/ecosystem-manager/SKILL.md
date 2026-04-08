@@ -159,6 +159,52 @@ After any ecosystem change — this is not optional:
 
 ---
 
+## Deep Ecosystem Audit (Periodic — after batches of changes)
+
+The per-change checklist above catches individual issues. This deeper audit catches systemic drift that accumulates across multiple changes. Run after major development sessions or as part of monthly architecture review.
+
+### 1. Functional cross-reference check
+
+For each skill, verify it references the skills, scripts, and files it SHOULD know about:
+
+- Does each skill that creates/modifies docs know about all 5 document types (context, process, policy, reference, playbook)?
+- Does each skill that routes content know about all 6 routing paths (inbox, planned, integrate, triage, collection, external)?
+- Do skills that hand off to other skills actually reference them? (e.g., onboarding → ingest → audit)
+- Are shared concepts (like handling modes: synthesize/wrap/catalog/map) described consistently across all skills that use them?
+
+### 2. Registry completeness
+
+- Does `reference-index.json` list ALL skills, hooks, scripts, and agents?
+- Does `state.json` skill count match actual SKILL.md files on disk?
+- Does ECOSYSTEM-MAP.md list all components with accurate descriptions?
+
+### 3. CI validation
+
+Run all 4 CI checks locally:
+
+```bash
+python .github/scripts/validate_frontmatter.py      # YAML metadata on all managed markdown
+python .github/scripts/validate_references.py        # All registry paths resolve + state.json accuracy
+python .claude/scripts/analyze_integration.py --ci   # Ecosystem wiring (install.sh, settings.json coverage)
+# JSON validation: python -m json.tool on each JSON file
+```
+
+### 4. Public documentation alignment
+
+- Does README.md skill count, enforcement table, and maintenance table match reality?
+- Does the Contributing section reflect current CI checks?
+- Does the folder tree match actual structure?
+
+### 5. Methodology consistency
+
+- Do document-standards.md type/field definitions match what skills enforce?
+- Does content-routing.md path definitions match what skills implement?
+- Are there concepts in skills that aren't documented in methodology/architecture?
+
+**Output:** A findings table with severity (critical/medium/low) and fix recommendations. See the Integration Audit capability for how to present results.
+
+---
+
 ## References
 
 - Ecosystem state: `.claude/quality/ecosystem/state.json`

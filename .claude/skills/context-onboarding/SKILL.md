@@ -32,19 +32,48 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 | What you see | What you do |
 |---|---|
-| User shares a URL, pitch deck, or describes their business | Gather from those sources, ask 2-3 follow-ups if needed, draft data points |
-| Repo already has docs/, README, markdown files with business content | Scan the repo, map what exists, draft data points from existing content |
-| User just says "help me get started" or "what do I do next?" | Quick-check the repo. If it has docs with business content, scan. If not, ask: "Tell me about your business — a website URL, a quick description, anything works." |
-| User drops files in `docs/_inbox/` | Read those files, treat them as source material, draft data points |
-| Mix of the above | Combine everything. Read the URLs AND scan the repo. More signal = better drafts. |
+| User shares a URL, pitch deck, or describes their business | Gather from those sources, ask 2-3 follow-ups if needed |
+| Repo already has docs/, README, markdown files with business content | Scan the repo, map what exists |
+| User drops files in `docs/_inbox/` | Read those files as source material |
+| User has MCP connectors (Google Drive, Notion, etc.) | Ask what to look at — don't fetch everything |
+| User just says "help me get started" or "what do I do next?" | Quick-check repo, check for MCP connectors, then ask where their knowledge lives |
+| Mix of the above | Combine all available sources |
 
-**Don't overthink this.** Read whatever the user gives you, synthesize it, draft data points.
+---
+
+## Step 0: Discover Sources
+
+**Before reading anything, find out where the knowledge lives.**
+
+If the user hasn't already told you, ask:
+
+> "Where does your business knowledge live right now? Files you can share, connected systems like Google Drive or Notion, or would you like to start fresh?"
+
+Based on the answer:
+
+| Source type | What to do |
+|---|---|
+| **Local files** | Ask user to drop them in `docs/_inbox/`, or point to their location |
+| **MCP-connected system** (Google Drive, Notion, Confluence) | Ask what folders/docs to look at — browse selectively, don't fetch everything |
+| **External system, not connected** | Note it — create an external reference data point later (Step 2) |
+| **Starting from scratch** | Skip to Step 1, use website/conversation to gather info |
+
+**For connected external systems:**
+- Ask: "What kind of docs should I look for? Company info, processes, brand guidelines?"
+- Fetch only what's relevant for business context — NOT bulk collections (invoices, call logs, etc.)
+- For large collections (100+ similar files): don't copy — map where they are (see handling modes in Step 2a)
+
+**Non-breaking guarantee:**
+- Never modify files outside `docs/` and `.claude/`
+- Never rename source files — originals keep their name
+- Never delete anything — archive only, after user approval
+- Create alongside, not instead of — new data points coexist with originals
 
 ---
 
 ## Step 1: Gather Information + Identify Profile
 
-Read everything available. Extract knowledge across all these areas (not all will apply):
+Read everything available from the sources discovered in Step 0. Extract knowledge across all these areas (not all will apply):
 
 **Business identity:**
 1. **Who they are** — identity, mission, founding story
@@ -67,6 +96,7 @@ Read everything available. Extract knowledge across all these areas (not all wil
 - LinkedIn company page → use WebFetch
 - Pitch deck / one-pager in `docs/_inbox/` → read the file
 - Existing repo docs → scan with Glob + Read
+- Connected systems (Google Drive, Notion) → browse selectively via MCP tools
 - What the user tells you directly
 
 **If something is unclear:** ask 2-3 focused follow-up questions. Not a questionnaire — just the gaps that matter most.
@@ -111,9 +141,10 @@ While gathering info, figure out what kind of project this is. Don't ask directl
 ### 2a. Content inventory + classification
 
 List every piece of content you found. For each item:
-- **Source** — where it came from (file, URL, user input)
+- **Source** — where it came from (file, URL, user input, MCP system)
 - **Topics covered** — what knowledge it contains
-- **Document type** — classify using the guide below
+- **Document type** — classify using the type guide below
+- **Handling mode** — how to process it (see handling guide below)
 - **Overlaps** — does it duplicate or contradict another source?
 - **Quality** — is it current, outdated, or a fragment?
 
@@ -127,13 +158,25 @@ List every piece of content you found. For each item:
 | Is lookup/reference data (glossary, org chart, tool list, tech stack, contacts) | **reference** | Answers "what's the..." factual lookups |
 | Is a situational response guide (crisis plan, launch playbook, competitive response) | **playbook** | Answers "what do we do when..." questions |
 
+**Handling mode guide:**
+
+| Mode | When to use | What Claude does | Content preserved? |
+|---|---|---|---|
+| **Synthesize** | Raw info from multiple sources (website, pitch, brain dump, conversation) | Combine into new data points with CLEAR structure | No — Claude writes new content from sources |
+| **Wrap** | Existing structured doc (SOP, process doc, policy, brand rules) | Add CLEAR frontmatter + ownership spec around existing content | **Yes — preserve original text exactly** |
+| **Catalog** | Reference material (templates, checklists, glossaries, inventories) | Add minimal frontmatter, keep content completely as-is | **Yes — preserve as-is** |
+| **Map** | External bulk collections too large to copy (call transcripts, invoices, reports in Drive/Notion) | Create a reference data point describing where and how to find them | N/A — nothing is copied locally |
+
+**CRITICAL for wrap and catalog modes:** Never rewrite, shorten, rephrase, or "improve" the original content. SOPs and processes especially — changing a step could break a real workflow. Add CLEAR structure (frontmatter, ownership spec) AROUND the content but leave the content itself untouched. Flag contradictions or outdated items for the user to decide, but don't fix them yourself.
+
 **Edge cases:**
-- Brand guidelines with rules → **policy** (it constrains behavior)
-- Brand identity describing who we are → **context** (it describes reality)
-- Onboarding doc with steps → **process** (it's a workflow)
-- Onboarding overview describing the team → **context** (it's knowledge)
-- Templates that define a standard → **reference** (they're lookup material)
-- If one source mixes types → split it into separate data points by type
+- Brand guidelines with rules → **policy**, mode: **wrap** (preserve the rules exactly)
+- Brand identity describing who we are → **context**, mode: **synthesize** (combine from multiple sources)
+- Onboarding doc with steps → **process**, mode: **wrap** (preserve the exact steps)
+- Onboarding overview describing the team → **context**, mode: **synthesize**
+- Templates that define a standard → **reference**, mode: **catalog** (don't modify at all)
+- If one source mixes types → split into separate data points, each with its own mode
+- 200 call transcripts in Google Drive → mode: **map** (create external reference, don't copy)
 
 ### 2b. Plan the data points
 
@@ -149,18 +192,20 @@ Present the plan to the user:
 Based on what I found, here's the data point structure I recommend:
 
 [Cluster Name]
-  1. [Data Point Name] (context) — [what it covers] (sources: file1.md, website)
-  2. [Data Point Name] (process) — [what it covers] (sources: sop-doc.md)
+  1. [Data Point Name] (context, synthesize) — [what it covers] (sources: file1.md, website)
+  2. [Data Point Name] (process, wrap) — [what it covers, content preserved as-is] (source: sop-doc.md)
 
 [Cluster Name]
-  3. [Data Point Name] (policy) — [what it covers] (sources: brand-guidelines.pdf)
-  4. [Data Point Name] (reference) — [what it covers] (sources: tech-stack.md)
-  ...
+  3. [Data Point Name] (policy, wrap) — [what it covers, content preserved] (source: brand-guidelines.pdf)
+  4. [Data Point Name] (reference, catalog) — [what it covers] (source: tech-stack.md)
+
+External references (not copied):
+  5. Sales Call Transcripts (reference, map) — ~200 files in Google Drive > Sales > Calls
 
 Conflicts found:
   - [Topic]: file1.md says X, file2.md says Y — which is current?
 
-Nothing is lost. [N] sources → [M] data points ([X] context, [Y] process, [Z] policy...).
+Nothing is lost. [N] sources → [M] data points + [E] external references.
 Want me to proceed or adjust the structure?
 ```
 
@@ -168,7 +213,9 @@ Want me to proceed or adjust the structure?
 
 ### 2c. Create the data points
 
-After the user approves the plan, create each data point in `docs/`:
+After the user approves the plan, create each data point in `docs/`. **The approach depends on the handling mode:**
+
+**For SYNTHESIZE mode** (raw info → new data point):
 
 ```markdown
 ---
@@ -204,9 +251,101 @@ last-updated: "[today]"
 [Why this matters. How to use it. Strategic implications.]
 ```
 
-**Pre-fill everything.** Draft real content from what you learned. The user edits — they don't write from scratch.
+**For WRAP mode** (existing structured doc → add CLEAR structure around it):
 
-**If drafting from existing repo docs:** do NOT move, rename, or reorganize the original files yet. Create new CLEAR data points alongside them. The user decides when to archive the originals.
+Add frontmatter + ownership spec at the top. Keep the original content below **exactly as-is**:
+
+```markdown
+---
+name: "[Original Doc Title]"
+type: process                      # or policy, playbook — whatever fits
+cluster: "[Cluster]"
+version: "1.0.0"
+status: draft
+created: "[today]"
+last-updated: "[today]"
+---
+
+# [Original Doc Title]
+
+## Ownership Specification
+
+**DOMAIN:** [What this document covers]
+
+**EXCLUSIVELY_OWNS:**
+- [Items this doc is the authority on]
+
+**STRICTLY_AVOIDS:**
+- [Topics that belong elsewhere]
+
+## Content
+
+[ORIGINAL CONTENT PRESERVED EXACTLY AS-IS — do not rewrite, shorten, or rephrase]
+```
+
+**For CATALOG mode** (reference material → minimal metadata):
+
+Same as wrap but even lighter — just frontmatter, no ownership spec needed if the content is self-explanatory:
+
+```markdown
+---
+name: "[Title]"
+type: reference
+cluster: "[Cluster]"
+version: "1.0.0"
+status: active
+created: "[today]"
+last-updated: "[today]"
+---
+
+[ORIGINAL CONTENT PRESERVED AS-IS]
+```
+
+**For MAP mode** (external collection → reference data point):
+
+Create a reference data point that describes WHERE to find content, not the content itself:
+
+```markdown
+---
+name: "[Collection Name]"
+type: reference
+cluster: "[Cluster]"
+version: "1.0.0"
+status: active
+created: "[today]"
+last-updated: "[today]"
+---
+
+# [Collection Name]
+
+## Ownership Specification
+
+**DOMAIN:** Location and access instructions for [what this collection contains].
+
+**EXCLUSIVELY_OWNS:**
+- Access instructions for this external collection
+- Summary of what's available and how to search it
+
+## External Source
+
+- **System:** [Google Drive / Notion / Confluence / etc.]
+- **Path:** [Folder path or workspace location]
+- **Format:** [File types, naming patterns if any]
+- **Volume:** [Approximate count, growth rate]
+- **Access:** [MCP tool name, or manual export instructions]
+- **How to find specific files:** [Search tips — by date, keyword, entity name]
+
+## When to Fetch
+
+- [Scenario 1 when you'd want to pull from this collection]
+- [Scenario 2]
+- [Scenario 3]
+```
+
+**General rules for all modes:**
+- Do NOT move, rename, or reorganize original source files
+- Create new CLEAR data points alongside originals — user decides when to archive
+- Pre-fill everything — user edits, they don't write from scratch
 
 ---
 
@@ -244,6 +383,7 @@ Take a look — anything off, missing, or wrong? I'll adjust whatever needs fixi
 After the user approves (with any corrections applied):
 - Set status to `active` on approved data points
 - Create `docs/_inbox/`, `docs/_planned/`, `docs/_archive/` if they don't exist
+- Run `python .claude/scripts/build_document_index.py` to generate the Document Index with DOMAIN one-liners
 
 ---
 
@@ -275,6 +415,11 @@ tracks what's left to set up — I'll remind you once per session until it's don
 
 Want to keep going or pick it up next time?
 ```
+
+**After the user is set up, let them know about ongoing tools:**
+- **New content in the future:** use `context-ingest` to add, classify, and route new material
+- **First quality check:** recommend running `context-audit` to verify the fresh architecture
+- **Architecture reference:** the content routing logic is defined in `docs/architecture/content-routing.md` (6 routing paths)
 
 ---
 

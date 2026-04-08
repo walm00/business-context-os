@@ -66,6 +66,76 @@ Proceeds through the full classify-route-integrate pipeline (Steps 2-6 below). T
 
 Claude reads the content, shows a summary and its recommendation (inbox / planned / integrate), and the user decides. Then follows the chosen path.
 
+### Path 5: Collection
+
+**Trigger:** "I have a bunch of similar files" / uploading call transcripts, reports, invoices, meeting notes in bulk
+
+Collections are for high-volume similar files that don't fit the data point model. A call transcript doesn't own a domain. An invoice doesn't have an ownership specification. But they're valuable reference material that should be searchable.
+
+**Where they go:** `docs/_collections/[type]/`
+
+```
+docs/_collections/
+  call-transcripts/
+  monthly-reports/
+  invoices/
+```
+
+**File naming:**
+
+- **Never rename user files.** If someone uploads `Acme Q3 Review.pdf`, keep that name.
+- **Optional prefix:** Users MAY adopt a date prefix convention going forward: `YYYY-MM-DD_original-name.ext`. This is a suggestion, not a requirement.
+- **Filename length:** Keep under 100 characters to avoid cross-platform issues.
+
+**What makes collections different from _inbox/:**
+
+| | `_inbox/` | `_collections/` |
+|---|---|---|
+| **Purpose** | Temporary landing zone for processing | Permanent storage for reference material |
+| **Lifecycle** | Gets processed and deleted/archived | Stays and grows over time |
+| **Metadata** | None required | Optional lightweight index |
+| **Volume** | Small (a few files at a time) | Large (dozens to hundreds) |
+| **Frontmatter** | Not expected | Not expected |
+
+**Lightweight collection index (optional):**
+
+For collections that grow past ~20 files, a simple index helps Claude navigate without opening every file. Create an `_index.md` in the collection folder:
+
+```markdown
+# Call Transcripts
+## Naming: YYYY-MM-DD_entity_topic.ext (recommended, not required)
+## Total: 47 files
+
+| Date | File | Key Topics | Outcome |
+|------|------|------------|---------|
+| 2026-04-08 | acme-quarterly-review.md | Pricing, Q3 roadmap | Renewed |
+| 2026-04-05 | globex-onboarding.md | Integration, API access | 30-day plan |
+| ... | | | |
+```
+
+**Index maintenance:** Append new entries when files are added. Don't regenerate the full index every time — incremental append is fine. The `context-ingest` skill can do this when routing files to a collection.
+
+**How Claude searches collections:** File names are free in Glob results. Claude can `Glob("docs/_collections/call-transcripts/2026-04-*")` to find all April calls without reading any file content. Consistent naming conventions multiply this leverage.
+
+### Path 6: External Reference
+
+**Trigger:** Content lives in an external system (Google Drive, Notion, Confluence, Dropbox) and is either too large to copy or better managed where it is.
+
+Don't clone external collections into the repo. Instead, create a reference data point that teaches Claude WHERE to find things and HOW to access them.
+
+**When to map vs. copy:**
+
+| Situation | Action |
+|---|---|
+| A few key docs (brand guide, strategy doc, 1-5 files) | Fetch via MCP, integrate locally as normal data points |
+| A large collection (100+ call transcripts, invoices, reports) | **Map** — create an external reference, don't copy |
+| Living documents that change frequently in the external system | **Map** — keep the source of truth external, reference it |
+| Historical archives rarely accessed | **Map** — no point copying, just know where they are |
+
+**The external reference data point** describes the system, path, format, volume, access method, and when to fetch. See `context-onboarding` Step 2c (map mode) for the full template.
+
+**How Claude uses external references:** When a query might need data from an external collection, Claude reads the reference data point first. It learns: what's available, how to search for it, and which MCP tool to use. Then it fetches only what's needed for the specific query — not the entire collection.
+
 ---
 
 ## Temporal Classification

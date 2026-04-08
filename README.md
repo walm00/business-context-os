@@ -78,13 +78,15 @@ bash <(curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/m
 
 Or tell Claude: *"Install CLEAR Context OS from https://github.com/walm00/business-context-os"*
 
-**Already have docs?**
+**Already have docs?** SOPs, brand guidelines, strategy docs, processes — bring them all:
 
 > "Scan my repo and show me what business context already exists."
 
 Or dump everything into `docs/_inbox/` and ask: *"Process my inbox — figure out what goes where."*
 
-Claude drafts your first data points and you review. **20-30 minutes to working context.**
+Claude classifies each piece, organizes it with proper ownership boundaries, and **preserves your existing content** — SOPs and processes are wrapped with structure, not rewritten. Connect Google Drive, Notion, or Confluence via MCP to pull docs directly.
+
+**20-30 minutes to working context.** Nothing gets lost.
 
 ---
 
@@ -133,13 +135,15 @@ business-context-os/
 
 ### Document Types
 
-| Type | Examples |
-|------|---------|
-| 📋 **Context** | Company identity, value proposition, target audience, competitive positioning |
-| 📝 **Process** | Onboarding, sales handoff, content approval, release process |
-| 📏 **Policy** | Brand usage, pricing rules, data handling, decision frameworks |
-| 📚 **Reference** | Glossary, tool inventory, org chart, tech stack |
-| 🎯 **Playbook** | Crisis comms, competitive response, product launch, market entry |
+Different content gets different treatment. Business context is synthesized from sources. SOPs and policies are preserved exactly as-is. Reference material is cataloged untouched.
+
+| Type | Examples | How it's handled |
+|------|---------|-----------------|
+| 📋 **Context** | Company identity, value proposition, target audience | Synthesized from multiple sources |
+| 📝 **Process** | Onboarding, sales handoff, content approval | Wrapped — your content preserved exactly |
+| 📏 **Policy** | Brand usage, pricing rules, decision frameworks | Wrapped — rules preserved, not rewritten |
+| 📚 **Reference** | Glossary, tool inventory, org chart, tech stack | Cataloged — just add metadata |
+| 🎯 **Playbook** | Crisis comms, competitive response, product launch | Wrapped — response steps preserved |
 
 ---
 
@@ -152,9 +156,9 @@ business-context-os/
 <td width="50%">
 
 #### 🔍 Context Onboarding
-**First-run discovery.** Scans your repo, maps what exists, recommends what to formalize first.
+**First-run discovery.** Scans your repo, connected systems, or uploaded files. Classifies content, preserves existing docs, builds your architecture.
 
-*"Scan my repo and show me what context exists"*
+*"I have docs in my repo and Google Drive — help me organize them"*
 
 </td>
 <td width="50%">
@@ -175,8 +179,6 @@ business-context-os/
 *"Extract context from this Slack export"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🔎 Context Audit
@@ -185,6 +187,8 @@ business-context-os/
 *"Audit my context for CLEAR compliance"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 💭 Daydream
@@ -193,8 +197,6 @@ business-context-os/
 *"Let's daydream about our context architecture"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📋 Clear Planner
@@ -203,6 +205,8 @@ business-context-os/
 *"Plan the restructuring of our audience data points"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### 🏗️ Ecosystem Manager
@@ -211,8 +215,6 @@ business-context-os/
 *"I want to create a new skill — check for overlaps"*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 🧠 Lessons Consolidate
@@ -221,6 +223,8 @@ business-context-os/
 *"What have we learned?"*
 
 </td>
+</tr>
+<tr>
 <td>
 
 #### ⚡ Core Discipline
@@ -229,8 +233,6 @@ business-context-os/
 *Always active — no invocation needed*
 
 </td>
-</tr>
-<tr>
 <td>
 
 #### 📄 Doc-Lint
@@ -238,8 +240,6 @@ business-context-os/
 
 *"Lint my documentation"*
 
-</td>
-<td>
 </td>
 </tr>
 <tr>
@@ -265,6 +265,7 @@ business-context-os/
 | 🚨 **PreCompact Save** | Emergency capture before context window compression |
 | 📋 **Commit Check** | Flags ecosystem drift after every git commit |
 | 🔍 **Integration Audit** | Scans for stale cross-references before shipping changes |
+| ✅ **CI Checks** | 4 automated checks on every PR: JSON validation, frontmatter, references, ecosystem integrity |
 
 ---
 
@@ -310,6 +311,14 @@ The script updates skills, hooks, scripts, methodology docs, templates, and exam
 ## Contributing
 
 Contributions welcome — open an issue or submit a PR targeting the `dev` branch.
+
+**CI checks run automatically on every PR.** Before pushing, you can run them locally:
+
+```bash
+python .github/scripts/validate_frontmatter.py    # Check YAML metadata
+python .github/scripts/validate_references.py      # Check file paths resolve
+python .claude/scripts/analyze_integration.py --ci  # Check ecosystem wiring
+```
 
 The fastest contribution path: **lessons learned.** As you use the system, it captures insights in `lessons.json`. If you find something universal, contribute it back.
 
