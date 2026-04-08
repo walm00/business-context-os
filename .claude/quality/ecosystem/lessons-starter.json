@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "lastUpdated": "2026-04-08",
-  "totalLessons": 15,
+  "lastUpdated": "2026-04-04",
+  "totalLessons": 9,
   "lessonsLearned": [
     {
       "id": "L-INIT-20260404-001",
@@ -83,60 +83,6 @@
       "tags": ["#ecosystem", "#maintenance"],
       "lesson": "Discovery scripts are the source of truth for what exists. State files record what discovery found, not the definition itself.",
       "applicability": "When checking ecosystem inventory or resolving discrepancies"
-    },
-    {
-      "id": "L-SESSION-20260408-001",
-      "date": "2026-04-08",
-      "source": "ecosystem audit session",
-      "type": "practice",
-      "tags": ["#ecosystem", "#audit", "#drift"],
-      "lesson": "Even with mandatory integration audits in FIXED END, ecosystem drift accumulates from ad-hoc changes between planned sessions. A full cross-reference audit found 12 issues (3 critical) that individual file-level checks missed — stale registries, missing entries, wrong paths.",
-      "applicability": "Run a full ecosystem audit (not just per-file integration check) after every batch of changes, especially when multiple files were touched across sessions"
-    },
-    {
-      "id": "L-SESSION-20260408-002",
-      "date": "2026-04-08",
-      "source": "update script testing",
-      "type": "bug-pattern",
-      "tags": ["#scripts", "#cross-platform", "#windows"],
-      "lesson": "File hash comparisons must normalize line endings (CRLF vs LF). Windows stores CRLF, GitHub zips contain LF — identical content produces different SHA256 hashes without normalization. This caused 70 false 'modified' results in the update script.",
-      "applicability": "Any script that compares file content across platforms (update.py, integration checks)"
-    },
-    {
-      "id": "L-SESSION-20260408-003",
-      "date": "2026-04-08",
-      "source": "scheduling implementation",
-      "type": "principle",
-      "tags": ["#scheduling", "#onboarding", "#adoption"],
-      "lesson": "Start maintenance schedules at aggressive frequency (daily/weekly). If you default to monthly or quarterly, users forget the system exists before it ever fires. Let them dial back when checks consistently find nothing — that's the signal things are stable.",
-      "applicability": "When setting up scheduled maintenance for any new BCOS installation"
-    },
-    {
-      "id": "L-SESSION-20260408-004",
-      "date": "2026-04-08",
-      "source": "onboarding redesign",
-      "type": "principle",
-      "tags": ["#onboarding", "#content-analysis", "#document-types"],
-      "lesson": "Never limit onboarding to a fixed number of data points. Analyze ALL content, classify by document type (context/process/policy/reference/playbook), and create as many data points as needed. Arbitrary limits (like '3 data points') lose information and misclassify mixed content.",
-      "applicability": "During context-onboarding, context-ingest, or any bulk content processing"
-    },
-    {
-      "id": "L-SESSION-20260408-005",
-      "date": "2026-04-08",
-      "source": "publish workflow",
-      "type": "practice",
-      "tags": ["#git", "#workflow", "#publish"],
-      "lesson": "After squash-merging a PR from dev to main on GitHub, dev branch still shows as 'ahead' because commit SHAs differ despite identical content. Must force-push main back to dev after every PR merge: `git push public public/main:dev --force`.",
-      "applicability": "Every time a PR is merged on the public repo — use `publish.sh --sync`"
-    },
-    {
-      "id": "L-SESSION-20260408-006",
-      "date": "2026-04-08",
-      "source": "podcast analysis + architecture review",
-      "type": "principle",
-      "tags": ["#architecture", "#navigation", "#tokens"],
-      "lesson": "File names are free in Glob results — Claude sees paths without spending tokens on content. Consistent naming conventions (YYYY-MM-DD_entity_topic.ext) let Claude filter by date or entity via Glob patterns alone. The Document Index with DOMAIN one-liners is the second routing layer: Claude scans 20 one-liners instead of opening 20 files. Reserve full file reads for the 2-3 docs that actually matter.",
-      "applicability": "When designing folder structures, naming conventions, or navigation aids for any content-heavy repo"
     }
   ]
 }

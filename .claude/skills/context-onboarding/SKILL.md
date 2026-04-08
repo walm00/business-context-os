@@ -45,9 +45,14 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 **Before reading anything, find out where the knowledge lives.**
 
-If the user hasn't already told you, ask:
+If the user hasn't already told you, **use the `AskUserQuestion` tool:**
 
-> "Where does your business knowledge live right now? Files you can share, connected systems like Google Drive or Notion, or would you like to start fresh?"
+- Question: "Where does your business knowledge live right now?"
+- Options:
+  - **I have files to share** (drop them in docs/_inbox/ or point me to them)
+  - **Connected system** (Google Drive, Notion, Confluence — I can browse via MCP)
+  - **Both** (local files + connected systems)
+  - **Starting from scratch** (no existing docs — let's create from conversation)
 
 Based on the answer:
 
@@ -206,8 +211,11 @@ Conflicts found:
   - [Topic]: file1.md says X, file2.md says Y — which is current?
 
 Nothing is lost. [N] sources → [M] data points + [E] external references.
-Want me to proceed or adjust the structure?
 ```
+
+**Then use the `AskUserQuestion` tool:**
+- Question: "Does this structure look right?"
+- Options: **Proceed** (create the data points) / **Adjust** (tell me what to change)
 
 **Wait for approval before creating files.** The user needs to see the full plan and resolve any conflicts first.
 
@@ -394,9 +402,11 @@ After the user approves (with any corrections applied):
 If there were existing source files in the repo (old docs, scattered markdown, inbox files):
 
 1. Show the user which original files are now fully captured in the new data points
-2. Ask: "These originals are now covered by the new data points. Want me to move them to _archive/?"
-3. If yes — move each file to `docs/_archive/` with a note in the file explaining what replaced it
-4. If no — leave them in place. The user may want to keep them around for now.
+2. **Use the `AskUserQuestion` tool:**
+   - Question: "These originals are now covered by the new data points. What should I do with them?"
+   - Options: **Archive them** (move to _archive/ with a note) / **Keep alongside** (leave in place for now)
+3. If archive — move each file to `docs/_archive/` with a note explaining what replaced it
+4. If keep — leave them in place
 
 **Never delete source files.** Archive only. The originals stay available for reference.
 

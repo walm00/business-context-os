@@ -155,7 +155,11 @@ Load the appropriate template from `references/scenario-phases.md` (defines phas
 
 ## Step 6: Present Approach for Alignment
 
-Present to user before creating documents: (1) restatement of intent, (2) key discovery findings (agents, overlaps, lessons), (3) proposed approach (scenario, phases, risks), (4) ask: "Proceed" or "Adjust"?
+Present to user before creating documents: (1) restatement of intent, (2) key discovery findings (agents, overlaps, lessons), (3) proposed approach (scenario, phases, risks).
+
+**Then use the `AskUserQuestion` tool:**
+- Question: "Does this approach look right?"
+- Options: **Proceed** (create plan artifacts) / **Adjust** (revise — tell me what to change)
 
 ### Gate 1: Approach Alignment
 
@@ -231,10 +235,10 @@ Structure: Header (session ID, scenario, status) -> Discovery Results -> Problem
 3. **URLs to artifacts:**
    - `{session}/plan-manifest.json`
    - `{session}/implementation-plan.md`
-4. **Next actions:**
-   - "Approve" -> Handoff to implementation
-   - "Modify [changes]" -> Revise plan
-   - "Cancel" -> Stop here
+
+**Then use the `AskUserQuestion` tool:**
+- Question: "Ready to implement this plan?"
+- Options: **Approve** (start implementation) / **Modify** (revise — tell me what to change) / **Cancel** (stop here)
 
 ### Gate 2: Plan Approval
 

@@ -45,22 +45,14 @@ allowed-tools: Read, Glob, Grep, Bash
 
 ### Step 1: Define Audit Scope
 
-**Ask user to clarify if not specified:**
+**If not specified, use the `AskUserQuestion` tool:**
 
-```
-What should I audit?
-
-Options:
-1. Specific context area (e.g., "competitive intelligence data points")
-2. Specific directory (e.g., "docs/context/")
-3. Cross-cutting concern (e.g., "all pricing-related data points")
-4. Full context architecture
-5. Recent changes
-
-Recommendation for large scopes: Start with one area, then expand.
-
-Please specify scope.
-```
+- Question: "What should I audit?"
+- Options:
+  - **Specific area** (e.g., competitive intelligence data points)
+  - **Full architecture** (all active data points — comprehensive)
+  - **Recent changes** (only docs modified recently)
+  - **Cross-cutting concern** (e.g., all pricing-related data points across clusters)
 
 ---
 
