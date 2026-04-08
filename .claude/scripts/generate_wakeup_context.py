@@ -34,10 +34,34 @@ def extract_frontmatter_field(content: str, field: str) -> str:
     return ""
 
 
-def extract_section_bullets(content: str, heading: str, max_items: int = 3) -> list[str]:
-    """Extract bullet points under a specific ## heading."""
+def extract_section_content(content: str, heading: str, max_lines: int = 3) -> list[str]:
+    """Extract first N non-empty, non-comment content lines under a ## heading.
+    Uses flexible matching: 'This Week' matches 'This Week's Focus'."""
     pattern = re.compile(
-        r"^##\s+" + re.escape(heading) + r"\s*\n(.*?)(?=\n##\s|\Z)",
+        r"^##\s+" + re.escape(heading) + r"[^\n]*\n(.*?)(?=\n##\s|\Z)",
+        re.MULTILINE | re.DOTALL | re.IGNORECASE
+    )
+    match = pattern.search(content)
+    if not match:
+        return []
+    section = match.group(1)
+    lines = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("<!--") or stripped.startswith(">"):
+            continue
+        lines.append(stripped)
+        if len(lines) >= max_lines:
+            break
+    return lines
+
+
+def extract_section_bullets(content: str, heading: str, max_items: int = 3) -> list[str]:
+    """Extract bullet points under a ## heading. Flexible: 'This Week' matches 'This Week's Focus'."""
+    pattern = re.compile(
+        r"^##\s+" + re.escape(heading) + r"[^\n]*\n(.*?)(?=\n##\s|\Z)",
         re.MULTILINE | re.DOTALL | re.IGNORECASE
     )
     match = pattern.search(content)
@@ -96,12 +120,16 @@ def main():
 
     if toc_path.is_file():
         toc = toc_path.read_text(encoding="utf-8", errors="replace")
-        business_name = extract_frontmatter_field(toc, "name")
-        # Try to get a one-liner from the first paragraph after frontmatter
-        after_fm = YAML_BLOCK_RE.sub("", toc).strip()
-        first_para = after_fm.split("\n\n")[0].strip() if after_fm else ""
-        if first_para and not first_para.startswith("#"):
-            business_desc = first_para[:200]
+        # Business name: try "Who We Are" section first line, then frontmatter "project" or "business" field
+        who_lines = extract_section_content(toc, "Who We Are", 1)
+        if who_lines:
+            business_name = who_lines[0][:150]
+        if not business_name:
+            business_name = extract_frontmatter_field(toc, "project") or extract_frontmatter_field(toc, "business")
+        # Business description: "What We Do" section first line
+        what_lines = extract_section_content(toc, "What We Do", 1)
+        if what_lines:
+            business_desc = what_lines[0][:200]
         # Look for phase/stage
         phase_bullets = extract_section_bullets(toc, "Current Phase", 1)
         if not phase_bullets:

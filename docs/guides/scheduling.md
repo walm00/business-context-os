@@ -34,12 +34,13 @@ Claude: when creating scheduled tasks, use these exact definitions. Each block b
 Run scheduled CLEAR maintenance: Daily Index + Health Check.
 
 1. Run: python .claude/scripts/build_document_index.py
-2. Scan docs/ (excluding _inbox/, _planned/, _archive/) for:
+2. Run: python .claude/scripts/generate_wakeup_context.py
+3. Scan docs/ (excluding _inbox/, _planned/, _archive/, _collections/) for:
    - New .md files missing YAML frontmatter
    - Missing required metadata fields
    - Boundary violations (content that belongs in a different document)
    - Broken cross-references (links to files that don't exist)
-3. Brief report:
+4. Brief report:
    - Total managed documents
    - Issues found (one line each)
    - One-line verdict: "All good" or "X items need attention"
