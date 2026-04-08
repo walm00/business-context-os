@@ -75,19 +75,6 @@ Automated checks run on every push and PR. Defined in `.github/workflows/ci.yml`
 
 ---
 
-## CI Checks (GitHub Actions)
-
-Automated checks run on every push and PR. Defined in `.github/workflows/ci.yml`.
-
-| Job | What it validates | Run locally |
-|-----|-------------------|-------------|
-| **validate-json** | All JSON files parse correctly | `python -m json.tool .claude/quality/ecosystem/state.json` |
-| **validate-frontmatter** | YAML frontmatter on all managed markdown | `python .github/scripts/validate_frontmatter.py` |
-| **validate-references** | All registry paths resolve, state.json accuracy | `python .github/scripts/validate_references.py` |
-| **validate-ecosystem** | Ecosystem wiring (install.sh, settings.json coverage) | `python .claude/scripts/analyze_integration.py --ci` |
-
----
-
 ## Discovery Scripts
 
 - **Rebuild Document Index:** `python .claude/scripts/build_document_index.py`
