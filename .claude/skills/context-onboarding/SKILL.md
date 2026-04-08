@@ -393,6 +393,7 @@ After the user approves (with any corrections applied):
 - Set status to `active` on approved data points
 - Create `docs/_inbox/`, `docs/_planned/`, `docs/_archive/` if they don't exist
 - Run `python .claude/scripts/build_document_index.py` to generate the Document Index with DOMAIN one-liners
+- Run `python .claude/scripts/generate_wakeup_context.py` to generate the Wake-Up Context for instant session orientation
 
 ---
 
