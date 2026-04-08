@@ -182,6 +182,7 @@ List every piece of content you found. For each item:
 - Templates that define a standard → **reference**, mode: **catalog** (don't modify at all)
 - If one source mixes types → split into separate data points, each with its own mode
 - 200 call transcripts in Google Drive → mode: **map** (create external reference, don't copy)
+- Bulk local files (reports, invoices) the user wants to keep → route to `docs/_collections/[type]/`, no frontmatter required
 
 ### 2b. Plan the data points
 

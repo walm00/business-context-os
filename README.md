@@ -114,6 +114,7 @@ business-context-os/
 │   ├── _inbox/                  # Raw material + auto-captured sessions
 │   ├── _planned/                # Ideas — not yet real
 │   ├── _archive/                # Superseded — historical reference
+│   ├── _collections/            # High-volume files — transcripts, reports, invoices
 │   ├── methodology/             # CLEAR principles, ownership spec, standards
 │   ├── guides/                  # Getting started, maintenance, migration
 │   ├── architecture/            # System design (for contributors)
@@ -125,6 +126,10 @@ business-context-os/
 │   ├── hooks/                   # Frontmatter check, session capture, commit check
 │   ├── scripts/                 # Index builder, update, pruning, cross-ref analysis
 │   └── registries/              # Entity registry, reference indexes
+│
+├── .github/
+│   ├── workflows/ci.yml         # 4 automated checks on every PR
+│   └── scripts/                 # Frontmatter + reference validators
 │
 ├── examples/brand-strategy/     # Complete worked example (8 data points)
 ├── CLAUDE.md                    # Claude Code instructions (lean — ~500 tokens)

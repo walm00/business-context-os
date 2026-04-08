@@ -22,8 +22,9 @@ REQUIRED_DOC_FIELDS = ["name", "type", "cluster", "version", "status", "created"
 VALID_STATUSES = {"draft", "active", "under-review", "archived"}
 VALID_TYPES = {"context", "process", "policy", "reference", "playbook"}
 
-SKIP_DIRS = ["docs/_inbox", "docs/_planned", "docs/_archive", "docs/methodology",
-             "docs/guides", "docs/templates", "docs/architecture", "docs/examples"]
+SKIP_DIRS = ["docs/_inbox", "docs/_planned", "docs/_archive", "docs/_collections",
+             "docs/methodology", "docs/guides", "docs/templates", "docs/architecture",
+             "docs/examples"]
 
 YAML_BLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 YAML_FIELD_RE = re.compile(r'^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.+)$', re.MULTILINE)

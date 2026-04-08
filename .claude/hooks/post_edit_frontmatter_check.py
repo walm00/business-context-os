@@ -38,6 +38,7 @@ SKIP_PATHS = [
     "docs/templates/",
     "docs/_inbox/",
     "docs/_archive/",
+    "docs/_collections/",
     "docs/document-index.md",
 ]
 
