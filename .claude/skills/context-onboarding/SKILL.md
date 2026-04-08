@@ -44,13 +44,23 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 ## Step 1: Gather Information + Identify Profile
 
-Read everything available. Extract these five things:
+Read everything available. Extract knowledge across all these areas (not all will apply):
 
+**Business identity:**
 1. **Who they are** — identity, mission, founding story
 2. **What they do** — core offering, product/service
 3. **Who they serve** — target audience, customer segments
 4. **What makes them different** — positioning, differentiators
 5. **What phase they're in** — startup, growth, mature, pivoting
+
+**Operations & processes:**
+6. **How they work** — workflows, SOPs, approval chains, team processes
+7. **What rules they follow** — brand guidelines, pricing rules, decision frameworks, policies
+8. **What they reference** — glossaries, tool inventories, org charts, tech stacks, contact lists
+
+**Strategy & playbooks:**
+9. **How they respond** — crisis comms, competitive response, launch playbooks, market entry plans
+10. **What they've learned** — past decisions, post-mortems, strategic pivots
 
 **Sources to read** (use whatever's available):
 - Website URL → use WebFetch
@@ -90,32 +100,81 @@ While gathering info, figure out what kind of project this is. Don't ask directl
 | Sales | Value Proposition, Target Market, Sales Process |
 | Combination | Pick from above based on what matters most right now |
 
-**Start with 2-4 clusters max.** The user can add more later. Don't present a cluster taxonomy — just use the right cluster names in your drafted data points.
+**Use as many clusters as the content demands.** Don't limit arbitrarily — if the user has content spanning 6 areas, use 6 clusters. Don't present a cluster taxonomy to the user — just use the right cluster names in your drafted data points.
 
 ---
 
-## Step 2: Draft 3 Data Points
+## Step 2: Plan the Data Point Architecture
 
-Pick the 3 most important. For most businesses:
+**Don't limit to 3 data points.** Analyze ALL the content and plan however many data points are needed to capture everything properly. Nothing gets lost — only duplications and conflicts get resolved.
 
-1. **Brand Identity / Company Identity** — who they are
-2. **Target Audience** — who they serve
-3. **Value Proposition / Offering** — what they do and why it wins
+### 2a. Content inventory + classification
 
-If the repo scan revealed contradictions or critical gaps, prioritize those instead:
-1. Contradictory content (same topic, different versions) — highest value
-2. Critical gaps (important topic, no docs)
-3. Scattered fragments (useful content spread across files)
+List every piece of content you found. For each item:
+- **Source** — where it came from (file, URL, user input)
+- **Topics covered** — what knowledge it contains
+- **Document type** — classify using the guide below
+- **Overlaps** — does it duplicate or contradict another source?
+- **Quality** — is it current, outdated, or a fragment?
 
-### Data point format
+**Type classification guide:**
 
-Create each as a file in `docs/`:
+| If content... | Type | Signal |
+|---|---|---|
+| Describes what something IS (identity, market, audience, positioning) | **context** | Answers "what is" questions |
+| Describes how to DO something (steps, workflows, SOPs, checklists) | **process** | Answers "how to" questions |
+| Defines rules, standards, or constraints (brand rules, pricing policy, approval criteria) | **policy** | Answers "must / must not" questions |
+| Is lookup/reference data (glossary, org chart, tool list, tech stack, contacts) | **reference** | Answers "what's the..." factual lookups |
+| Is a situational response guide (crisis plan, launch playbook, competitive response) | **playbook** | Answers "what do we do when..." questions |
+
+**Edge cases:**
+- Brand guidelines with rules → **policy** (it constrains behavior)
+- Brand identity describing who we are → **context** (it describes reality)
+- Onboarding doc with steps → **process** (it's a workflow)
+- Onboarding overview describing the team → **context** (it's knowledge)
+- Templates that define a standard → **reference** (they're lookup material)
+- If one source mixes types → split it into separate data points by type
+
+### 2b. Plan the data points
+
+Group the content inventory into logical data points. Each data point should:
+- Own one clear topic (no overlap with other data points)
+- Contain all the knowledge about that topic from all sources
+- Consolidate duplicates — pick the best version, merge the rest
+- Resolve contradictions — flag them for the user to decide
+
+Present the plan to the user:
+
+```
+Based on what I found, here's the data point structure I recommend:
+
+[Cluster Name]
+  1. [Data Point Name] (context) — [what it covers] (sources: file1.md, website)
+  2. [Data Point Name] (process) — [what it covers] (sources: sop-doc.md)
+
+[Cluster Name]
+  3. [Data Point Name] (policy) — [what it covers] (sources: brand-guidelines.pdf)
+  4. [Data Point Name] (reference) — [what it covers] (sources: tech-stack.md)
+  ...
+
+Conflicts found:
+  - [Topic]: file1.md says X, file2.md says Y — which is current?
+
+Nothing is lost. [N] sources → [M] data points ([X] context, [Y] process, [Z] policy...).
+Want me to proceed or adjust the structure?
+```
+
+**Wait for approval before creating files.** The user needs to see the full plan and resolve any conflicts first.
+
+### 2c. Create the data points
+
+After the user approves the plan, create each data point in `docs/`:
 
 ```markdown
 ---
 name: "[Data Point Name]"
-type: context
-cluster: "[Best fit cluster from profile]"
+type: "[classified type]"          # context | process | policy | reference | playbook
+cluster: "[Cluster]"
 version: "1.0.0"
 status: draft
 created: "[today]"
@@ -138,7 +197,7 @@ last-updated: "[today]"
 
 ## Content
 
-[The actual business knowledge, synthesized from sources. Real content, not placeholders.]
+[Real content synthesized from sources. Not placeholders.]
 
 ## Context
 
@@ -147,22 +206,39 @@ last-updated: "[today]"
 
 **Pre-fill everything.** Draft real content from what you learned. The user edits — they don't write from scratch.
 
-**If drafting from existing repo docs:** do NOT move, rename, or reorganize existing files. Create new CLEAR data points alongside them.
+**If drafting from existing repo docs:** do NOT move, rename, or reorganize the original files yet. Create new CLEAR data points alongside them. The user decides when to archive the originals.
 
 ---
 
-## Step 3: Review
+## Step 3: Verify — Quality Check
 
-Show the user what you drafted:
+Before showing the user, verify the work yourself:
+
+1. **Nothing lost check** — for every source item in your content inventory, confirm it appears in at least one data point. List any gaps.
+2. **Ownership check** — every data point has a clear DOMAIN and EXCLUSIVELY_OWNS. No two data points claim the same topic.
+3. **Cross-reference check** — STRICTLY_AVOIDS entries point to real data points. Links resolve.
+4. **Content quality** — no placeholder text, no empty sections, no "TBD" entries. If you can't fill a section from sources, cut it.
+5. **Metadata** — all YAML frontmatter fields present and correct.
+
+Then present the results:
 
 ```
-Here are 3 data points based on [what you shared / what I found in the repo]:
+Here are [N] data points based on [what you shared / what I found]:
 
-1. [Name] — [one-line summary]
-2. [Name] — [one-line summary]
-3. [Name] — [one-line summary]
+[Cluster Name]
+  1. [Name] — [one-line summary]
+  2. [Name] — [one-line summary]
 
-Take a look — anything off or missing? I'll adjust whatever needs fixing.
+[Cluster Name]
+  3. [Name] — [one-line summary]
+  ...
+
+Coverage check:
+  - [X] sources processed → [Y] data points created
+  - [Z] conflicts resolved (list if any)
+  - No content was dropped
+
+Take a look — anything off, missing, or wrong? I'll adjust whatever needs fixing.
 ```
 
 After the user approves (with any corrections applied):
@@ -171,7 +247,22 @@ After the user approves (with any corrections applied):
 
 ---
 
-## Step 4: Update the Onboarding Checklist
+## Step 4: Archive Originals
+
+**Only after the user approves the new data points.** Never archive before approval.
+
+If there were existing source files in the repo (old docs, scattered markdown, inbox files):
+
+1. Show the user which original files are now fully captured in the new data points
+2. Ask: "These originals are now covered by the new data points. Want me to move them to _archive/?"
+3. If yes — move each file to `docs/_archive/` with a note in the file explaining what replaced it
+4. If no — leave them in place. The user may want to keep them around for now.
+
+**Never delete source files.** Archive only. The originals stay available for reference.
+
+---
+
+## Step 5: Update the Onboarding Checklist
 
 The checklist ships with install at `docs/.onboarding-checklist.md`. After data points are approved:
 
@@ -184,6 +275,19 @@ tracks what's left to set up — I'll remind you once per session until it's don
 
 Want to keep going or pick it up next time?
 ```
+
+---
+
+## Step 6: Set Up Scheduled Maintenance
+
+After data points and the document index are in place, the next checklist item is scheduled maintenance.
+
+1. Read `docs/guides/scheduling.md` — it has exact task definitions (ID, cron, prompt) for all 5 tasks
+2. Create all 5 scheduled tasks using the scheduled tasks tool, copying each task's ID, schedule, description, and prompt exactly as defined
+3. Check off "Scheduled maintenance tasks created" in the onboarding checklist
+4. Tell the user: "Maintenance schedules are active — daily health checks, weekly reflections, monthly architecture review. You can adjust frequency anytime."
+
+**Don't skip this step.** Users who don't set up scheduled maintenance will hit context rot within weeks.
 
 ---
 
@@ -212,7 +316,7 @@ When ALL items are checked:
 
 ## Tips
 
-- **Don't try to formalize everything at once.** 3 data points. Add more when these feel stable.
+- **Capture everything, don't limit arbitrarily.** Create as many data points as the content demands. Better to have proper coverage than to lose information.
 - **Draft real content, not placeholders.** If you can't fill a section, cut it — don't leave it empty.
 - **Ask focused questions, not questionnaires.** 2-3 max.
 - **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.

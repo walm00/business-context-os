@@ -60,6 +60,7 @@ The point is not to invoke every skill every time. The point is to not miss the 
 | `context-audit`        | Auditing context architecture       |
 | `clear-planner`        | Planning changes                    |
 | `daydream`             | Stepping back to reflect            |
+| `doc-lint`             | Validating markdown, cross-references, JSON |
 | `ecosystem-manager`    | Ecosystem questions                 |
 | `lessons-consolidate`  | Knowledge maintenance               |
 

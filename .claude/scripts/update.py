@@ -66,9 +66,10 @@ REVIEW_FILES = [
 # ---------------------------------------------------------------------------
 
 def file_hash(path: str) -> str:
+    """Hash file contents, normalizing line endings so CRLF == LF."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
-        h.update(f.read())
+        h.update(f.read().replace(b"\r\n", b"\n"))
     return h.hexdigest()
 
 
