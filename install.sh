@@ -158,11 +158,12 @@ echo -e "${BLUE}Installing docs/...${NC}"
 echo ""
 
 # Document folder zones (active / inbox / planned / archive)
-mkdir -p docs/_inbox docs/_inbox/sessions docs/_planned docs/_archive
+mkdir -p docs/_inbox docs/_inbox/sessions docs/_planned docs/_archive docs/_collections
 echo -e "  ${GREEN}CREATE${NC}  docs/_inbox/ (raw material landing zone)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_inbox/sessions/ (auto-captured session context)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_planned/ (polished ideas, not yet active)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
+echo -e "  ${GREEN}CREATE${NC}  docs/_collections/ (high-volume files — transcripts, reports)"
 echo ""
 
 # Onboarding checklist (self-removes when complete)

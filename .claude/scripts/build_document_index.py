@@ -38,6 +38,7 @@ SKIP_PATHS = {
 INBOX_DIR = "docs/_inbox"
 PLANNED_DIR = "docs/_planned"
 ARCHIVE_DIR = "docs/_archive"
+COLLECTIONS_DIR = "docs/_collections"
 
 REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "created", "last-updated"]
 
@@ -163,6 +164,12 @@ def is_archive(filepath):
     return rel.startswith(ARCHIVE_DIR) or ("/_archive/" in rel)
 
 
+def is_collection(filepath):
+    """Check if file is in the _collections directory."""
+    rel = os.path.relpath(filepath).replace("\\", "/")
+    return rel.startswith(COLLECTIONS_DIR) or ("/_collections/" in rel)
+
+
 def scan_documents(scan_dir):
     """Scan directory for markdown files, extract metadata."""
     managed = []
@@ -214,6 +221,10 @@ def scan_documents(scan_dir):
                 "size": size_str,
                 "modified": mtime,
             })
+            continue
+
+        # Collection files — skip (high-volume, no frontmatter required)
+        if is_collection(filepath):
             continue
 
         meta = extract_frontmatter(filepath)
