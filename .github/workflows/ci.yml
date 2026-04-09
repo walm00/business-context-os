@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [main, dev]
 
+# These checks are advisory — warnings, not blockers.
+# They help catch issues during development but should never
+# block users who fork or adapt this repo for their own use.
+
 jobs:
   validate-json:
     name: Validate JSON
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Validate all JSON files
@@ -23,7 +28,7 @@ jobs:
             .claude/settings.json; do
             if [ -f "$f" ]; then
               if ! python3 -m json.tool "$f" > /dev/null 2>&1; then
-                echo "FAIL: $f is not valid JSON"
+                echo "::warning::$f is not valid JSON"
                 failed=1
               else
                 echo "OK:   $f"
@@ -37,6 +42,7 @@ jobs:
   validate-frontmatter:
     name: Validate Frontmatter
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -48,6 +54,7 @@ jobs:
   validate-references:
     name: Validate References
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,6 +66,7 @@ jobs:
   validate-ecosystem:
     name: Validate Ecosystem
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

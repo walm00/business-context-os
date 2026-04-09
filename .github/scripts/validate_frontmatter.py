@@ -55,6 +55,9 @@ def should_check_doc(path):
     basename = os.path.basename(norm)
     if basename.startswith("."):
         return False
+    # Skip auto-generated files (no frontmatter by design)
+    if basename == "document-index.md":
+        return False
     return True
 
 
