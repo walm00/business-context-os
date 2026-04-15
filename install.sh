@@ -122,6 +122,10 @@ copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-starter.json" ".c
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-schema.md" ".claude/quality/ecosystem/lessons-schema.md"
 mkdir -p .claude/quality/sessions
 
+# Schedule dispatcher template — onboarding uses this as the source for the live
+# schedule-config.json. update.py keeps this template in sync across releases.
+copy_if_missing "$SCRIPT_DIR/.claude/quality/schedule-config.template.json" ".claude/quality/schedule-config.template.json"
+
 # Hooks
 for f in "$SCRIPT_DIR"/.claude/hooks/*; do
     if [ -f "$f" ]; then

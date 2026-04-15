@@ -46,7 +46,25 @@ The point is not to invoke every skill every time. The point is to not miss the 
 | Single-file fixes         | Just do it             |
 | Small changes (1-3 files) | Think briefly, execute |
 
-**When in doubt:** Ask the user.
+**When in doubt:** Ask the user — via `AskUserQuestion`, not prose (see "Decision-point UX" below).
+
+---
+
+## Decision-point UX (cross-cutting)
+
+**Every decision point in every BCOS interaction uses `AskUserQuestion`.** Not prose "should I do X?" questions. Not lists of options typed as text. Structured choice, clickable menu, dashboard-aware session state.
+
+Applies everywhere: onboarding, ingest, audit, tune, migrate, dispatcher output, update confirmations, archival decisions, every skill that offers the user choices.
+
+**Skip only when:**
+- Response is information-only, no choice involved
+- Decision is a trivial acknowledgement that would add more friction than value
+- User needs to TYPE something free-form (a name, custom cron, path) — prose + AskUserQuestion's "Other → free text" fallback works for hybrid cases
+- A scheduled dispatcher run finishes clean green with zero findings (one-line summary keeps the dashboard "Ready" status meaningful)
+
+**Canonical pattern + option-wording rules + good/bad examples:** [`references/askuserquestion-pattern.md`](references/askuserquestion-pattern.md).
+
+**Special case — wrapping scripts with built-in prompts** (like `update.py`'s `[y/N]` prompt): invoke the script with `--dry-run` first, parse the output, surface the summary via `AskUserQuestion`, then re-invoke with `--yes` based on the user's choice. This keeps the Claude UX consistent whether the user runs scripts via shell or via Claude.
 
 ---
 

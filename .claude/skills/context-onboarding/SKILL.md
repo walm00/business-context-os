@@ -452,14 +452,76 @@ Want to keep going or pick it up next time?
 
 ## Step 6: Set Up Scheduled Maintenance
 
-After data points and the document index are in place, the next checklist item is scheduled maintenance.
+After data points and the document index are in place, the next checklist item is scheduled maintenance. In v1.2 this is ONE task per repo — the `bcos-{project}` dispatcher. It runs daily, reads `.claude/quality/schedule-config.json`, and decides which maintenance jobs are due today.
 
-1. Read `docs/_bcos-framework/guides/scheduling.md` — it has exact task definitions (ID, cron, prompt) for all 5 tasks
-2. Create all 5 scheduled tasks using the scheduled tasks tool, copying each task's ID, schedule, description, and prompt exactly as defined
-3. Check off "Scheduled maintenance tasks created" in the onboarding checklist
-4. Tell the user: "Maintenance schedules are active — daily health checks, weekly reflections, monthly architecture review. You can adjust frequency anytime."
+**Before creating anything, resolve two variables:**
 
-**Don't skip this step.** Users who don't set up scheduled maintenance will hit context rot within weeks.
+1. **`{REPO_PATH}`** — the absolute path to this repo's root directory (the current working directory)
+2. **`{PROJECT}`** — a short slug derived from the repo folder name. Lowercase, hyphens only, no spaces. Examples: `leverage`, `tystiq`, `acme-corp`.
+
+### 6a. Seed the config file
+
+Copy `.claude/quality/schedule-config.template.json` → `.claude/quality/schedule-config.json`. Keep all the `_comment` and `_about` fields — users will read them.
+
+If the file already exists, don't overwrite. Skip to 6b.
+
+### 6b. Ensure the diary directory exists
+
+The diary lives at `.claude/hook_state/schedule-diary.jsonl` (gitignored). Ensure the `.claude/hook_state/` directory exists (it usually does from install.sh — check and create if missing). Don't create the JSONL file itself; the dispatcher will create it on first run.
+
+### 6c. Ask about the dispatcher time
+
+Default is 09:00 local. Use `AskUserQuestion`:
+
+- Question: "When should the morning dispatcher run?"
+- Options:
+  - **09:00 (default)** — runs at 9am local
+  - **Earlier (7:00-8:30)** — pick a specific time
+  - **Later (10:00-12:00)** — pick a specific time
+
+If user picks "earlier" or "later", follow up with a specific-time question. Resolve to a concrete `HH:MM`.
+
+### 6d. Create the single dispatcher task
+
+Use `mcp__scheduled-tasks__create_scheduled_task` with:
+
+- `taskId`: `bcos-{project}` (e.g. `bcos-leverage`)
+- `cronExpression`: derive from the user's chosen time. `09:00` → `"0 9 * * *"`, `08:30` → `"30 8 * * *"`.
+- `description`: `BCOS daily maintenance dispatcher for {project}`
+- `prompt` (literal, with `{REPO_PATH}` substituted):
+
+```
+Working directory: {REPO_PATH}
+
+IMPORTANT: First ensure the working directory is {REPO_PATH}. If the session is running elsewhere, cd there before starting.
+
+Run the schedule-dispatcher skill to execute today's scheduled CLEAR maintenance. It will:
+1. Read .claude/quality/schedule-config.json
+2. Determine which jobs are scheduled for today based on day-of-week / day-of-month
+3. Execute each job in sequence, appending one diary entry per job
+4. Write a consolidated digest to docs/_inbox/daily-digest.md
+5. Report a one-line summary
+
+Keep output focused. If everything is green with no action items, say so in one line.
+```
+
+### 6e. Confirm and close out
+
+Check off "Dispatcher task created" in the onboarding checklist. Tell the user:
+
+> Maintenance is live. One task, `bcos-{project}`, runs every morning at {time}. It produces `docs/_inbox/daily-digest.md` and a one-line summary. You can change frequencies anytime by telling me things like "run audit twice a week" or "turn off deep daydream" — I'll handle the config edit.
+>
+> Want to test it now with "run today's maintenance now"?
+
+Don't auto-run. Let the user invoke the first run on their terms.
+
+### Why this shape
+
+Scheduled tasks live in `~/.claude/scheduled-tasks/` — user-global, not per-repo. One task per repo keeps the user-global task list short and unambiguous, and eliminates the time-collision problem that 5 separate per-repo tasks used to cause.
+
+**Don't skip this step.** Users who don't set up the dispatcher will hit context rot within weeks. The default config is aggressive (daily index-health, weekly everything else) — the dispatcher will suggest reductions once it sees green runs stacking up.
+
+**Never mention migration during onboarding.** Migration is a separate path triggered only when `update.py` finds pre-existing v1.x tasks. A fresh install has nothing to migrate and should never see the word.
 
 ---
 

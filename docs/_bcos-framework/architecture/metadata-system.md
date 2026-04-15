@@ -113,9 +113,9 @@ After every Edit or Write tool call on a `.md` file under `docs/`.
 
 Files in these paths are excluded from validation:
 
-- `docs/methodology/`
-- `docs/guides/`
-- `docs/templates/`
+- `docs/_bcos-framework/methodology/`
+- `docs/_bcos-framework/guides/`
+- `docs/_bcos-framework/templates/`
 - `docs/_inbox/`
 - `docs/_archive/`
 - `docs/document-index.md`
@@ -179,9 +179,9 @@ The script scans `docs/` and generates a Document Index with:
 
 The script excludes framework files that are not user content:
 
-- `docs/methodology/`
-- `docs/guides/`
-- `docs/templates/`
+- `docs/_bcos-framework/methodology/`
+- `docs/_bcos-framework/guides/`
+- `docs/_bcos-framework/templates/`
 - `docs/document-index.md` (its own output)
 
 ### User Notes Preservation

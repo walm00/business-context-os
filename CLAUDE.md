@@ -25,6 +25,8 @@ Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/documen
 
 **Framework update check:** If `.claude/bcos-claude-reference.md` exists, compare it against this CLAUDE.md once per session. Briefly mention any critical missing instructions. Don't nag.
 
+**Migration check:** If `.claude/MIGRATION-NEEDED.md` exists, read it and offer to run the `schedule-migrate` skill. Mention at most once per session. The file is auto-deleted when migration completes successfully — don't recreate it.
+
 ---
 
 ## Folder Trust Levels
@@ -49,6 +51,7 @@ These apply when editing any file in `docs/`:
 - Ownership Specification: DOMAIN + EXCLUSIVELY_OWNS at minimum
 - Explicit relationships — link, don't duplicate
 - **Compounding rule:** After significant work, offer to update the relevant data point. Every task produces two outputs: the answer + context updates.
+- **Decision-point UX:** At any decision point that offers the user choices, use the `AskUserQuestion` tool — not a prose "should I do X?" question. Applies across ALL skills, workflows, and ad-hoc interactions — onboarding, ingest, audit, tune, migrate, dispatcher output, update confirmations, archival decisions, etc. The default is: **structured choice over prose**. Skip only when a decision is trivially acknowledge-only and AskUserQuestion would add friction. See `.claude/skills/core-discipline/references/askuserquestion-pattern.md` for option-wording rules and examples.
 
 **NEVER:**
 - Delete content without consolidating it into the owning document first
@@ -61,5 +64,5 @@ For full standards: `docs/_bcos-framework/methodology/document-standards.md`
 
 ---
 
-**Version**: 1.1.0
-**Last Updated**: 2026-04-07
+**Version**: 1.2.0
+**Last Updated**: 2026-04-15

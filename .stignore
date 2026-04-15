@@ -1,0 +1,55 @@
+// ============================================================
+// Syncthing .stignore — business-context-os-dev
+// Syncs: .private/, .env files, .claude local settings & sessions
+// Skips: .git, node_modules, build artifacts, OS junk, logs
+// ============================================================
+
+// Never sync git internals
+/.git
+
+// Never sync dependencies
+node_modules
+__pycache__
+*.pyc
+*.egg-info
+
+// Never sync build outputs
+/dist
+/build
+/out
+/coverage
+
+// Never sync OS junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+._*
+
+// Never sync log files
+*.log
+npm-debug.log*
+
+// Never sync temp files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+// Never sync Syncthing metadata
+.stfolder
+.stversions
+
+// ============================================================
+// Everything else WILL sync, including:
+//   ✓ .private/ (private strategy docs)
+//   ✓ .env, .env.local, .env.*.local
+//   ✓ .claude/settings.local.json
+//   ✓ .claude/quality/sessions/
+//   ✓ .claude/quality/ecosystem/lessons.json
+//   ✓ .claude/hook_state/
+//   ✓ .claude/bcos-claude-reference.md
+//   ✓ docs/.wake-up-context.md
+//   ✓ .claude/scripts/publish.sh
+// ============================================================
