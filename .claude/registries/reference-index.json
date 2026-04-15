@@ -1,6 +1,6 @@
 {
-  "version": "1.1",
-  "lastUpdated": "2026-04-08",
+  "version": "1.2",
+  "lastUpdated": "2026-04-15",
   "references": {
     "methodology": {
       "clear-principles": "docs/_bcos-framework/methodology/clear-principles.md",
@@ -27,7 +27,13 @@
       "ecosystem-manager/architecture": ".claude/skills/ecosystem-manager/references/architecture.md",
       "ecosystem-manager/ecosystem-changes-checklist": ".claude/skills/ecosystem-manager/references/ecosystem-changes-checklist.md",
       "ecosystem-manager/learnings-capture": ".claude/skills/ecosystem-manager/references/learnings-capture.md",
-      "todo-utilities/todo-patterns": ".claude/skills/todo-utilities/references/todo-patterns.md"
+      "todo-utilities/todo-patterns": ".claude/skills/todo-utilities/references/todo-patterns.md",
+      "schedule-dispatcher/auto-fix-whitelist": ".claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md",
+      "schedule-dispatcher/job-index-health": ".claude/skills/schedule-dispatcher/references/job-index-health.md",
+      "schedule-dispatcher/job-daydream-lessons": ".claude/skills/schedule-dispatcher/references/job-daydream-lessons.md",
+      "schedule-dispatcher/job-daydream-deep": ".claude/skills/schedule-dispatcher/references/job-daydream-deep.md",
+      "schedule-dispatcher/job-audit-inbox": ".claude/skills/schedule-dispatcher/references/job-audit-inbox.md",
+      "schedule-dispatcher/job-architecture-review": ".claude/skills/schedule-dispatcher/references/job-architecture-review.md"
     },
     "architecture": {
       "system-design": "docs/_bcos-framework/architecture/system-design.md",
@@ -55,7 +61,10 @@
       "ecosystem-manager": ".claude/skills/ecosystem-manager/SKILL.md",
       "lessons-consolidate": ".claude/skills/lessons-consolidate/SKILL.md",
       "doc-lint": ".claude/skills/doc-lint/SKILL.md",
-      "todo-utilities": ".claude/skills/todo-utilities/SKILL.md"
+      "todo-utilities": ".claude/skills/todo-utilities/SKILL.md",
+      "schedule-dispatcher": ".claude/skills/schedule-dispatcher/SKILL.md",
+      "schedule-tune": ".claude/skills/schedule-tune/SKILL.md",
+      "schedule-migrate": ".claude/skills/schedule-migrate/SKILL.md"
     },
     "agents": {
       "explore": ".claude/agents/explore/AGENT.md"

@@ -83,21 +83,25 @@ Write-time validation catches issues at the moment of creation:
 
 This is the fastest feedback loop -- problems caught in seconds, not days.
 
-### Scheduled Triggers (Cron/Tasks)
+### Scheduled Triggers (Dispatcher)
 
-Recurring tasks run via Claude Code scheduled tasks or `CronCreate`:
+From v1.2 onward, BCOS installs a **single scheduled task per repo** — `bcos-{project}` — that runs daily and acts as a dispatcher. It reads `.claude/quality/schedule-config.json` to decide which maintenance jobs are due today, runs them in sequence, and produces one consolidated digest at `docs/_inbox/daily-digest.md`.
 
-| Task | Cron Expression | Notes |
-|------|-----------------|-------|
-| Daily index rebuild | `0 9 * * *` | Every day at 9am local |
-| Weekly health check | `0 9 * * 1` | Monday at 9am |
-| Bi-weekly daydream | `0 15 * * 5` | Friday at 3pm (skip alternating weeks) |
-| Monthly deep audit | `0 9 1-7 * 1` | First Monday of each month |
-| Quarterly review | Manual trigger | Too complex for unattended execution |
+Five jobs, one dispatch:
 
-Every scheduled task includes a Document Index rebuild as its first step. The index takes seconds and catches new unmanaged docs, stale metadata, and disappeared files.
+| Job                   | Default cadence | Purpose                                                        |
+|-----------------------|-----------------|----------------------------------------------------------------|
+| `index-health`        | daily           | Rebuild index; structural scan; apply whitelisted auto-fixes   |
+| `daydream-lessons`    | Mon             | Weekly operational reflection + lessons capture                |
+| `daydream-deep`       | Wed             | Deeper structural reflection (splits, merges, retirements)     |
+| `audit-inbox`         | Fri             | Light CLEAR audit across all clusters + inbox aging + lessons triage |
+| `architecture-review` | 1st             | Full audit + ecosystem drift + health score + 3 priorities     |
 
-> **Implementation:** See `docs/guides/scheduling.md` for full cron reference and phase-specific prompts.
+Every dispatcher run writes one diary line per job to `.claude/hook_state/schedule-diary.jsonl` — an append-only, gitignored history that the dispatcher reads to generate frequency-tuning suggestions (never auto-applies them).
+
+**Why one task, not five:** user-global scheduled tasks collided when users ran BCOS across multiple repos, named checks were running daily despite "weekly" labels, and five separate morning reports created a UX mess. One task, one digest, one config file — changes happen in natural language through the `schedule-tune` skill.
+
+> **Implementation:** See `docs/_bcos-framework/guides/scheduling.md` for the full dispatcher model, config schema, and natural-language tuning examples.
 
 ### Event-Driven Triggers
 
@@ -111,7 +115,7 @@ Business changes that should prompt immediate context review:
 | New market entry | Create market-specific context | Market context, audience, competitive landscape, messaging |
 | Rebrand | Cascade from brand identity outward | Brand identity, voice, messaging, visual identity, value prop |
 
-> **Implementation:** See `docs/guides/maintenance-guide.md` for full trigger-to-data-point mapping.
+> **Implementation:** See `docs/_bcos-framework/guides/maintenance-guide.md` for full trigger-to-data-point mapping.
 
 ### Cascade Triggers
 
@@ -293,8 +297,11 @@ The goal is not zero findings at any layer. The goal is **no surprises** -- issu
 
 | Resource | Path | Purpose |
 |----------|------|---------|
-| Scheduling guide | `docs/guides/scheduling.md` | Phase-specific cron expressions and prompts |
-| Maintenance guide | `docs/guides/maintenance-guide.md` | User-facing maintenance rhythm and triggers |
+| Scheduling guide | `docs/_bcos-framework/guides/scheduling.md` | Dispatcher model, config schema, natural-language tuning |
+| Maintenance guide | `docs/_bcos-framework/guides/maintenance-guide.md` | User-facing maintenance rhythm and triggers |
+| Schedule dispatcher | `.claude/skills/schedule-dispatcher/SKILL.md` | The single-task dispatcher that coordinates all jobs |
+| Schedule tune | `.claude/skills/schedule-tune/SKILL.md` | Natural-language config editor |
+| Schedule migrate | `.claude/skills/schedule-migrate/SKILL.md` | One-time v1.x → v1.2 migration helper |
 | Daydream skill | `.claude/skills/daydream/SKILL.md` | 4-phase reflection process |
 | Context-audit skill | `.claude/skills/context-audit/SKILL.md` | CLEAR compliance checks and severity levels |
 | Lessons-consolidate skill | `.claude/skills/lessons-consolidate/SKILL.md` | Knowledge compounding and cleanup |

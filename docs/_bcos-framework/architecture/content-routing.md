@@ -1,6 +1,6 @@
 # Content Routing Architecture
 
-How new content enters, flows through, and settles into the right location in CLEAR Context OS. This document covers the mechanics -- for the business rationale behind folder zones and ownership, see `docs/architecture/system-design.md`.
+How new content enters, flows through, and settles into the right location in CLEAR Context OS. This document covers the mechanics -- for the business rationale behind folder zones and ownership, see `docs/_bcos-framework/architecture/system-design.md`.
 
 ---
 

@@ -1,10 +1,10 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-09",
-  "lastAudit": "2026-04-09",
+  "lastUpdated": "2026-04-15",
+  "lastAudit": "2026-04-15",
   "inventory": {
     "skills": {
-      "total": 11,
+      "total": 14,
       "list": [
         "context-onboarding",
         "context-ingest",
@@ -16,7 +16,10 @@
         "daydream",
         "ecosystem-manager",
         "lessons-consolidate",
-        "todo-utilities"
+        "todo-utilities",
+        "schedule-dispatcher",
+        "schedule-tune",
+        "schedule-migrate"
       ],
       "overlayCapable": [
         "core-discipline"
@@ -25,7 +28,8 @@
         "context-onboarding",
         "clear-planner",
         "context-audit",
-        "ecosystem-manager"
+        "ecosystem-manager",
+        "schedule-dispatcher"
       ]
     },
     "agents": {
