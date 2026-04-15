@@ -19,6 +19,8 @@
       "migration-guide": "docs/_bcos-framework/guides/migration-guide.md"
     },
     "skills-references": {
+      "core-discipline/askuserquestion-pattern": ".claude/skills/core-discipline/references/askuserquestion-pattern.md",
+      "core-discipline/context-rules": ".claude/skills/core-discipline/references/context-rules.md",
       "clear-planner/scenario-phases": ".claude/skills/clear-planner/references/scenario-phases.md",
       "clear-planner/plan-manifest-schema": ".claude/skills/clear-planner/references/plan-manifest-schema.md",
       "clear-planner/planning-workflow-schema": ".claude/skills/clear-planner/references/planning-workflow-schema.md",
