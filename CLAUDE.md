@@ -25,6 +25,8 @@ Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/documen
 
 **Framework update check:** If `.claude/bcos-claude-reference.md` exists, compare it against this CLAUDE.md once per session. Briefly mention any critical missing instructions. Don't nag.
 
+**Migration check:** If `.claude/MIGRATION-NEEDED.md` exists, read it and offer to run the `schedule-migrate` skill. Mention at most once per session. The file is auto-deleted when migration completes successfully — don't recreate it.
+
 ---
 
 ## Folder Trust Levels
@@ -61,5 +63,5 @@ For full standards: `docs/_bcos-framework/methodology/document-standards.md`
 
 ---
 
-**Version**: 1.1.0
-**Last Updated**: 2026-04-07
+**Version**: 1.2.0
+**Last Updated**: 2026-04-15

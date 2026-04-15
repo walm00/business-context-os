@@ -22,6 +22,7 @@ import tempfile
 import zipfile
 import difflib
 import argparse
+import datetime
 import urllib.request
 from pathlib import Path
 
@@ -46,9 +47,12 @@ FRAMEWORK_DIRS = [
     "examples",
 ]
 
-# Root-level files that are always overwritten with the upstream version
+# Framework files synced from upstream on every update (always overwritten).
+# These are NOT user content — they live outside FRAMEWORK_DIRS for structural
+# reasons but are owned by the framework.
 FRAMEWORK_FILES = [
     "README.md",
+    ".claude/quality/schedule-config.template.json",
 ]
 
 # .gitignore — merged: new upstream entries are appended, nothing removed
@@ -180,6 +184,135 @@ def merge_gitignore(upstream_path: str, local_path: str) -> int:
     return len(new_entries)
 
 
+def merge_ecosystem_state(upstream_path: str, local_path: str) -> dict:
+    """Merge upstream skills/agents inventory into local state.json. Additive only.
+    Preserves user-added custom skills/agents and never touches user state
+    (`health`, `maintenanceBacklog`, `lastAudit`).
+
+    Returns dict with counts: {"skills_added": N, "agents_added": M}.
+    """
+    import json as _json
+
+    if not os.path.exists(upstream_path):
+        return {"skills_added": 0, "agents_added": 0}
+
+    with open(upstream_path, "r", encoding="utf-8") as f:
+        upstream = _json.load(f)
+
+    # Fresh install path — copy upstream wholesale.
+    if not os.path.exists(local_path):
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        shutil.copy2(upstream_path, local_path)
+        up_skills = upstream.get("inventory", {}).get("skills", {}).get("list", [])
+        up_agents = sum(
+            len(v) for v in upstream.get("inventory", {}).get("agents", {}).get("byCategory", {}).values()
+        )
+        return {"skills_added": len(up_skills), "agents_added": up_agents}
+
+    with open(local_path, "r", encoding="utf-8") as f:
+        local = _json.load(f)
+
+    skills_added = 0
+    agents_added = 0
+
+    up_inv = upstream.get("inventory", {})
+    lc_inv = local.setdefault("inventory", {})
+
+    # ---- Skills: list + categorical lists (overlayCapable, discoveryCapable)
+    up_skills = up_inv.get("skills", {})
+    lc_skills = lc_inv.setdefault("skills", {
+        "total": 0, "list": [], "overlayCapable": [], "discoveryCapable": []
+    })
+
+    existing = set(lc_skills.get("list", []))
+    for s in up_skills.get("list", []):
+        if s not in existing:
+            lc_skills.setdefault("list", []).append(s)
+            existing.add(s)
+            skills_added += 1
+
+    for cat in ("overlayCapable", "discoveryCapable"):
+        existing_cat = set(lc_skills.get(cat, []))
+        for s in up_skills.get(cat, []):
+            if s not in existing_cat:
+                lc_skills.setdefault(cat, []).append(s)
+                existing_cat.add(s)
+
+    # Total is always derived from the list length — keep it accurate
+    lc_skills["total"] = len(lc_skills.get("list", []))
+
+    # ---- Agents: byCategory dict
+    up_agents = up_inv.get("agents", {})
+    lc_agents = lc_inv.setdefault("agents", {"total": 0, "byCategory": {}})
+
+    for cat, agents in up_agents.get("byCategory", {}).items():
+        lc_cat_list = lc_agents.setdefault("byCategory", {}).setdefault(cat, [])
+        existing_in_cat = set(lc_cat_list)
+        for a in agents:
+            if a not in existing_in_cat:
+                lc_cat_list.append(a)
+                existing_in_cat.add(a)
+                agents_added += 1
+
+    lc_agents["total"] = sum(len(v) for v in lc_agents.get("byCategory", {}).values())
+
+    if skills_added or agents_added:
+        local["lastUpdated"] = datetime.date.today().isoformat()
+        with open(local_path, "w", encoding="utf-8") as f:
+            _json.dump(local, f, indent=2)
+            f.write("\n")
+
+    return {"skills_added": skills_added, "agents_added": agents_added}
+
+
+def merge_reference_index(upstream_path: str, local_path: str) -> int:
+    """Merge upstream reference-index entries into local. Additive only.
+    Preserves user-added custom references; never removes any local entries.
+
+    Returns total count of entries added across all categories.
+    """
+    import json as _json
+
+    if not os.path.exists(upstream_path):
+        return 0
+
+    with open(upstream_path, "r", encoding="utf-8") as f:
+        upstream = _json.load(f)
+
+    if not os.path.exists(local_path):
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        shutil.copy2(upstream_path, local_path)
+        total = 0
+        for category in upstream.get("references", {}).values():
+            if isinstance(category, dict):
+                total += len(category)
+        return total
+
+    with open(local_path, "r", encoding="utf-8") as f:
+        local = _json.load(f)
+
+    added = 0
+    up_refs = upstream.get("references", {})
+    lc_refs = local.setdefault("references", {})
+
+    for category, entries in up_refs.items():
+        if not isinstance(entries, dict):
+            continue
+        lc_cat = lc_refs.setdefault(category, {})
+        for key, path in entries.items():
+            if key not in lc_cat:
+                lc_cat[key] = path
+                added += 1
+
+    if added > 0:
+        local["lastUpdated"] = datetime.date.today().isoformat()
+        with open(local_path, "w", encoding="utf-8") as f:
+            _json.dump(local, f, indent=2)
+            f.write("\n")
+
+    return added
+
+
 def merge_settings_json(upstream_path: str, local_path: str) -> int:
     """Merge upstream settings.json hooks into local. Additive only — never removes user hooks.
     Returns count of new hook entries added."""
@@ -278,6 +411,277 @@ def ensure_convention_infrastructure(project_root: str, upstream_root: str) -> l
             Path(gitkeep).touch()
 
     return created
+
+
+# ---------------------------------------------------------------------------
+# Migration detection (v1.2+)
+# ---------------------------------------------------------------------------
+#
+# Up to v1.1, BCOS installed five standalone scheduled tasks per repo:
+# `{slug}-index`, `{slug}-daydream`, `{slug}-audit`, etc. v1.2 consolidates
+# these into a single `bcos-{slug}` dispatcher. Existing installs need to
+# migrate — but update.py cannot call MCP tools, so it writes a flag file
+# that Claude picks up on next session.
+#
+# This logic is narrowly scoped: it ONLY writes the flag when there is
+# something concrete to migrate. Fresh installs never see migration.
+
+MIGRATION_OLD_SUFFIXES = [
+    "-index", "-daily-index",
+    "-daydream", "-daydream-deep",
+    "-audit", "-weekly-audit", "-deep-audit",
+    "-architecture", "-monthly-architecture", "-quarterly-architecture",
+    "-weekly-health", "-biweekly-daydream", "-monthly-deep-audit",
+    "-lessons-capture",
+]
+
+
+# Known acronyms for common long repo names. Tested before falling back to
+# generic trimming. Extend as real-world cases surface.
+KNOWN_ACRONYMS = {
+    "business-context-os": "bcos",
+}
+
+
+def compute_slug_candidates(repo_root: Path) -> list:
+    """Compute candidate slugs that might have been used for v1.x task IDs.
+    The user may have picked any slug — we try a few plausible ones."""
+    name = repo_root.name.lower()
+    candidates = {name}
+
+    # Known acronyms (targeted — better than generic first-letter rule which
+    # tends to drop semantic weight, e.g. 'bco' vs 'bcos')
+    for phrase, acronym in KNOWN_ACRONYMS.items():
+        if phrase in name:
+            candidates.add(acronym)
+
+    # Trim common prefixes
+    trimmed = name
+    for prefix in ("the-", "project-", "my-"):
+        if trimmed.startswith(prefix):
+            trimmed = trimmed[len(prefix):]
+            candidates.add(trimmed)
+
+    # Trim common suffixes
+    for suffix in ("-ai", "-app", "-trunk", "-repo", "-project", "-dev"):
+        if trimmed.endswith(suffix):
+            trimmed = trimmed[: -len(suffix)]
+            candidates.add(trimmed)
+
+    # Single-word version (first hyphen segment)
+    first_seg = name.split("-")[0]
+    if first_seg:
+        candidates.add(first_seg)
+
+    # Drop empty strings, return deterministic order (longest first so specific matches win)
+    return sorted((c for c in candidates if c), key=lambda s: (-len(s), s))
+
+
+def user_scheduled_tasks_dir() -> Path:
+    """User-global scheduled tasks directory.
+    Same on macOS, Linux, and Windows: ~/.claude/scheduled-tasks/"""
+    return Path.home() / ".claude" / "scheduled-tasks"
+
+
+def _has_old_suffix(task_id: str) -> str | None:
+    """If the task ID ends in a known v1.x suffix, return the slug portion
+    (everything before the suffix). Otherwise None."""
+    # Try longest suffixes first so e.g. "-daily-index" beats "-index"
+    for suffix in sorted(MIGRATION_OLD_SUFFIXES, key=len, reverse=True):
+        if task_id.endswith(suffix):
+            return task_id[: -len(suffix)]
+    return None
+
+
+def _is_v2_dispatcher(skill_md_path: Path) -> bool:
+    """Does this task's SKILL.md reference the v1.2 dispatcher skill? If so,
+    it's the new-style task, not a migration target."""
+    try:
+        content = skill_md_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return "schedule-dispatcher" in content
+
+
+def _task_references_repo(skill_md_path: Path, repo_root: Path) -> bool:
+    """Does this task's SKILL.md mention this specific repo? Checks for the
+    absolute path (with forward slashes) or a clear folder-name mention."""
+    try:
+        content = skill_md_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    # Normalize for cross-platform path comparison
+    normalized = content.replace("\\", "/")
+    repo_abs = str(repo_root).replace("\\", "/")
+    if repo_abs in normalized:
+        return True
+    # Also accept "/{foldername}/" or similar as a weaker signal — avoids false
+    # positives by requiring path-delimiter context around the name
+    repo_name = repo_root.name
+    for wrapper in (f"/{repo_name}/", f"/{repo_name}\n", f"/{repo_name}\"", f"/{repo_name} "):
+        if wrapper in normalized:
+            return True
+    return False
+
+
+def detect_old_tasks(repo_root: Path, slug_candidates: list) -> list:
+    """Find v1.x scheduled tasks that belong to this repo.
+
+    Matches in two complementary ways:
+    1. Slug-based — task ID matches `{candidate}-{known-old-suffix}`
+    2. Path-based — task SKILL.md references this repo's absolute path
+
+    A task matched by either rule is included. Tasks whose SKILL.md
+    references the v1.2 `schedule-dispatcher` skill are always excluded
+    (those are the new dispatchers, not migration targets).
+
+    Returns list of (detected_slug, task_id) tuples.
+    """
+    tasks_dir = user_scheduled_tasks_dir()
+    if not tasks_dir.is_dir():
+        return []
+
+    try:
+        entries = [d for d in tasks_dir.iterdir() if d.is_dir()]
+    except OSError:
+        return []
+
+    matches = []
+    slug_set = set(slug_candidates)
+
+    for task_dir in entries:
+        task_id = task_dir.name
+        skill_md = task_dir / "SKILL.md"
+
+        # Exclude v1.2 dispatchers — they're new-style, not migration targets
+        if skill_md.is_file() and _is_v2_dispatcher(skill_md):
+            continue
+
+        matched = False
+        detected_slug = None
+
+        # Path 1: slug-based match (exact {slug}-{suffix} pattern)
+        slug = _has_old_suffix(task_id)
+        if slug and slug in slug_set:
+            matched = True
+            detected_slug = slug
+
+        # Path 2: content-based match (task prompt mentions this repo)
+        if not matched and skill_md.is_file() and _task_references_repo(skill_md, repo_root):
+            # Only include if the task ID also has a known old suffix — otherwise
+            # we'd false-positive on unrelated tasks that happen to mention the path
+            slug_from_id = _has_old_suffix(task_id)
+            if slug_from_id:
+                matched = True
+                detected_slug = slug_from_id
+
+        if matched:
+            matches.append((detected_slug, task_id))
+
+    return matches
+
+
+def bcos_dispatcher_exists(repo_root: Path, slug_candidates: list) -> bool:
+    """Does a v1.2 dispatcher task already exist for this repo?
+
+    Detection: any task whose SKILL.md references both this repo's path AND
+    the `schedule-dispatcher` skill. Slug-based name matching is a weak
+    fallback — users may have picked an unusual slug.
+    """
+    tasks_dir = user_scheduled_tasks_dir()
+    if not tasks_dir.is_dir():
+        return False
+
+    # Fallback: a task literally named bcos-{candidate} counts
+    for slug in slug_candidates:
+        if (tasks_dir / f"bcos-{slug}").is_dir():
+            return True
+
+    # Authoritative: a task whose SKILL.md mentions schedule-dispatcher AND this repo
+    try:
+        entries = [d for d in tasks_dir.iterdir() if d.is_dir()]
+    except OSError:
+        return False
+
+    for task_dir in entries:
+        skill_md = task_dir / "SKILL.md"
+        if not skill_md.is_file():
+            continue
+        if _is_v2_dispatcher(skill_md) and _task_references_repo(skill_md, repo_root):
+            return True
+
+    return False
+
+
+def write_migration_flag(flag_path: Path, canonical_slug: str, old_tasks: list):
+    """Write .claude/MIGRATION-NEEDED.md with detected task info.
+    Claude reads this on session start (per CLAUDE.md) and offers migration."""
+    flag_path.parent.mkdir(parents=True, exist_ok=True)
+
+    task_lines = "\n".join(f"- `{task_id}`" for (_, task_id) in old_tasks)
+
+    content = f"""# Migration Needed — v1.x → v1.2
+
+update.py detected v1.x-era scheduled tasks for this repo that should be
+consolidated into a single v1.2 dispatcher.
+
+Detected slug: `{canonical_slug}`
+Detected tasks ({len(old_tasks)}):
+
+{task_lines}
+
+---
+
+## What to do
+
+Mention this to the user **ONCE** per session (not every turn), then offer to
+run the `schedule-migrate` skill. The skill handles detection, user
+confirmation, new task creation, old task disabling, and deleting this flag
+file when complete.
+
+If the user says "not now" — leave it. Next session will offer again once.
+Do not nag within a session.
+
+---
+
+_This file is auto-deleted when schedule-migrate completes successfully. If
+migration has already finished and this file persists, it's safe to delete
+manually or invoke schedule-migrate (it will detect completed state and clean
+up)._
+"""
+    flag_path.write_text(content, encoding="utf-8")
+
+
+def run_migration_detection(local_root: Path, dry_run: bool) -> None:
+    """Check for v1.x tasks and write the migration flag if needed.
+    Silent when there's nothing to migrate (fresh installs, already migrated)."""
+    candidates = compute_slug_candidates(local_root)
+
+    if bcos_dispatcher_exists(local_root, candidates):
+        # Already migrated (or in progress) — stay silent
+        return
+
+    old_tasks = detect_old_tasks(local_root, candidates)
+    if not old_tasks:
+        return  # fresh install, nothing to migrate
+
+    # Pick the slug with the most matches as canonical
+    from collections import Counter
+    slug_counts = Counter(slug for (slug, _) in old_tasks)
+    canonical_slug = slug_counts.most_common(1)[0][0]
+
+    flag_path = local_root / ".claude" / "MIGRATION-NEEDED.md"
+
+    if dry_run:
+        print()
+        print(f"  Migration needed: {len(old_tasks)} old-style scheduled task(s) detected.")
+        print(f"  (Dry run — no flag file written. Detected slug: {canonical_slug})")
+        return
+
+    write_migration_flag(flag_path, canonical_slug, old_tasks)
+    print()
+    print(f"  Migration needed: {len(old_tasks)} old-style scheduled task(s) detected for this repo.")
+    print(f"  Flag written to .claude/MIGRATION-NEEDED.md — Claude will offer to migrate on next session.")
 
 
 # ---------------------------------------------------------------------------
@@ -435,6 +839,38 @@ def main():
             else:
                 print(f"  settings.json: all upstream hooks already registered.")
 
+        # ------------------------------------------------ merge ecosystem state.json
+        # Additive merge — preserves user's custom skills/agents and user-state
+        # (health, maintenanceBacklog), only adds framework skills/agents not yet
+        # registered locally. Without this, framework releases that add new skills
+        # would leave existing installs out of sync, failing ecosystem CI checks.
+        upstream_state = os.path.join(upstream_root, ".claude", "quality", "ecosystem", "state.json")
+        local_state = str(local_root / ".claude" / "quality" / "ecosystem" / "state.json")
+        if os.path.exists(upstream_state):
+            counts = merge_ecosystem_state(upstream_state, local_state)
+            added = counts["skills_added"] + counts["agents_added"]
+            if added:
+                parts = []
+                if counts["skills_added"]:
+                    parts.append(f"{counts['skills_added']} skill(s)")
+                if counts["agents_added"]:
+                    parts.append(f"{counts['agents_added']} agent(s)")
+                print(f"  state.json: registered {' + '.join(parts)} from upstream.")
+            else:
+                print(f"  state.json: all upstream skills/agents already registered.")
+
+        # ------------------------------------------------ merge reference-index.json
+        # Same additive pattern. Framework references stay current; user custom
+        # references are preserved.
+        upstream_ref = os.path.join(upstream_root, ".claude", "registries", "reference-index.json")
+        local_ref = str(local_root / ".claude" / "registries" / "reference-index.json")
+        if os.path.exists(upstream_ref):
+            ref_added = merge_reference_index(upstream_ref, local_ref)
+            if ref_added:
+                print(f"  reference-index.json: added {ref_added} new entry/entries from upstream.")
+            else:
+                print(f"  reference-index.json: all upstream entries already present.")
+
         # ----------------------------------------- convention infrastructure
         infra_created = ensure_convention_infrastructure(str(local_root), upstream_root)
         if infra_created:
@@ -443,26 +879,47 @@ def main():
                 print(item)
 
         # --------------------------------- migrate old framework doc locations
-        # v1.2.0 moved docs/architecture etc. to docs/_bcos-framework/
+        # v1.2.0 moved docs/architecture etc. to docs/_bcos-framework/. The
+        # framework content at the new location is now authoritative — but the
+        # old folders may ALSO contain user-created files (e.g. the user dropped
+        # their own notes into docs/guides/, not realising it was framework-owned).
+        #
+        # Policy: never delete. Archive the whole old folder to docs/_archive/
+        # with a timestamped name so the user can review and recover anything
+        # they care about. Idempotent — if the same-day archive already exists,
+        # skip (assume the migration already ran today).
         OLD_TO_NEW = [
             ("docs/architecture", "docs/_bcos-framework/architecture"),
-            ("docs/guides", "docs/_bcos-framework/guides"),
-            ("docs/methodology", "docs/_bcos-framework/methodology"),
-            ("docs/templates", "docs/_bcos-framework/templates"),
+            ("docs/guides",       "docs/_bcos-framework/guides"),
+            ("docs/methodology",  "docs/_bcos-framework/methodology"),
+            ("docs/templates",    "docs/_bcos-framework/templates"),
         ]
+        today = datetime.date.today().isoformat()
+        archive_root = os.path.join(str(local_root), "docs", "_archive")
         migrated = 0
         for old_dir, new_dir in OLD_TO_NEW:
             old_path = os.path.join(str(local_root), old_dir)
             new_path = os.path.join(str(local_root), new_dir)
-            if os.path.isdir(old_path) and os.path.isdir(new_path):
-                # New location already has files from this update — safe to remove old
-                try:
-                    shutil.rmtree(old_path)
-                    migrated += 1
-                except OSError:
-                    pass
+            if not (os.path.isdir(old_path) and os.path.isdir(new_path)):
+                continue
+            basename = os.path.basename(old_dir)
+            archive_path = os.path.join(archive_root, f"migrated-{basename}-{today}")
+            if os.path.exists(archive_path):
+                # Already archived today — skip, don't clobber a prior archive.
+                continue
+            try:
+                os.makedirs(archive_root, exist_ok=True)
+                shutil.move(old_path, archive_path)
+                migrated += 1
+            except OSError:
+                # Non-fatal: leave the old folder in place if the move failed.
+                # User can clean up manually.
+                pass
         if migrated:
-            print(f"  Migrated {migrated} old framework folder(s) to docs/_bcos-framework/")
+            print(f"  Migrated {migrated} old framework folder(s) — archived, NOT deleted.")
+            print(f"    Archive: docs/_archive/migrated-*-{today}/")
+            print(f"    → review those folders in case you had any custom files there,")
+            print(f"      then delete the archive folders when you've confirmed they're safe.")
 
         # ----------------------------------------- regenerate wake-up context
         wakeup_script = str(local_root / ".claude" / "scripts" / "generate_wakeup_context.py")
@@ -514,6 +971,13 @@ def main():
         with tempfile.TemporaryDirectory() as tmp:
             upstream_root = download_upstream(upstream_repo, args.branch, tmp)
             run_scan(upstream_root)
+
+    # ---------------------------------------------------------- migration check
+    # Runs regardless of whether framework sync found anything — if v1.x tasks
+    # exist for this repo and no v1.2 dispatcher has been created yet, write
+    # the migration flag so Claude can offer migration on next session.
+    # Silent when there's nothing to migrate (fresh installs, already migrated).
+    run_migration_detection(local_root, args.dry_run)
 
 
 if __name__ == "__main__":
