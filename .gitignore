@@ -54,6 +54,21 @@ __pycache__/
 # Auto-generated wake-up context (regenerated per user)
 docs/.wake-up-context.md
 
+# Auto-generated document index (regenerated per user via build_document_index.py)
+docs/document-index.md
+
+# Planning drafts — each install's own ideas, not shared framework content
+docs/_planned/umbrella-bcos-prd.md
+docs/_planned/umbrella-bcos-architecture.md
+
+# Schedule dispatcher runtime artifacts (v1.2+)
+# The template ships (schedule-config.template.json); the live config does not.
+.claude/quality/schedule-config.json
+# Migration trigger flag — written by update.py when v1.x tasks detected, deleted by schedule-migrate on success
+.claude/MIGRATION-NEEDED.md
+# Daily digest is runtime output, overwritten each morning
+docs/_inbox/daily-digest.md
+
 # Private publish script (repo-specific config)
 .claude/scripts/publish.sh
 

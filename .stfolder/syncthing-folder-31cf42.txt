@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: business-context-os-dev
+created: 2026-04-10T09:50:27+03:00

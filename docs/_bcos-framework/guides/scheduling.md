@@ -1,196 +1,278 @@
 # Scheduled Maintenance
 
-**Context that isn't maintained rots.** These 5 scheduled tasks keep your knowledge alive automatically.
+**Context that isn't maintained rots.** BCOS ships one scheduled task per repo that keeps your knowledge alive automatically.
 
-Default frequencies are aggressive — daily and weekly. It's better to catch problems while they're small than discover a mess weeks later. If checks consistently find nothing, reduce frequency.
+The dispatcher runs once a day. It decides which maintenance jobs are due, runs them in sequence, writes one consolidated digest to `docs/_inbox/daily-digest.md`, and appends to a local history file. You read one report. You don't manage five separate schedules.
 
 ---
 
 ## Setup
 
-Tell Claude:
+During onboarding, Claude creates a single task named `bcos-{project}` (e.g. `bcos-leverage`). It runs daily at 09:00 local time by default.
 
-> **Set up CLEAR maintenance schedules. Use the exact task definitions from docs/guides/scheduling.md.**
+To set it up manually, tell Claude:
 
-Or Claude will offer to set them up when it reaches that item on your onboarding checklist.
+> **Set up CLEAR maintenance scheduling. Use the schedule-dispatcher skill.**
 
----
+To adjust it later, tell Claude in natural language:
 
-## The 5 Tasks
+> "Switch the dispatcher to 08:30."
+> "Run the audit twice a week instead of weekly."
+> "Turn off the deep daydream for now."
+> "Reduce index-health to weekdays only."
 
-Claude: when creating scheduled tasks, use these exact definitions. Each block below is one task.
-
----
-
-### Task 1: Index + Health Check
-
-**ID:** `clear-daily-index`
-**Schedule:** Daily (`0 9 * * *`)
-**Description:** Daily document index rebuild + CLEAR health check
-
-**Prompt:**
-
-```
-Run scheduled CLEAR maintenance: Daily Index + Health Check.
-
-1. Run: python .claude/scripts/build_document_index.py
-2. Run: python .claude/scripts/generate_wakeup_context.py
-3. Scan docs/ (excluding _inbox/, _planned/, _archive/, _collections/) for:
-   - New .md files missing YAML frontmatter
-   - Missing required metadata fields
-   - Boundary violations (content that belongs in a different document)
-   - Broken cross-references (links to files that don't exist)
-4. Brief report:
-   - Total managed documents
-   - Issues found (one line each)
-   - One-line verdict: "All good" or "X items need attention"
-
-Keep output short. If healthy, say so in one line.
-```
+Claude uses the `schedule-tune` skill to update `.claude/quality/schedule-config.json` safely. You shouldn't need to hand-edit the config, and the config has natural-language hints inline to explain what each setting does.
 
 ---
 
-### Task 2: Daydream + Lessons (Monday)
+## The Five Jobs
 
-**ID:** `clear-monday-daydream`
-**Schedule:** Monday (`0 9 * * 1`)
-**Description:** Weekly daydream reflection + lessons capture + session pruning
+The dispatcher runs up to five jobs each morning. Each job has a default cadence. You can change any of them.
 
-**Prompt:**
+| Job                   | Default    | What it does                                                       |
+|-----------------------|------------|--------------------------------------------------------------------|
+| `index-health`        | Daily      | Rebuild document index; scan for frontmatter / metadata / broken xrefs; auto-fix low-risk issues |
+| `daydream-lessons`    | Mon        | Weekly strategic reflection + lessons capture + session pruning     |
+| `daydream-deep`       | Wed        | Deeper structural reflection — splits, merges, retirements          |
+| `audit-inbox`         | Fri        | Deep CLEAR audit (one cluster in rotation) + inbox aging + lessons triage |
+| `architecture-review` | 1st        | Full-architecture audit + ecosystem drift + health score + 3 priorities for the month |
 
-```
-Run scheduled CLEAR maintenance: Monday Daydream + Lessons.
+Full job specs live in `.claude/skills/schedule-dispatcher/references/job-*.md`. If you want to understand exactly what runs, read those files — they're the authoritative source.
 
-1. Read docs/.wake-up-context.md and docs/.session-diary.md for orientation
-2. Run: python .claude/scripts/build_document_index.py
-3. Strategic reflection (5-8 bullets max):
-   - What changed this week that context hasn't caught up with?
-   - Topics we discuss but haven't formalized?
-   - Data points that no longer reflect reality?
-   - Connections between documents we're not seeing?
-4. Lessons capture:
-   - Read .claude/quality/ecosystem/lessons.json
-   - What worked this week? What was confusing?
-   - Any overlapping or stale lessons to consolidate?
-5. Run: python .claude/scripts/prune_sessions.py
-6. Run: python .claude/scripts/prune_diary.py
-7. End with: "Highest-value next action: ..."
+### Why these cadences?
 
-Keep it focused and strategic.
-```
+They're **aggressive starting defaults**. Better to catch problems while small than to discover a mess weeks later. As your context matures:
+
+- If `index-health` finds nothing for 3+ days → dispatcher suggests reducing to weekdays
+- If `daydream-deep` finds nothing for 3+ weeks → suggests moving to monthly
+- If `audit-inbox` keeps finding the same things → suggests increasing frequency or fixing root cause
+
+**The dispatcher only suggests. It never changes cadence automatically.** You approve every change.
 
 ---
 
-### Task 3: Mid-week Daydream (Wednesday)
+## What You See
 
-**ID:** `clear-wednesday-daydream`
-**Schedule:** Wednesday (`0 15 * * 3`)
-**Description:** Mid-week standalone daydream — deeper strategic reflection
+Every morning, the dispatcher writes the full digest to `docs/_inbox/daily-digest.md`. But the primary interface is **your Claude Code session dashboard** — the dispatcher uses session states to pre-triage your attention.
 
-**Prompt:**
+### The dashboard becomes your priority inbox
+
+| Dashboard status | What it means | Your action |
+|---|---|---|
+| 🟡 **Awaiting input** (yellow) | Dispatcher found something that needs your judgement — action items, frequency suggestions, or an error | Open the session, click through the structured options |
+| 🔵 **Ready** (blue) | Clean green run — nothing to act on | Bulk "Mark all read" and move on |
+
+This is the meaningful signal: yellow = attend, blue = dismiss. If every morning's run is clean, you bulk-read-acknowledge a row of blue sessions in one click. If one has findings, it's the only yellow row — impossible to miss.
+
+### When a run has findings (yellow "Awaiting input")
+
+Short chat summary:
 
 ```
-Run scheduled CLEAR maintenance: Wednesday Daydream.
-
-1. Read docs/.wake-up-context.md and docs/.session-diary.md for orientation
-2. Run: python .claude/scripts/build_document_index.py
-3. Run: python .claude/scripts/analyze_crossrefs.py (if it exists)
-4. Deeper reflection:
-   - What's the biggest gap in our context right now?
-   - Any data points that should be split, merged, or retired?
-   - What business reality has shifted that our docs don't reflect?
-   - Any patterns across recent sessions that suggest a structural change?
-5. One concrete recommendation: "The highest-value thing to do next is..."
-
-This is the deeper thinking session. Be strategic, not mechanical.
+Maintenance complete — verdict: amber.
+3 findings, 2 auto-fixed. Full report: docs/_inbox/daily-digest.md
 ```
+
+Then a question with 2-4 concrete options you can click:
+
+- Walk me through the action items
+- Show full digest
+- Dismiss for now
+
+Click "Walk me through" → the dispatcher loads the first action item, explains it, and asks what to do. Click "Show full digest" → the digest appears, then you're asked again with updated options. Click "Dismiss" → done in one click, session marks read.
+
+### When a run is clean (blue "Ready")
+
+One line, no question, nothing to click:
+
+```
+Maintenance complete — verdict: green. Nothing to act on.
+```
+
+Session auto-marks as Ready. You never have to open it unless curious.
+
+This rule applies to every dispatch path: scheduled morning run, on-demand "run today's maintenance now", and single-job runs like "run audit-inbox now". Questions appear only when something is actually worth your attention.
+
+### The digest file structure
+
+`docs/_inbox/daily-digest.md` is the full report, useful when you want depth:
+
+```markdown
+# Daily Maintenance Digest — 2026-04-15
+
+**Overall:** amber — 5 jobs ran, 7 findings, 3 auto-fixed.
+
+## Action needed (4)
+- [ ] audit-inbox: 2 inbox files aged > 7 days — triage
+- [ ] daydream-lessons: reconcile stage claim in brand-identity vs current-state
+- [ ] index-health: docs/new-playbook.md has no frontmatter
+- [ ] audit-inbox: lessons X and Y overlap — merge?
+
+## Auto-fixed (3)
+- index-health: missing-last-updated in brand-identity.md
+- index-health: eof-newline in competitive-positioning.md
+- audit-inbox: trailing-whitespace in messaging-framework.md
+
+## Per-job summary
+### index-health — green (after fixes)
+### daydream-lessons — amber (4 observations)
+...
+
+## Frequency suggestions
+- daydream-deep has been green 3 runs running. Consider running it less often.
+```
+
+You don't HAVE to open this file — the in-chat menu gets you everywhere. The file is there when you want to read the full context in one place.
+
+**Green with zero findings**: you still get a menu (consistent UX), but the default option is "Done, thanks" and a single click closes the cycle.
 
 ---
 
-### Task 4: Deep Audit + Inbox (Friday)
+## Auto-Fix Policy
 
-**ID:** `clear-friday-audit`
-**Schedule:** Friday (`0 9 * * 5`)
-**Description:** Weekly deep audit, lessons consolidation, and inbox processing
+The dispatcher is allowed to apply a short list of structural fixes without asking. The defaults:
 
-**Prompt:**
+- Missing `last-updated` field → set to today
+- Frontmatter field order normalization
+- Trailing whitespace / EOF newline
+- Broken cross-reference where exactly one rename candidate exists
 
-```
-Run scheduled CLEAR maintenance: Friday Deep Audit + Inbox.
+Everything else — missing whole frontmatter blocks, boundary violations, stale content, content contradictions, archive decisions — becomes an action item for you to review.
 
-1. Run: python .claude/scripts/build_document_index.py
-2. Deep CLEAR audit (pick one cluster in rotation each week):
-   - Boundary violations and ownership gaps
-   - Stale cross-references (files moved, renamed, or deleted)
-   - Duplicate or near-duplicate content across documents
-   - Documents that should be archived (superseded or inactive 90+ days)
-3. Lessons consolidation:
-   - Read .claude/quality/ecosystem/lessons.json
-   - Identify overlapping or redundant lessons
-   - Flag lessons that are no longer relevant
-4. Inbox check:
-   - Scan docs/_inbox/ for files older than 7 days
-   - List unprocessed items with a suggested action (process, archive, discard)
-5. Weekly summary:
-   - Top 3 findings
-   - Top 3 recommended actions for next week
-```
+Full semantics: `.claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md`.
+
+To change the whitelist, tell Claude: *"Stop auto-fixing trailing whitespace."* or *"Enable auto-fix for broken cross-references."*
 
 ---
 
-### Task 5: Architecture Review (Monthly)
+## On-Demand Jobs
 
-**ID:** `clear-monthly-architecture`
-**Schedule:** 1st of month (`0 9 1 * *`)
-**Description:** Monthly full architecture + ecosystem review
+You don't have to wait for the scheduled time. Any job can be run manually:
 
-**Prompt:**
+> "Run the audit-inbox job now."
+> "Do a quick index-health."
+> "Run today's maintenance."
 
+On-demand runs **don't** write to the daily digest (that's reserved for the morning scheduled run) and **don't** emit frequency-tuning suggestions. They do log to the diary so the history stays complete.
+
+---
+
+## The Schedule Diary
+
+Every job run appends one line to `.claude/hook_state/schedule-diary.jsonl`:
+
+```json
+{"ts":"2026-04-15T09:04:12","job":"index-health","verdict":"green","findings_count":0,"auto_fixed":[],"actions_needed":[],"duration_s":4}
 ```
-Run scheduled CLEAR maintenance: Monthly Architecture Review.
 
-1. Run: python .claude/scripts/build_document_index.py
-2. Full CLEAR audit across ALL data points (not just one cluster):
-   - Every document's ownership spec — still accurate?
-   - Every cross-reference — does it resolve?
-   - Ownership gaps — topics that no one owns?
-   - Duplicates — content in multiple places?
-3. Ecosystem check:
-   - Run: python .claude/scripts/analyze_integration.py --staged (if applicable)
-   - Compare .claude/quality/ecosystem/state.json against actual files
-   - Any skills, hooks, or scripts that are stale or redundant?
-4. Lessons review:
-   - Read .claude/quality/ecosystem/lessons.json
-   - Which lessons have become obvious and can be retired?
-   - Which lessons are still being violated?
-5. Monthly report:
-   - Health score (0-10)
-   - Top 5 findings
-   - Top 3 recommendations for next month
-   - One strategic insight: what's the system getting right, and what needs to improve?
+The diary is:
+
+- **Gitignored** — local to your machine, doesn't clutter commits
+- **Append-only** — never rewritten, corrective entries added if needed
+- **Used for tuning suggestions** — the dispatcher reads recent entries to decide when to suggest frequency changes
+
+To ask Claude about history:
+
+> "How has audit-inbox looked over the last month?"
+> "What did the dispatcher say last Tuesday?"
+> "Has architecture-review ever run red?"
+
+---
+
+## Configuration
+
+The config file is `.claude/quality/schedule-config.json`. You can read it, but you shouldn't hand-edit it — it has a specific schema and the natural-language flow is less error-prone.
+
+Structure (abbreviated):
+
+```json
+{
+  "version": "1.0",
+  "jobs": {
+    "index-health":       { "enabled": true, "schedule": "daily" },
+    "daydream-lessons":   { "enabled": true, "schedule": "mon"   },
+    "daydream-deep":      { "enabled": true, "schedule": "wed"   },
+    "audit-inbox":        { "enabled": true, "schedule": "fri"   },
+    "architecture-review":{ "enabled": true, "schedule": "1st"   }
+  },
+  "auto_fix": {
+    "enabled": true,
+    "whitelist": ["missing-last-updated", "..."]
+  },
+  "digest": { "write_file": true, "path": "docs/_inbox/daily-digest.md" },
+  "tuning": { "suggest_reduce_after_green_runs": 3 }
+}
 ```
+
+Valid `schedule` values: `"daily"`, `"mon"..."sun"`, `"weekdays"`, `"weekends"`, `"1st"`, `"15th"`, `"last"`, `"every-Nd"` (every N days), `"off"`, or a raw cron string.
+
+---
+
+## Multi-Repo Users
+
+Scheduled tasks live in `~/.claude/scheduled-tasks/` — **user-global, not per-repo**. If you run BCOS on multiple repos, each one needs its own dispatcher task with a unique ID.
+
+- Task ID format: `bcos-{project}` where `{project}` is a short slug derived from the repo folder name
+- Task prompt includes the absolute repo path so the dispatcher always runs in the right directory
+- Onboarding handles both automatically — you should never see collisions
+
+If you want a cross-repo combined digest, that's a separate feature not covered by this guide. Ask in a separate session.
+
+---
+
+## Migration from v1.0 / v1.1
+
+Earlier BCOS versions shipped five standalone scheduled tasks (`{project}-index`, `{project}-daydream`, `{project}-daydream-deep`, `{project}-audit`, `{project}-architecture`). v1.2 consolidates them into one dispatcher.
+
+When you run `python .claude/scripts/update.py` on an existing install, it detects old-style tasks and writes `.claude/MIGRATION-NEEDED.md`. Next time Claude starts, it reads this file and offers to run the `schedule-migrate` skill, which:
+
+1. Lists the old tasks
+2. Asks you to confirm before deleting them
+3. Creates the new `bcos-{project}` dispatcher
+4. Seeds `schedule-config.json` with the defaults
+5. Deletes the old tasks
+6. Writes the migration into the diary so you have a clean history boundary
+
+Existing tasks keep running until migration completes — nothing breaks in the window between update and migration.
 
 ---
 
 ## Adjusting Later
 
-Your schedule is not permanent. As your context matures:
+Your schedule is not permanent. Signals to adjust:
 
-- **If 3 consecutive checks find nothing** — reduce that task's frequency by half
-- **If checks keep finding problems** — increase frequency or fix the root cause
-- **Quarterly architecture review** — when things stabilize, switch monthly to quarterly
+- **Job keeps finding nothing** (dispatcher will suggest this) — reduce frequency
+- **Job keeps finding the same issue** — fix the root cause instead of running more often
+- **Inbox grows faster than weekly triage** — bump `audit-inbox` to twice a week
+- **You've stopped reading the digest** — dispatcher is too noisy; reduce depth or frequency
+- **A cluster is suddenly active** — consider temporarily increasing `audit-inbox` rotation speed
 
-To change a schedule, tell Claude: "Update my CLEAR [task name] schedule to [new frequency]."
+Tell Claude the signal, Claude handles the config change.
 
 ---
 
 ## Reviewing Results
 
-When a scheduled task produces results:
+When the daily digest lands:
 
-1. **Scan the summary.** If everything is green, you're done in 30 seconds.
-2. **Act on urgents.** Broken references, ownership gaps, contradictions.
-3. **Queue the rest.** Add to your next work session.
-4. **Capture surprises.** If the audit found something unexpected, that's a lesson.
+1. **Scan the one-liner.** If green with zero actions, you're done in 5 seconds.
+2. **Act on action items.** Open the digest, work through the list.
+3. **Apply suggested tuning.** If the dispatcher suggests a frequency change and it makes sense, tell Claude to apply it.
+4. **Capture surprises.** If an audit found something unexpected about your business, that's a lesson — tell Claude to capture it.
 
 The goal is not zero findings. The goal is **no surprises**.
+
+---
+
+## References
+
+| Resource                  | Path                                                                          |
+|---------------------------|-------------------------------------------------------------------------------|
+| Dispatcher skill          | `.claude/skills/schedule-dispatcher/SKILL.md`                                 |
+| Job specs                 | `.claude/skills/schedule-dispatcher/references/job-*.md`                      |
+| Auto-fix whitelist        | `.claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md`         |
+| Config                    | `.claude/quality/schedule-config.json` (your repo's live config)              |
+| Config template           | `.claude/quality/schedule-config.template.json` (defaults shipped by BCOS)    |
+| Diary                     | `.claude/hook_state/schedule-diary.jsonl` (gitignored, machine-local)         |
+| Digest                    | `docs/_inbox/daily-digest.md` (overwritten daily)                             |
+| Maintenance lifecycle     | `docs/_bcos-framework/architecture/maintenance-lifecycle.md`                  |
