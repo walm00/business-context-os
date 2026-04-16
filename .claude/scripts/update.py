@@ -51,7 +51,6 @@ FRAMEWORK_DIRS = [
 # These are NOT user content — they live outside FRAMEWORK_DIRS for structural
 # reasons but are owned by the framework.
 FRAMEWORK_FILES = [
-    "README.md",
     ".claude/quality/schedule-config.template.json",
 ]
 
@@ -108,15 +107,21 @@ def download_upstream(repo: str, branch: str, dest_dir: str) -> str:
 
 
 def collect_framework_files(root: str) -> list[str]:
-    """Return all framework file paths relative to root (posix form)."""
+    """Return all framework file paths relative to root (posix form).
+    Skips Python bytecode caches (__pycache__ dirs and *.pyc files) — those are
+    machine-local artifacts that should never sync between installs."""
     files = []
 
     for d in FRAMEWORK_DIRS:
         dir_path = os.path.join(root, d)
         if not os.path.isdir(dir_path):
             continue
-        for dirpath, _, filenames in os.walk(dir_path):
+        for dirpath, dirnames, filenames in os.walk(dir_path):
+            # Prune __pycache__ before descending (modifies dirnames in-place)
+            dirnames[:] = [dn for dn in dirnames if dn != "__pycache__"]
             for fname in filenames:
+                if fname.endswith(".pyc"):
+                    continue
                 full = os.path.join(dirpath, fname)
                 rel = posix(os.path.relpath(full, root))
                 files.append(rel)
@@ -411,6 +416,71 @@ def ensure_convention_infrastructure(project_root: str, upstream_root: str) -> l
             Path(gitkeep).touch()
 
     return created
+
+
+# ---------------------------------------------------------------------------
+# README check
+# ---------------------------------------------------------------------------
+
+def check_readme(project_root: Path, dry_run: bool) -> None:
+    """If no README.md exists and BCOS content is present, create a minimal one.
+
+    Three cases:
+    - README exists → skip (never touch an existing README, even if empty).
+    - README missing + no BCOS content yet → note it for later; too early.
+    - README missing + BCOS content present → create a minimal repo README.
+    """
+    readme_path = project_root / "README.md"
+    if readme_path.exists():
+        return  # existing repo — never touch it
+
+    # Detect whether meaningful BCOS content has been built up yet.
+    # We look for any active context file (not just framework scaffolding).
+    has_content = any([
+        (project_root / "docs" / "table-of-context.md").is_file(),
+        (project_root / "docs" / "current-state.md").is_file(),
+        (project_root / "docs" / "document-index.md").is_file(),
+    ])
+
+    if not has_content:
+        print("  README.md: not found — no content yet, will create once context is established.")
+        return
+
+    if dry_run:
+        print("  README.md: would create (no README found, BCOS content present)")
+        return
+
+    repo_name = project_root.name
+    # Produce a human-readable title from the repo/folder name
+    title = repo_name.replace("-", " ").replace("_", " ").title()
+
+    readme_content = f"""# {title}
+
+This repository uses [CLEAR Context OS](https://github.com/walm00/business-context-os)
+to maintain structured business context for AI-assisted work.
+
+## Navigation
+
+| Location | Contents |
+|----------|---------|
+| `docs/` | Active context — current business reality |
+| `docs/_inbox/` | Raw material waiting to be processed |
+| `docs/_planned/` | Ideas and drafts — not yet active |
+| `docs/_archive/` | Historical — superseded documents |
+| `.private/` | Local-only context — never committed |
+
+## Using with Claude Code
+
+Open Claude Code in this directory and start working. Claude reads the context
+automatically and uses it to give you accurate, up-to-date assistance.
+
+To update the framework:
+```bash
+python .claude/scripts/update.py
+```
+"""
+    readme_path.write_text(readme_content, encoding="utf-8")
+    print("  README.md: created (minimal BCOS context README).")
 
 
 # ---------------------------------------------------------------------------
@@ -920,6 +990,9 @@ def main():
             print(f"    Archive: docs/_archive/migrated-*-{today}/")
             print(f"    → review those folders in case you had any custom files there,")
             print(f"      then delete the archive folders when you've confirmed they're safe.")
+
+        # ------------------------------------------------------ README check
+        check_readme(local_root, args.dry_run)
 
         # ----------------------------------------- regenerate wake-up context
         wakeup_script = str(local_root / ".claude" / "scripts" / "generate_wakeup_context.py")

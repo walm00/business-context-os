@@ -49,7 +49,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check YAML frontmatter
-        run: python3 .github/scripts/validate_frontmatter.py
+        run: python3 .claude/scripts/validate_frontmatter.py
 
   validate-references:
     name: Validate References
@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check file path references
-        run: python3 .github/scripts/validate_references.py
+        run: python3 .claude/scripts/validate_references.py
 
   validate-ecosystem:
     name: Validate Ecosystem

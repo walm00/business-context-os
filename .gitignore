@@ -68,6 +68,9 @@ docs/_inbox/daily-digest.md
 # Private publish script (repo-specific config)
 .claude/scripts/publish.sh
 
+# Pre-commit hook (dev-only — end users have scheduled maintenance instead)
+.claude/hooks/pre_commit_validate.sh
+
 # Private strategy docs (not for public repo)
 .private/
 

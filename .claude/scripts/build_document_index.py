@@ -389,7 +389,8 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
                 doc_type = meta.get("type", "—")
                 status = meta.get("status", "—")
                 updated = meta.get("last-updated", "—")
-                lines.append(f"| [{name}]({doc['path']}) | {domain} | {doc_type} | {status} | {updated} |")
+                link = doc['path'][len('docs/'):] if doc['path'].startswith('docs/') else doc['path']
+                lines.append(f"| [{name}]({link}) | {domain} | {doc_type} | {status} | {updated} |")
             lines.append("")
 
         lines.append("---")
@@ -480,7 +481,8 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
         lines.append("|----------|--------|--------------|")
         for doc in planned:
             status = doc["meta"].get("status", "—") if doc.get("meta") else "—"
-            lines.append(f"| [{doc['name']}]({doc['path']}) | {status} | {doc['modified']} |")
+            link = doc['path'][len('docs/'):] if doc['path'].startswith('docs/') else doc['path']
+            lines.append(f"| [{doc['name']}]({link}) | {status} | {doc['modified']} |")
     else:
         lines.append("No planned documents. Put polished ideas and future plans in `docs/_planned/`.")
     lines.append("")
@@ -498,7 +500,8 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
         lines.append("| Document | Size | Last Modified |")
         lines.append("|----------|------|--------------|")
         for doc in archive:
-            lines.append(f"| [{doc['name']}]({doc['path']}) | {doc['size']} | {doc['modified']} |")
+            link = doc['path'][len('docs/'):] if doc['path'].startswith('docs/') else doc['path']
+            lines.append(f"| [{doc['name']}]({link}) | {doc['size']} | {doc['modified']} |")
     else:
         lines.append("No archived documents. Move superseded docs to `docs/_archive/` instead of deleting them.")
     lines.append("")
@@ -583,7 +586,7 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
     lines.append("")
     lines.append(USER_END)
 
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 # --- Main ---
