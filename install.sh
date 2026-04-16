@@ -240,6 +240,21 @@ else
     copy_if_missing "$SCRIPT_DIR/CLAUDE.md" "CLAUDE.md"
 fi
 
+# ─── README.md handling ─────────────────────────────────────────────
+
+echo -e "${BLUE}README.md...${NC}"
+echo ""
+
+if [ -f "$TARGET_DIR/README.md" ]; then
+    echo -e "  ${YELLOW}SKIP${NC}  README.md (existing repo — not touched)"
+    echo ""
+else
+    echo -e "  ${YELLOW}NOTE${NC}  No README.md found."
+    echo "        Once your context is established, ask Claude to generate one:"
+    echo "        \"Create a README for this repository based on my context.\""
+    echo ""
+fi
+
 # ─── Make scripts executable ────────────────────────────────────────
 
 chmod +x .claude/agents/agent-discovery/find_agents.sh 2>/dev/null || true
