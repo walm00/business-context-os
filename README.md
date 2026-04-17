@@ -12,7 +12,7 @@
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code Ready">
-    <img src="https://img.shields.io/badge/skills-11-blue" alt="11 Skills">
+    <img src="https://img.shields.io/badge/skills-14-blue" alt="14 Skills">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
     <img src="https://img.shields.io/badge/free-open--source-brightgreen" alt="Free & Open Source">
@@ -56,7 +56,7 @@ CLEAR Context OS is a **complete system** — methodology, skills, templates, an
 
 | | Organize | Maintain | Learn |
 |---|---|---|---|
-| **What** | CLEAR methodology + ownership boundaries | 11 skills + 4 hooks that automate maintenance | Lessons system captures insights every session |
+| **What** | CLEAR methodology + ownership boundaries | 14 skills + 4 hooks that automate maintenance | Lessons system captures insights every session |
 | **How** | Every doc declares what it owns. No duplicates, no drift. | Session capture, integration audits, scheduled reviews | What worked, what didn't — your system gets smarter |
 | **You do** | Define your data points (Claude helps) | Review what Claude surfaces | Approve or reject captured lessons |
 
@@ -122,18 +122,17 @@ business-context-os/
 │   │   └── templates/           # Data point, cluster, architecture templates
 │
 ├── .claude/
-│   ├── skills/                  # 11 skills (see below)
+│   ├── skills/                  # 14 skills (see below)
 │   ├── agents/                  # 1 agent (explore)
-│   ├── hooks/                   # Frontmatter check, session capture, commit check
-│   ├── scripts/                 # Index builder, update, pruning, cross-ref analysis
+│   ├── hooks/                   # Frontmatter check, session + pre-compact capture, commit check, opt-in pre-commit validator
+│   ├── scripts/                 # Index builder, update, validators, pruning, cross-ref + ecosystem analysis, lessons, wake-up context, publish
 │   └── registries/              # Entity registry, reference indexes
 │
 ├── .github/
-│   ├── workflows/ci.yml         # 4 automated checks on every PR
-│   └── scripts/                 # Frontmatter + reference validators
+│   └── workflows/ci.yml         # 4 automated checks on every PR
 │
 ├── examples/brand-strategy/     # Complete worked example (8 data points)
-├── CLAUDE.md                    # Claude Code instructions (lean — ~500 tokens)
+├── CLAUDE.md                    # Claude Code instructions (lean — ~650 tokens)
 └── install.sh                   # One-command installer
 ```
 
@@ -155,7 +154,7 @@ Different content gets different treatment. Business context is synthesized from
 
 ## Skills & Agents
 
-### 11 Skills
+### 14 Skills
 
 <table>
 <tr>
@@ -258,6 +257,30 @@ Different content gets different treatment. Business context is synthesized from
 
 </td>
 <td>
+
+#### ⏰ Schedule Dispatcher
+**Daily maintenance runner.** Reads the schedule, runs due jobs, writes one consolidated digest — green/amber/red verdicts at a glance.
+
+*Runs automatically each morning via the `bcos-{project}` scheduled task*
+
+</td>
+</tr>
+<tr>
+<td>
+
+#### 🎛️ Schedule Tune
+**Natural-language config editor.** Describe what you want — *"run audit twice a week"* — and it edits `schedule-config.json` with a before/after diff and confirmation.
+
+*"Turn off deep daydream"* · *"Move dispatcher to 08:30"*
+
+</td>
+<td>
+
+#### 🔁 Schedule Migrate
+**One-time v1.0/v1.1 → v1.2 migration.** Collapses five standalone scheduled tasks into a single dispatcher. Auto-invoked by `update.py` when needed.
+
+*Runs once per repo, then stays dormant*
+
 </td>
 </tr>
 </table>
@@ -321,8 +344,8 @@ Contributions welcome — open an issue or submit a PR targeting the `dev` branc
 **CI checks run automatically on every PR.** Before pushing, you can run them locally:
 
 ```bash
-python .github/scripts/validate_frontmatter.py    # Check YAML metadata
-python .github/scripts/validate_references.py      # Check file paths resolve
+python .claude/scripts/validate_frontmatter.py    # Check YAML metadata
+python .claude/scripts/validate_references.py     # Check file paths resolve
 python .claude/scripts/analyze_integration.py --ci  # Check ecosystem wiring
 ```
 
