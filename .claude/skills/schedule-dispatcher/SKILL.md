@@ -140,9 +140,11 @@ For each job run today, check recent diary:
 - **Findings trending up over last 3 runs** → suggest increasing frequency one step
 - **Last run was `error`** → suggest investigating, not frequency change
 
-Suggestions are just lines in the report. Format:
+Suggestions are just lines in the report. Prefix each line with 📉 for "reduce frequency" or 📈 for "increase frequency" so the direction is obvious at a glance. Format:
 
-> `daydream-deep` has been green 3 runs running. Consider running it less often — tell me "run daydream-deep only on the 1st" and I'll update config.
+> 📉 `daydream-deep` has been green 3 runs running. Consider running it less often — tell me "run daydream-deep only on the 1st" and I'll update config.
+
+> 📈 `audit-inbox` findings trending up over last 3 runs. Consider running it more often — tell me "run audit-inbox daily" and I'll update config.
 
 Do NOT change the config automatically. The user must go through `schedule-tune`.
 
@@ -157,31 +159,31 @@ Structure of the digest:
 ```markdown
 # Daily Maintenance Digest — {YYYY-MM-DD}
 
-**Overall:** {green|amber|red} — {N} jobs ran, {M} findings, {K} auto-fixed.
+**Overall:** {🟢 green|🟡 amber|🔴 red} — {N} jobs ran, {M} findings, {K} auto-fixed.
 
-## Action needed ({count})
+## ⚠️ Action needed ({count})
 
 - [ ] {job-name}: {short description of action}
 - [ ] ...
 
 (If no actions, write "None — everything's clean.")
 
-## Auto-fixed ({count})
+## 🔧 Auto-fixed ({count})
 
 - {job-name}: {fix description}
 - ...
 
 ## Per-job summary
 
-### index-health — {verdict}
+### index-health — {🟢 green|🟡 amber|🔴 red|⚠️ error}
 {one-line summary, optional details}
 
-### daydream-lessons — {verdict}
+### daydream-lessons — {🟢 green|🟡 amber|🔴 red|⚠️ error}
 ...
 
-## Frequency suggestions
+## 💡 Frequency suggestions
 
-- {suggestion line with exact command the user can say}
+- {📉 or 📈 prefix}{suggestion line with exact command the user can say}
 
 (If none, omit this section entirely.)
 
@@ -214,14 +216,14 @@ Otherwise — clean green run, zero findings, zero suggestions — output a shor
 Short, affirmative, one or two lines:
 
 ```
-Maintenance complete — verdict: green. Nothing to act on.
+Maintenance complete — verdict: 🟢 green. Nothing to act on.
 (Full report: docs/_inbox/daily-digest.md)
 ```
 
 Or even shorter when the user is watching an on-demand run:
 
 ```
-Green — nothing to act on.
+🟢 Green — nothing to act on.
 ```
 
 Stop. No question. Do not add "let me know if…" or "want me to…". The dashboard handles the follow-through.
@@ -231,9 +233,11 @@ Stop. No question. Do not add "let me know if…" or "want me to…". The dashbo
 **Short lead-in** (2-4 lines max, above the question):
 
 ```
-Maintenance complete — verdict: amber.
+Maintenance complete — verdict: 🟡 amber.
 3 findings, 2 auto-fixed. Full report: docs/_inbox/daily-digest.md
 ```
+
+(Use 🔴 for red verdicts, ⚠️ for error.)
 
 **Then `AskUserQuestion`** with a `header` under 12 chars (e.g. "Next step", "Maintenance") and 2-4 options tailored to what happened.
 
@@ -326,12 +330,12 @@ If the user says "run the {job-name} job now" or "run today's maintenance now":
 
    ## On-demand run — {HH:MM} ({job-name})
 
-   **Verdict:** {verdict} — {findings} findings, {fixed} auto-fixed.
+   **Verdict:** {🟢 green|🟡 amber|🔴 red|⚠️ error} — {findings} findings, {fixed} auto-fixed.
 
-   ### Action needed
+   ### ⚠️ Action needed
    - ...
 
-   ### Auto-fixed
+   ### 🔧 Auto-fixed
    - ...
    ```
 

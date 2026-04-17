@@ -137,13 +137,24 @@ Every change follows the same five-step pattern:
 
 ### The proposal format
 
-Always show before→after, not just after:
+Always show before→after, not just after. Use ✏️ for field edits, ✅ for enable, ❌ for disable, so the diff is scannable at a glance:
 
 ```
 Proposed change to schedule-config.json:
 
-  jobs.audit-inbox.schedule:
+  ✏️ jobs.audit-inbox.schedule:
     "fri"  →  "tue,fri"
+
+No other changes.
+```
+
+Enable/disable example:
+
+```
+Proposed change to schedule-config.json:
+
+  ❌ jobs.daydream-deep.enabled:
+    true  →  false
 
 No other changes.
 ```
@@ -154,10 +165,10 @@ If the change is on the scheduled task itself (time change):
 Proposed changes:
 
   Config file:
-    dispatcher.time_hint:  "09:00"  →  "08:30"
+    ✏️ dispatcher.time_hint:  "09:00"  →  "08:30"
 
   Scheduled task bcos-leverage:
-    cronExpression:  "0 9 * * *"  →  "30 8 * * *"
+    ✏️ cronExpression:  "0 9 * * *"  →  "30 8 * * *"
 
 Both will be applied together.
 ```

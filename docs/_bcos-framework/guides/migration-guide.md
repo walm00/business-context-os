@@ -67,7 +67,7 @@ Find every document that contains information about this topic. Pull the relevan
 **Step 2: Create the data point**
 
 Copy `docs/templates/context-data-point.md`. Fill in:
-- `name`, `type`, `owner`, `created`, `last-updated`
+- `name`, `type`, `cluster`, `version`, `status`, `created`, `last-updated`
 - `DOMAIN` — one sentence
 - `EXCLUSIVELY_OWNS` — what belongs here
 

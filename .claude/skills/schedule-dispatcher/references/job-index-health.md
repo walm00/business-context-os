@@ -51,7 +51,7 @@ For each remaining file, check:
 | Issue ID                      | What to look for                                                     |
 |-------------------------------|----------------------------------------------------------------------|
 | `missing-frontmatter`         | No YAML frontmatter block at all, or empty block                     |
-| `missing-required-field`      | Required field missing: name, type, cluster, version, status, created, last-updated, owner |
+| `missing-required-field`      | Required field missing: name, type, cluster, version, status, created, last-updated |
 | `missing-last-updated`        | `last-updated` field absent (but other frontmatter present)          |
 | `frontmatter-field-order`     | All required fields present, but not in canonical order              |
 | `broken-xref`                 | Markdown link pointing to a non-existent file                        |
@@ -72,10 +72,10 @@ If not allowed, record it in `actions_needed`: one string per item, format: `{is
 
 ### 5. Determine verdict
 
-- `green` — no findings, or every finding was auto-fixed
-- `amber` — one or more items remain in `actions_needed`, all non-critical (missing fields, broken xref without candidate, etc.)
-- `red` — any critical item: missing-frontmatter entirely on an active doc, or index script errored
-- `error` — the scan itself failed (script crash, permission error, etc.)
+- 🟢 `green` — no findings, or every finding was auto-fixed
+- 🟡 `amber` — one or more items remain in `actions_needed`, all non-critical (missing fields, broken xref without candidate, etc.)
+- 🔴 `red` — any critical item: missing-frontmatter entirely on an active doc, or index script errored
+- ⚠️ `error` — the scan itself failed (script crash, permission error, etc.)
 
 ### 6. Emit result
 

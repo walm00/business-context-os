@@ -184,8 +184,8 @@ Context-audit is the structural integrity layer. It checks whether documents fol
 
 ### What Gets Checked
 
-**Metadata completeness** -- 8 required fields per document:
-- `name`, `type`, `cluster`, `version`, `status`, `owner`, `created`, `last-updated`
+**Metadata completeness** -- 7 required fields per document:
+- `name`, `type`, `cluster`, `version`, `status`, `created`, `last-updated`
 
 **CLEAR compliance** -- 5 audit categories:
 

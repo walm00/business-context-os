@@ -56,10 +56,10 @@ If the deep daydream finds literally nothing worth changing, that's a real signa
 
 ### 5. Determine verdict
 
-- `green` — no structural change warranted; architecture is aligned with current reality
-- `amber` — one concrete recommendation that's worth considering but not urgent
-- `red` — a misalignment that's actively causing problems (e.g. two docs claim ownership of the same topic, or a cluster has grown far beyond what its structure can hold)
-- `error` — daydream skill errored
+- 🟢 `green` — no structural change warranted; architecture is aligned with current reality
+- 🟡 `amber` — one concrete recommendation that's worth considering but not urgent
+- 🔴 `red` — a misalignment that's actively causing problems (e.g. two docs claim ownership of the same topic, or a cluster has grown far beyond what its structure can hold)
+- ⚠️ `error` — daydream skill errored
 
 ### 6. Emit result
 

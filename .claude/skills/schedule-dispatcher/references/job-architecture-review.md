@@ -106,10 +106,10 @@ If there are fewer than three worth flagging, surface fewer. Do not manufacture 
 
 ### 8. Determine verdict
 
-- `green` — health score ≥ 8, zero critical, zero ecosystem drift
-- `amber` — health score 5-7, some findings, no criticals
-- `red` — health score < 5, OR any critical finding, OR ecosystem drift
-- `error` — audit or integration analysis crashed
+- 🟢 `green` — health score ≥ 8, zero critical, zero ecosystem drift
+- 🟡 `amber` — health score 5-7, some findings, no criticals
+- 🔴 `red` — health score < 5, OR any critical finding, OR ecosystem drift
+- ⚠️ `error` — audit or integration analysis crashed
 
 ### 9. Emit result
 
