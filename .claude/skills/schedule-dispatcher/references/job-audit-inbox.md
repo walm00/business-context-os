@@ -89,10 +89,10 @@ If `lessons-consolidate` has a `--report-only` flag, use it. If not (v1.0-1.1 ve
 
 ### 7. Determine verdict
 
-- `green` — no critical or high findings, no aged inbox, no lesson consolidation pressure
-- `amber` — some high or medium findings, or 1-3 aged inbox items
-- `red` — any critical finding (missing frontmatter on active doc, ownership boundary violation, broken invariant), or 5+ aged inbox items
-- `error` — audit skill or script crashed
+- 🟢 `green` — no critical or high findings, no aged inbox, no lesson consolidation pressure
+- 🟡 `amber` — some high or medium findings, or 1-3 aged inbox items
+- 🔴 `red` — any critical finding (missing frontmatter on active doc, ownership boundary violation, broken invariant), or 5+ aged inbox items
+- ⚠️ `error` — audit skill or script crashed
 
 ### 8. Emit result
 

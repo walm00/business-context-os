@@ -231,16 +231,18 @@ After this step, nothing on disk tells Claude migration is pending, so subsequen
 Tell the user in one short paragraph:
 
 ```
-Migration complete.
+🟢 Migration complete.
 
-  • Created: bcos-leverage (runs daily 09:00)
-  • Disabled 5 old tasks — delete them via the UI when convenient
-  • schedule-config.json seeded with defaults (preserving your enable/disable choices)
-  • Diary boundary entry written
+  ✅ Created: bcos-leverage (runs daily 09:00)
+  ❌ Disabled 5 old tasks — delete them via the UI when convenient
+  ✏️ schedule-config.json seeded with defaults (preserving your enable/disable choices)
+  📝 Diary boundary entry written
 
 Tomorrow morning's run produces docs/_inbox/daily-digest.md. Want to test it now?
   → say "run today's maintenance now"
 ```
+
+If any old tasks failed to disable (partial success), lead with ⚠️ instead of 🟢 and list the failures under an **⚠️ Needs attention** line.
 
 Offer the test run but don't invoke it automatically.
 

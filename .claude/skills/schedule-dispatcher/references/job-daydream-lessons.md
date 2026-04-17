@@ -91,10 +91,10 @@ Keep `actions_needed` to a maximum of 8 items. If daydream produced more, pick t
 
 ### 7. Determine verdict
 
-- `green` — zero observations, clean week (rare and suspicious; note this in the report)
-- `amber` — 1-5 observations, all of routine significance
-- `red` — one or more observations of strategic significance (e.g. a data point claims a fact that current-state contradicts; a whole cluster feels stale)
-- `error` — daydream skill crashed or wake-up context was unreadable
+- 🟢 `green` — zero observations, clean week (rare and suspicious; note this in the report)
+- 🟡 `amber` — 1-5 observations, all of routine significance
+- 🔴 `red` — one or more observations of strategic significance (e.g. a data point claims a fact that current-state contradicts; a whole cluster feels stale)
+- ⚠️ `error` — daydream skill crashed or wake-up context was unreadable
 
 ### 8. Emit result
 

@@ -212,6 +212,9 @@ def check_settings_coverage(project_root: str, changed_files: list[str]) -> list
         normalized = changed.replace("\\", "/")
         if classify_file(normalized) == "hook":
             filename = os.path.basename(normalized)
+            hook_path = os.path.join(project_root, normalized)
+            if _is_git_hook(hook_path):
+                continue
             if filename not in content:
                 gaps.append({
                     "file": normalized,
@@ -219,6 +222,24 @@ def check_settings_coverage(project_root: str, changed_files: list[str]) -> list
                 })
 
     return gaps
+
+
+def _is_git_hook(hook_path: str) -> bool:
+    """Return True if the hook file declares `bcos-hook-type: git` in its header.
+
+    Git hooks install into .git/hooks/ — not .claude/settings.json — so they
+    must be excluded from the Claude Code settings coverage check.
+    """
+    try:
+        with open(hook_path, "r", encoding="utf-8", errors="replace") as f:
+            for i, line in enumerate(f):
+                if i >= 20:
+                    break
+                if "bcos-hook-type: git" in line:
+                    return True
+    except Exception:
+        pass
+    return False
 
 
 def check_state_coverage(project_root: str, changed_files: list[str]) -> list[dict]:

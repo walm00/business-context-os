@@ -55,7 +55,7 @@ Return: [what you need back — file paths, summaries, validation results].
 > "Scan docs/ recursively. For each .md file, extract: path, name from frontmatter (or filename if no frontmatter), status, cluster, last-updated. Return as a table."
 
 **From context-audit:**
-> "Read these 12 files: [list]. For each, check if YAML frontmatter has all required fields (name, type, cluster, version, status, owner, created, last-updated). Report which fields are missing per file."
+> "Read these 12 files: [list]. For each, check if YAML frontmatter has all required fields (name, type, cluster, version, status, created, last-updated). Report which fields are missing per file."
 
 **From daydream:**
 > "Run git log --since='2026-03-20' --name-only -- docs/ and read the diffs for each changed file. Summarize what changed in 1-2 sentences per file."

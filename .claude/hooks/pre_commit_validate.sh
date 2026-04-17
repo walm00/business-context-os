@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # pre_commit_validate.sh — BCOS pre-commit validation hook
+# bcos-hook-type: git
 #
 # Runs the same checks as .github/workflows/ci.yml locally, before the commit
 # lands. Catches JSON syntax errors, missing frontmatter, stale references,
@@ -8,6 +9,8 @@
 #
 # Opt-in: install manually if you want strict blocking validation.
 # Not auto-installed — Claude Code hooks provide non-blocking validation.
+# Installs to .git/hooks/pre-commit, NOT .claude/settings.json — so the
+# ecosystem analyzer skips this file via the `bcos-hook-type: git` marker.
 #
 # Bypass with:   git commit --no-verify
 # Uninstall with:   rm .git/hooks/pre-commit
