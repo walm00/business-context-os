@@ -64,5 +64,5 @@ For full standards: `docs/_bcos-framework/methodology/document-standards.md`
 
 ---
 
-**Version**: 1.2.0
-**Last Updated**: 2026-04-15
+**Version**: 1.2.1
+**Last Updated**: 2026-04-20

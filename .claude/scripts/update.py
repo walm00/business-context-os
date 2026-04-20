@@ -319,8 +319,8 @@ def merge_reference_index(upstream_path: str, local_path: str) -> int:
 
 
 def merge_settings_json(upstream_path: str, local_path: str) -> int:
-    """Merge upstream settings.json hooks into local. Additive only — never removes user hooks.
-    Returns count of new hook entries added."""
+    """Merge upstream settings.json hooks and permission allowlist into local.
+    Additive only — never removes user entries. Returns count of new entries added."""
     import json as _json
 
     with open(upstream_path, "r", encoding="utf-8") as f:
@@ -331,32 +331,42 @@ def merge_settings_json(upstream_path: str, local_path: str) -> int:
     else:
         local = {}
 
-    if "hooks" not in upstream:
-        return 0
-    if "hooks" not in local:
-        local["hooks"] = {}
-
     added = 0
-    for event, matchers in upstream.get("hooks", {}).items():
-        if event not in local["hooks"]:
-            local["hooks"][event] = matchers
-            added += len(matchers)
-            continue
 
-        # For each matcher group in upstream, check if local has it
-        local_commands = set()
-        for matcher_group in local["hooks"][event]:
-            for hook in matcher_group.get("hooks", []):
-                local_commands.add(hook.get("command", ""))
+    # --- hooks (additive, keyed by command string) ---
+    if "hooks" in upstream:
+        if "hooks" not in local:
+            local["hooks"] = {}
+        for event, matchers in upstream.get("hooks", {}).items():
+            if event not in local["hooks"]:
+                local["hooks"][event] = matchers
+                added += len(matchers)
+                continue
 
-        for matcher_group in matchers:
-            for hook in matcher_group.get("hooks", []):
-                cmd = hook.get("command", "")
-                if cmd and cmd not in local_commands:
-                    # New hook — add the whole matcher group
-                    local["hooks"][event].append(matcher_group)
-                    added += 1
-                    break  # one add per matcher group
+            local_commands = set()
+            for matcher_group in local["hooks"][event]:
+                for hook in matcher_group.get("hooks", []):
+                    local_commands.add(hook.get("command", ""))
+
+            for matcher_group in matchers:
+                for hook in matcher_group.get("hooks", []):
+                    cmd = hook.get("command", "")
+                    if cmd and cmd not in local_commands:
+                        local["hooks"][event].append(matcher_group)
+                        added += 1
+                        break  # one add per matcher group
+
+    # --- permissions.allow (additive, deduped by exact rule string) ---
+    upstream_allow = upstream.get("permissions", {}).get("allow", [])
+    if upstream_allow:
+        local.setdefault("permissions", {}).setdefault("allow", [])
+        local_allow = local["permissions"]["allow"]
+        existing = set(local_allow)
+        for rule in upstream_allow:
+            if rule not in existing:
+                local_allow.append(rule)
+                existing.add(rule)
+                added += 1
 
     if added > 0:
         with open(local_path, "w", encoding="utf-8") as f:
@@ -903,11 +913,11 @@ def main():
         upstream_settings = os.path.join(upstream_root, ".claude", "settings.json")
         local_settings = str(local_root / ".claude" / "settings.json")
         if os.path.exists(upstream_settings):
-            hooks_added = merge_settings_json(upstream_settings, local_settings)
-            if hooks_added:
-                print(f"  settings.json: merged {hooks_added} new hook(s) from upstream.")
+            entries_added = merge_settings_json(upstream_settings, local_settings)
+            if entries_added:
+                print(f"  settings.json: merged {entries_added} new entries (hooks + permissions) from upstream.")
             else:
-                print(f"  settings.json: all upstream hooks already registered.")
+                print(f"  settings.json: all upstream entries already registered.")
 
         # ------------------------------------------------ merge ecosystem state.json
         # Additive merge — preserves user's custom skills/agents and user-state
