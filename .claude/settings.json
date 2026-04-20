@@ -1,4 +1,23 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python .claude/scripts/append_diary.py:*)",
+      "Edit(.claude/hook_state/**)",
+      "Write(.claude/hook_state/**)",
+      "Edit(.claude/quality/ecosystem/**)",
+      "Write(.claude/quality/ecosystem/**)",
+      "Edit(docs/.wake-up-context.md)",
+      "Write(docs/.wake-up-context.md)",
+      "Edit(docs/.session-diary.md)",
+      "Write(docs/.session-diary.md)",
+      "Edit(docs/.onboarding-checklist.md)",
+      "Write(docs/.onboarding-checklist.md)",
+      "Edit(docs/document-index.md)",
+      "Write(docs/document-index.md)",
+      "Edit(docs/_inbox/daily-digest.md)",
+      "Write(docs/_inbox/daily-digest.md)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {

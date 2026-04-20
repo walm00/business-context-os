@@ -4,6 +4,25 @@ All notable changes to CLEAR Context OS will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.2.1] — 2026-04-20
+
+### Added
+
+- **Permission allowlist for auto-generated paths.** `.claude/settings.json` now ships a `permissions.allow` block covering only dispatcher-owned state files: `.claude/hook_state/**`, `.claude/quality/ecosystem/**`, `docs/.wake-up-context.md`, `docs/.session-diary.md`, `docs/.onboarding-checklist.md`, `docs/document-index.md`, `docs/_inbox/daily-digest.md`. Framework code paths (`.claude/skills/**`, `.claude/agents/**`, `.claude/scripts/**`, `.claude/hooks/**`, `.claude/settings.json`, `.claude/quality/schedule-config.json`) intentionally stay prompting — this prevents Claude from fixing skills or hooks mid-run and drifting from the BCOS repo standard.
+- **`.claude/scripts/append_diary.py`** — dedicated helper that appends one JSON line to `.claude/hook_state/schedule-diary.jsonl`. Hard-coded target path (refuses any other write), creates `hook_state/` on first run, and pairs with the `Bash(python .claude/scripts/append_diary.py:*)` allowlist entry so diary writes never prompt.
+
+### Changed
+
+- **`schedule-dispatcher` SKILL** now writes diary entries via `append_diary.py` instead of `echo … >> schedule-diary.jsonl`. Raw redirects into `.claude/` triggered the sensitive-file approval prompt on every append; the helper avoids that and also handles first-run directory creation.
+- **`update.py` `merge_settings_json`** is now additive for `permissions.allow` as well as hooks. Existing user rules are never removed or reordered; upstream rules are appended if absent. Status line: `settings.json: merged N new entries (hooks + permissions) from upstream.`
+
+### Migration
+
+- Existing installs pick the allowlist up on the next `python .claude/scripts/update.py` run. Nothing else to do.
+- If you want the prompts gone before updating, the same entries can be mirrored into `~/.claude/settings.json` for an immediate, cross-project effect.
+
+---
+
 ## [1.2.0] — 2026-04-15
 
 ### Changed — Breaking
