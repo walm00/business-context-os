@@ -62,6 +62,20 @@ CLEAR Context OS is a **complete system** — methodology, skills, templates, an
 
 ---
 
+## Requirements
+
+- **Claude Code** — desktop app, CLI, or web
+- **Python 3.8+** on `PATH` — used by hooks, validators, and the updater
+- **bash** — only the installer and two hooks use it; the default macOS bash (3.2) is fine
+
+**macOS-specific notes:**
+
+- Install Python via `xcode-select --install` (Command Line Tools) or `brew install python`. The installer fails fast with instructions if `python3` is missing.
+- If you use the python.org installer and the updater fails with an SSL error, run `/Applications/Python\ 3.x/Install\ Certificates.command` once. Homebrew and CLT Python don't hit this.
+- Scheduled maintenance runs inside Claude Code itself (tasks live in `~/.claude/scheduled-tasks/`) — no `launchd` plist needed, but Claude Code must be running for tasks to fire.
+
+---
+
 ## Quick Start
 
 **New project:**

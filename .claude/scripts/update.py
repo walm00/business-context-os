@@ -23,7 +23,9 @@ import zipfile
 import difflib
 import argparse
 import datetime
+import ssl
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -89,6 +91,24 @@ def download_upstream(repo: str, branch: str, dest_dir: str) -> str:
     zip_path = os.path.join(dest_dir, "upstream.zip")
     try:
         urllib.request.urlretrieve(url, zip_path)
+    except (ssl.SSLError, urllib.error.URLError) as e:
+        # macOS python.org installers ship without cert bundle configuration, which
+        # surfaces here as an SSL verification failure. Give a targeted hint.
+        err = str(e)
+        is_ssl = isinstance(e, ssl.SSLError) or "SSL" in err or "certificate" in err.lower()
+        print(f"\nERROR: Could not download upstream: {e}")
+        if is_ssl and sys.platform == "darwin":
+            print("")
+            print("SSL certificate verification failed. If you installed Python")
+            print("from python.org, run the certificate installer once:")
+            print("")
+            print("  /Applications/Python\\ 3.*/Install\\ Certificates.command")
+            print("")
+            print("Or install Python via Homebrew (`brew install python`), which")
+            print("ships with certs pre-wired.")
+        else:
+            print("Check your internet connection and the upstream repo URL.")
+        sys.exit(1)
     except Exception as e:
         print(f"\nERROR: Could not download upstream: {e}")
         print("Check your internet connection and the upstream repo URL.")
