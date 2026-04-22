@@ -2,7 +2,7 @@
 name: context-onboarding
 description: |
   First-run onboarding skill. Gets a new user from zero to a working context system.
-  Claude figures out the right approach based on what the user shares — no paths to choose.
+  Claude asks one direct question upfront to pick the right scaffolding, then works from what the user shares — no long assessment ceremony beyond that.
   Creates a checklist that tracks setup progress across sessions and self-removes when done.
 
   WHEN TO USE:
@@ -26,7 +26,7 @@ Claude does the drafting. The user reviews and corrects. No questionnaires, no c
 
 ## How It Works
 
-Claude figures out the approach from what the user says and what's in the repo. Don't ask the user to "choose a path" — just start.
+Claude asks ONE direct question upfront — "what kind of project is this?" — and uses the answer to pick the right template + pattern doc. After that, Claude figures out the rest from what the user says and what's in the repo. No long path-chooser; just one gate that routes scaffolding correctly.
 
 ### Signals → What to do
 
@@ -41,9 +41,49 @@ Claude figures out the approach from what the user says and what's in the repo. 
 
 ---
 
-## Step 0: Discover Sources
+## Step 0: Identify Project Type + Discover Sources
 
-**Before reading anything, find out where the knowledge lives.**
+Two short `AskUserQuestion` gates, in order: what kind of project this is (0a), then where the knowledge lives (0b). Pre-fill both from what you can see before asking — the user confirms or overrides.
+
+### 0a. Project type
+
+**Before anything else, ask what kind of project this is.** The answer picks the template + pattern doc Claude uses for the rest of onboarding. This is the one question that isn't inferred silently — one direct question is the ceremony.
+
+**Pre-fill suggestion first:** glance at any URLs the user shared, files they dropped, README contents, repo structure (frontend code? Dockerfile + cron? marketing copy? client names? spec docs + ADRs? runbooks and on-call docs? pricing / enablement / battlecards?). Use that to pick the most likely answer as the suggested option, but still ask.
+
+Two levels, only ask the follow-up when needed.
+
+**Level 1 — always ask. Use the `AskUserQuestion` tool:**
+
+- Question: "What's this repo primarily about? (This picks the scaffolding — you can change it later.)"
+- Options:
+  - **Product** (external product, service, or company context)
+  - **Product development** (R&D, specs, architecture, engineering roadmap)
+  - **Internal tool** (dashboards, scripts, internal apps, developer tools)
+  - **Marketing** (marketing site, campaigns, content strategy)
+  - **GTM / sales** (pricing, positioning, sales enablement, partnerships)
+  - **Operations** (ops runbooks, processes, infrastructure docs)
+  - **Client work** (agency engagement scoped to one client)
+  - **Team playbook / personal** (team practices, ops runbook, personal projects)
+
+**Level 2 — only when the Level 1 answer is ambiguous.** Skip if repo signals already disambiguate.
+
+- If the user picked **"Product"** (and the repo doesn't obviously lean one way — e.g. marketing site + pricing page → external product; spec docs + ADRs + architecture → R&D), ask:
+  - Question: "External-facing product/service, or product development (R&D)?"
+  - Options:
+    - **External product / service** (the product as sold — brand, positioning, customers)
+    - **Product development** (how the product is built — specs, architecture, roadmap)
+- If the user picked **"Internal tool"** (and the repo doesn't make the sub-shape obvious — e.g. a React frontend → app; cron config + Dockerfile with no UI → automation), ask:
+  - Question: "Is it more of an app or an automation?"
+  - Options:
+    - **App with UI + internal users** (web dashboard, internal admin tool, back-office app)
+    - **Automation / CLI / pipeline / service** (no UI — scripts, ETL, cron jobs, backend services)
+
+Claude should silently pre-fill the Level 1 option based on inference, and skip Level 2 entirely when pre-fill confidence is high on the sub-shape. Carry the resolved profile through to Step 1 (profile → template + pattern mapping) and Step 2 (cluster naming).
+
+### 0b. Source discovery
+
+**Now find out where the knowledge lives.**
 
 **ALWAYS use the `AskUserQuestion` tool — even if files already exist in `_inbox/`:**
 
@@ -74,8 +114,16 @@ Based on the answer:
 | **Starting from scratch** | Skip to Step 1, use website/conversation to gather info |
 
 **For connected external systems:**
-- Ask: "What kind of docs should I look for? Company info, processes, brand guidelines?"
-- Fetch only what's relevant for business context — NOT bulk collections (invoices, call logs, etc.)
+- Ask what kind of docs to look for — adapt the prompt to the project type from Step 0a:
+  - **External product / service:** "Company info, processes, brand guidelines?"
+  - **Product development:** "PRDs, RFCs / ADRs, architecture diagrams, spec docs?"
+  - **Internal tool:** "Architecture docs, runbooks, ADRs, ops guides?"
+  - **Marketing:** "Campaign briefs, content calendars, editorial guidelines, performance reports?"
+  - **GTM / sales:** "Sales plays, battlecards, pricing docs, enablement materials, partner agreements?"
+  - **Operations:** "Runbooks, on-call playbooks, incident post-mortems, SLI / SLO docs?"
+  - **Client work:** "Client briefs, SOWs, design files, meeting notes?"
+  - **Team playbook / personal:** "SOPs, team docs, notes, references?"
+- Fetch only what's relevant for context — NOT bulk collections (invoices, call logs, etc.)
 - For large collections (100+ similar files): don't copy — map where they are (see handling modes in Step 2a)
 
 **Non-breaking guarantee:**
@@ -91,21 +139,35 @@ Based on the answer:
 
 ## Step 1: Gather Information + Identify Profile
 
-Read everything available from the sources discovered in Step 0. Extract knowledge across all these areas (not all will apply):
+Read everything available from the sources discovered in Step 0. The knowledge categories you extract depend on the project type from Step 0a:
 
-**Business identity:**
+**The knowledge categories to extract come from the resolved profile's pattern doc in `docs/_bcos-framework/patterns/`.** Open the matching pattern doc, read its "Data Point Map" section, and use those clusters as the extraction targets. A short per-profile pointer:
+
+- **External product / service** → see `docs/_bcos-framework/patterns/product-service-pattern.md`. The generic "business identity → operations → strategy" shape below also works as a fallback.
+- **Product development** → see `docs/_bcos-framework/patterns/product-development-pattern.md`. Categories lean toward product scope, architecture, features & specs, technical decisions, team & roadmap.
+- **Internal tool → app** → see `docs/_bcos-framework/patterns/internal-tool-app-pattern.md` and `table-of-context.internal-tool.md`. Categories: what the tool is, what it does, who uses it, how it works, upstream/downstream, operational model, current state.
+- **Internal tool → automation** → see `docs/_bcos-framework/patterns/internal-tool-automation-pattern.md`. Shared template with app — different cluster emphasis (pipeline identity, behavior & ownership, architecture & operations).
+- **Marketing** → see `docs/_bcos-framework/patterns/marketing-pattern.md`. Brand adjacency, campaigns & content, channels & performance, editorial voice.
+- **GTM / sales** → see `docs/_bcos-framework/patterns/gtm-pattern.md`. Target ICP, positioning & messaging, pricing & packaging, sales motion & enablement, partner & channel.
+- **Operations** → see `docs/_bcos-framework/patterns/operational-pattern.md`. System map, runbooks & procedures, on-call & escalation, SLIs & incidents, change management.
+- **Client work** → see `docs/_bcos-framework/patterns/client-project-pattern.md` and `table-of-context.client-project.md`. Engagement context, scope & delivery, architecture & handoff.
+- **Team playbook / personal** → no dedicated pattern doc yet. Use the generic shape below and pick cluster names from what the content actually is.
+
+**Generic fallback categories** — use these when the profile is "Team playbook / personal" or when a pattern-doc-specific map doesn't yet exist:
+
+**Business identity:** (product/service only — skip for internal-tool, client-project, operational, gtm, marketing, product-development)
 1. **Who they are** — identity, mission, founding story
 2. **What they do** — core offering, product/service
 3. **Who they serve** — target audience, customer segments
 4. **What makes them different** — positioning, differentiators
 5. **What phase they're in** — startup, growth, mature, pivoting
 
-**Operations & processes:**
+**Operations & processes:** (applies across most project types)
 6. **How they work** — workflows, SOPs, approval chains, team processes
 7. **What rules they follow** — brand guidelines, pricing rules, decision frameworks, policies
 8. **What they reference** — glossaries, tool inventories, org charts, tech stacks, contact lists
 
-**Strategy & playbooks:**
+**Strategy & playbooks:** (product/service and playbook profiles)
 9. **How they respond** — crisis comms, competitive response, launch playbooks, market entry plans
 10. **What they've learned** — past decisions, post-mortems, strategic pivots
 
@@ -124,29 +186,35 @@ Read everything available from the sources discovered in Step 0. Extract knowled
 - Important topics with no docs at all (gaps)
 - Content that looks significantly outdated
 
-### Identify the project profile
+### Profile → template + pattern mapping
 
-While gathering info, figure out what kind of project this is. Don't ask directly — infer from what you see:
+The Step 0a answer already decided the profile. This table maps each resolved answer to the template variant and pattern doc Claude uses for drafting. Pattern docs live in `docs/_bcos-framework/patterns/` and describe the data-point map, relationships, and voice for each profile — read the matching pattern doc before drafting.
 
-| Signal | Profile |
+| Resolved profile (from Step 0a) | Template | Pattern doc | Notes |
+|---|---|---|---|
+| **External product / service** | `docs/_bcos-framework/templates/table-of-context.md` + `current-state.md` | `docs/_bcos-framework/patterns/product-service-pattern.md` | Default. Brand + business identity + GTM overview. |
+| **Product development** | `table-of-context.md` + `current-state.md` (fallback) | `docs/_bcos-framework/patterns/product-development-pattern.md` | **TODO: dedicated template variant not yet built.** Pattern doc notes this — reuse product/service scaffolding and lean on the pattern's cluster map. |
+| **Internal tool → app** | `docs/_bcos-framework/templates/table-of-context.internal-tool.md` + `current-state.internal-tool.md` | `docs/_bcos-framework/patterns/internal-tool-app-pattern.md` | App shape: UI + internal users + persistence. |
+| **Internal tool → automation** | `docs/_bcos-framework/templates/table-of-context.internal-tool.md` + `current-state.internal-tool.md` | `docs/_bcos-framework/patterns/internal-tool-automation-pattern.md` | No UI: scripts, CLIs, pipelines, services. Shared template, different cluster emphasis. |
+| **Marketing** | `table-of-context.md` + `current-state.md` (fallback) | `docs/_bcos-framework/patterns/marketing-pattern.md` | **TODO: dedicated template variant not yet built.** Pattern doc notes this — reuse product/service scaffolding. Expect brand inheritance from a sibling product-service repo. |
+| **GTM / sales** | `table-of-context.md` + `current-state.md` (fallback) | `docs/_bcos-framework/patterns/gtm-pattern.md` | **TODO: dedicated template variant not yet built.** Pattern doc notes this — reuse product/service scaffolding. Expect positioning inheritance from a sibling product-service repo. |
+| **Operations** | `table-of-context.internal-tool.md` + `current-state.internal-tool.md` (fallback) | `docs/_bcos-framework/patterns/operational-pattern.md` | **TODO: dedicated template variant not yet built.** Pattern doc notes this — reuse internal-tool templates and treat scope as the team's operational layer across many systems. |
+| **Client work** | `docs/_bcos-framework/templates/table-of-context.client-project.md` + `current-state.client-project.md` | `docs/_bcos-framework/patterns/client-project-pattern.md` | External deliverable scoped to one client. One client, one engagement. |
+| **Team playbook / personal** | `table-of-context.md` + `current-state.md` (fallback) | No dedicated pattern yet (fallback: `product-service-pattern.md` for shape only) | **TODO: dedicated pattern + template not yet built.** Reuse product/service scaffolding, lean heavily on the content the user shares, adapt clusters to what the content actually is. |
+
+**Pick sensible cluster names** based on the profile — don't present a formal "profile assessment" to the user, just use the right cluster names in your drafted data points. Cluster hints (these mirror the "Data Point Map" in each pattern doc):
+
+| Resolved profile | Likely clusters |
 |---|---|
-| Solo founder, freelancer, side project | **Personal / Small** |
-| Team, departments, multiple products | **Company / Large** |
-| Code repos, APIs, technical docs | **IT / Development** |
-| Campaigns, brand guides, content calendars | **Marketing / Brand** |
-| Pipelines, CRM mentions, deal stages | **Sales** |
-| Mix of the above | **Combination** (most common) |
-
-**Use the profile to pick sensible cluster names** for the data points you draft. Don't present this as a formal "profile assessment" to the user — just use it to make better choices:
-
-| Profile | Likely clusters |
-|---|---|
-| Personal / Small | Brand & Identity, Offering, Audience |
-| Company / Large | Brand & Identity, Audience & Market, Product & Value, Operations, Strategy |
-| IT / Development | Product & Architecture, Users & Market, Team & Process |
-| Marketing / Brand | Brand & Identity, Audience & Segments, Messaging & Content |
-| Sales | Value Proposition, Target Market, Sales Process |
-| Combination | Pick from above based on what matters most right now |
+| External product / service | Business Identity, Offerings & Positioning, Market & Customers, Brand & Voice, GTM Overview |
+| Product development | Product Scope & Vision, Architecture, Features & Specs, Technical Decisions, Team & Roadmap |
+| Internal tool → app | Tool Identity, Users & Capabilities, Architecture & Operations |
+| Internal tool → automation | Pipeline Identity, Behavior & Ownership, Architecture & Operations |
+| Marketing | Brand Adjacency, Campaigns & Content, Channels & Performance, Editorial Voice |
+| GTM / sales | Target ICP, Positioning & Messaging, Pricing & Packaging, Sales Motion & Enablement, Partner & Channel |
+| Operations | System Map, Runbooks & Procedures, On-Call & Escalation, SLIs & Incidents, Change Management |
+| Client work | Engagement Context, Scope & Delivery, Architecture & Handoff |
+| Team playbook / personal | Pick 2-4 clusters from the content the user shares (TODO: refine when variant is built) |
 
 **Use as many clusters as the content demands.** Don't limit arbitrarily — if the user has content spanning 6 areas, use 6 clusters. Don't present a cluster taxonomy to the user — just use the right cluster names in your drafted data points.
 
@@ -555,4 +623,4 @@ When ALL items are checked:
 - **Ask focused questions, not questionnaires.** 2-3 max.
 - **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.
 - **No jargon on first contact.** Say "data point" only after you've shown them one. Before that, say "a doc about your [topic]."
-- **Profile detection is silent.** Don't present a "project profile assessment" — just use it to make better cluster and data point choices.
+- **Project type is one direct question, not an assessment.** Step 0a is the only gate. Pre-fill the suggested answer from signals in the repo/sources, but still ask. Don't wrap it in a formal "project profile assessment" or a long questionnaire — one question, then move on.

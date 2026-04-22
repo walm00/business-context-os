@@ -96,18 +96,22 @@ if [ "$SINCE_LAST" -ge "$SAVE_INTERVAL" ]; then
     # Update save point
     echo "$EXCHANGE_COUNT" > "$SAVE_FILE"
 
-    # Log
-    echo "$(date -Iseconds) AUTO-SAVE triggered: $EXCHANGE_COUNT messages ($SINCE_LAST since last save)" \
+    # Log — use UTC Zulu format (portable across GNU and BSD date)
+    echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo 'unknown') AUTO-SAVE triggered: $EXCHANGE_COUNT messages ($SINCE_LAST since last save)" \
         >> "$STATE_DIR/hook.log" 2>/dev/null || true
 
     # Generate timestamp for filename
     TIMESTAMP=$(date +%Y-%m-%d_%H%M 2>/dev/null || echo "session")
 
+    # ISO-8601 UTC timestamp for the session-capture frontmatter.
+    # Using `date -u +"%Y-%m-%dT%H:%M:%SZ"` because BSD date (macOS) doesn't support `-Iseconds`.
+    NOW_ISO=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo '2026-01-01T00:00:00Z')
+
     # Block the AI and tell it what to save
     cat <<HOOKJSON
 {
   "decision": "block",
-  "reason": "SESSION CHECKPOINT — $SINCE_LAST messages since last save.\nWrite a session capture to docs/_inbox/sessions/${TIMESTAMP}.md with this structure:\n\n---\ntype: session-capture\ndate: $(date -Iseconds 2>/dev/null || echo '2026-01-01T00:00:00')\nstatus: raw\n---\n## Decisions\n- [bullet points of decisions made this session]\n\n## Discoveries\n- [bullet points of new information learned]\n\n## Follow-ups\n- [ ] [action items identified]\n\n## Files Changed\n- [list of file paths modified]\n\nKeep each section to 3-5 bullets maximum. Skip empty sections."
+  "reason": "SESSION CHECKPOINT — $SINCE_LAST messages since last save.\nWrite a session capture to docs/_inbox/sessions/${TIMESTAMP}.md with this structure:\n\n---\ntype: session-capture\ndate: ${NOW_ISO}\nstatus: raw\n---\n## Decisions\n- [bullet points of decisions made this session]\n\n## Discoveries\n- [bullet points of new information learned]\n\n## Follow-ups\n- [ ] [action items identified]\n\n## Files Changed\n- [list of file paths modified]\n\nKeep each section to 3-5 bullets maximum. Skip empty sections."
 }
 HOOKJSON
 else

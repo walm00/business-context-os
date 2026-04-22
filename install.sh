@@ -51,6 +51,24 @@ if [ ! -f "$SCRIPT_DIR/CLAUDE.md" ] || [ ! -d "$SCRIPT_DIR/.claude" ]; then
     exit 1
 fi
 
+# Python 3 is required — hooks, validators, and update.py all run on it.
+# Fresh macOS installs don't ship python3 until Xcode Command Line Tools are
+# installed, so catch the missing interpreter here with a useful hint.
+if ! command -v python3 > /dev/null 2>&1; then
+    echo -e "${RED}Error: python3 is required but not found on PATH.${NC}"
+    echo ""
+    echo "BCOS uses Python 3 for hooks, validators, and the update script."
+    echo ""
+    echo "Install it with one of:"
+    echo "  macOS:    xcode-select --install    (Xcode Command Line Tools)"
+    echo "            brew install python       (Homebrew)"
+    echo "  Linux:    sudo apt install python3  (or your distro's equivalent)"
+    echo "  Windows:  https://www.python.org/downloads/"
+    echo ""
+    echo "Then re-run this installer."
+    exit 1
+fi
+
 # ─── Track what we do ───────────────────────────────────────────────
 
 COPIED=0
