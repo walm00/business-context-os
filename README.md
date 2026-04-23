@@ -56,7 +56,7 @@ CLEAR Context OS is a **complete system** — methodology, skills, templates, an
 
 | | Organize | Maintain | Learn |
 |---|---|---|---|
-| **What** | CLEAR methodology + ownership boundaries | 14 skills + 4 hooks that automate maintenance | Lessons system captures insights every session |
+| **What** | CLEAR methodology + ownership boundaries | 13 skills + 4 hooks that automate maintenance | Lessons system captures insights every session |
 | **How** | Every doc declares what it owns. No duplicates, no drift. | Session capture, integration audits, scheduled reviews | What worked, what didn't — your system gets smarter |
 | **You do** | Define your data points (Claude helps) | Review what Claude surfaces | Approve or reject captured lessons |
 
@@ -131,12 +131,12 @@ business-context-os/
 │   ├── _collections/            # High-volume files — transcripts, reports, invoices
 │   ├── _bcos-framework/
 │   │   ├── methodology/         # CLEAR principles, ownership spec, standards
-│   │   ├── guides/              # Getting started, maintenance, migration
+│   │   ├── guides/              # Getting started, maintenance, scheduling
 │   │   ├── architecture/        # System design (for contributors)
 │   │   └── templates/           # Data point, cluster, architecture templates
 │
 ├── .claude/
-│   ├── skills/                  # 14 skills (see below)
+│   ├── skills/                  # 13 skills (see below)
 │   ├── agents/                  # 1 agent (explore)
 │   ├── hooks/                   # Frontmatter check, session + pre-compact capture, commit check, opt-in pre-commit validator
 │   ├── scripts/                 # Index builder, update, validators, pruning, cross-ref + ecosystem analysis, lessons, wake-up context, publish
@@ -290,10 +290,7 @@ Different content gets different treatment. Business context is synthesized from
 </td>
 <td>
 
-#### 🔁 Schedule Migrate
-**One-time v1.0/v1.1 → v1.2 migration.** Collapses five standalone scheduled tasks into a single dispatcher. Auto-invoked by `update.py` when needed.
-
-*Runs once per repo, then stays dormant*
+<!-- intentionally empty — odd count of skills in this row -->
 
 </td>
 </tr>

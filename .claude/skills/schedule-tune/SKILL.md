@@ -17,7 +17,6 @@ description: |
 
   DO NOT USE:
   - For actually running jobs (that's the `schedule-dispatcher` skill)
-  - For migration from v1.x (that's `schedule-migrate`)
   - For onboarding first-time setup (that's `context-onboarding` Step 6)
 category: maintenance
 ---

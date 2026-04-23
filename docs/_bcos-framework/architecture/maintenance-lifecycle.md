@@ -301,7 +301,6 @@ The goal is not zero findings at any layer. The goal is **no surprises** -- issu
 | Maintenance guide | `docs/_bcos-framework/guides/maintenance-guide.md` | User-facing maintenance rhythm and triggers |
 | Schedule dispatcher | `.claude/skills/schedule-dispatcher/SKILL.md` | The single-task dispatcher that coordinates all jobs |
 | Schedule tune | `.claude/skills/schedule-tune/SKILL.md` | Natural-language config editor |
-| Schedule migrate | `.claude/skills/schedule-migrate/SKILL.md` | One-time v1.x → v1.2 migration helper |
 | Daydream skill | `.claude/skills/daydream/SKILL.md` | 4-phase reflection process |
 | Context-audit skill | `.claude/skills/context-audit/SKILL.md` | CLEAR compliance checks and severity levels |
 | Lessons-consolidate skill | `.claude/skills/lessons-consolidate/SKILL.md` | Knowledge compounding and cleanup |

@@ -65,8 +65,7 @@
       "doc-lint": ".claude/skills/doc-lint/SKILL.md",
       "todo-utilities": ".claude/skills/todo-utilities/SKILL.md",
       "schedule-dispatcher": ".claude/skills/schedule-dispatcher/SKILL.md",
-      "schedule-tune": ".claude/skills/schedule-tune/SKILL.md",
-      "schedule-migrate": ".claude/skills/schedule-migrate/SKILL.md"
+      "schedule-tune": ".claude/skills/schedule-tune/SKILL.md"
     },
     "agents": {
       "explore": ".claude/agents/explore/AGENT.md"

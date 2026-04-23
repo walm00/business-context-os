@@ -220,20 +220,9 @@ If you want a cross-repo combined digest, that's a separate feature not covered 
 
 ---
 
-## Migration from v1.0 / v1.1
+## Migration from older versions
 
-Earlier BCOS versions shipped five standalone scheduled tasks (`{project}-index`, `{project}-daydream`, `{project}-daydream-deep`, `{project}-audit`, `{project}-architecture`). v1.2 consolidates them into one dispatcher.
-
-When you run `python .claude/scripts/update.py` on an existing install, it detects old-style tasks and writes `.claude/MIGRATION-NEEDED.md`. Next time Claude starts, it reads this file and offers to run the `schedule-migrate` skill, which:
-
-1. Lists the old tasks
-2. Asks you to confirm before deleting them
-3. Creates the new `bcos-{project}` dispatcher
-4. Seeds `schedule-config.json` with the defaults
-5. Deletes the old tasks
-6. Writes the migration into the diary so you have a clean history boundary
-
-Existing tasks keep running until migration completes — nothing breaks in the window between update and migration.
+If you are on a pre-v1.2 install (five standalone scheduled tasks per repo rather than the single `bcos-{project}` dispatcher), see [CHANGELOG.md § Upgrading from pre-v1.2](../../../CHANGELOG.md#upgrading-from-pre-v12). The short version: update to v1.2.x first (which has the migration helper), then update to the current version. Migration tooling is no longer shipped in current releases.
 
 ---
 
