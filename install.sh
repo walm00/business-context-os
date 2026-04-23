@@ -21,8 +21,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Where the BCOS source lives
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Where the BCOS source lives. Tolerate cd failure (e.g. exotic /dev/fd setups
+# under `bash <(curl …)`) — the bootstrap block below will recover.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
 TARGET_DIR="$(pwd)"
 
 echo ""
@@ -31,6 +32,74 @@ echo "================================"
 echo ""
 echo "Target: $TARGET_DIR"
 echo ""
+
+# ─── Self-bootstrap (curl-pipe path) ────────────────────────────────
+# When run via `bash <(curl …)` or `curl … | bash`, SCRIPT_DIR points at a
+# process-substitution FD or /tmp with no source tree. Detect that, download a
+# tarball of the repo, and re-exec from the extracted copy. Keeps the advertised
+# one-liner honest without forcing users to clone first.
+
+# If a previous run already bootstrapped, clean up its temp dir when we exit.
+if [ -n "${BCOS_CLEANUP_DIR:-}" ]; then
+    trap 'rm -rf "$BCOS_CLEANUP_DIR"' EXIT
+fi
+
+if [ -z "${BCOS_BOOTSTRAPPED:-}" ] && { [ ! -f "$SCRIPT_DIR/CLAUDE.md" ] || [ ! -d "$SCRIPT_DIR/.claude" ]; }; then
+    for tool in curl tar; do
+        if ! command -v "$tool" > /dev/null 2>&1; then
+            echo -e "${RED}Error: '$tool' is required for remote install but not found on PATH.${NC}"
+            echo "Install it and re-run, or clone the repo and run install.sh locally."
+            exit 1
+        fi
+    done
+
+    echo -e "${BLUE}Downloading CLEAR Context OS…${NC}"
+
+    BOOTSTRAP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t bcos)"
+    TARBALL_URL="https://github.com/walm00/business-context-os/archive/refs/heads/main.tar.gz"
+    TARBALL="$BOOTSTRAP_DIR/bcos.tar.gz"
+    CURL_ERR="$BOOTSTRAP_DIR/curl.err"
+
+    # First attempt — normal TLS. On Windows Schannel, revocation lookups fail
+    # on many corporate/VPN networks even for valid certs; detect that specific
+    # error and retry with --ssl-no-revoke. Any other failure is a real error.
+    if ! curl -fsSL "$TARBALL_URL" -o "$TARBALL" 2>"$CURL_ERR"; then
+        if grep -qiE "revocation|CRYPT_E_NO_REVOCATION|CERT_TRUST_REVOCATION" "$CURL_ERR"; then
+            echo -e "  ${YELLOW}Windows SSL revocation check failed — retrying with --ssl-no-revoke${NC}"
+            if ! curl -fsSL --ssl-no-revoke "$TARBALL_URL" -o "$TARBALL" 2>"$CURL_ERR"; then
+                echo -e "${RED}Error: Failed to download BCOS tarball.${NC}"
+                cat "$CURL_ERR" >&2
+                rm -rf "$BOOTSTRAP_DIR"
+                exit 1
+            fi
+        else
+            echo -e "${RED}Error: Failed to download BCOS tarball.${NC}"
+            cat "$CURL_ERR" >&2
+            rm -rf "$BOOTSTRAP_DIR"
+            exit 1
+        fi
+    fi
+
+    if ! tar -xzf "$TARBALL" -C "$BOOTSTRAP_DIR"; then
+        echo -e "${RED}Error: Failed to extract BCOS tarball.${NC}"
+        rm -rf "$BOOTSTRAP_DIR"
+        exit 1
+    fi
+
+    EXTRACTED_DIR="$(find "$BOOTSTRAP_DIR" -maxdepth 1 -type d -name 'business-context-os-*' | head -n1)"
+    if [ -z "$EXTRACTED_DIR" ] || [ ! -f "$EXTRACTED_DIR/install.sh" ]; then
+        echo -e "${RED}Error: Downloaded archive has unexpected structure.${NC}"
+        rm -rf "$BOOTSTRAP_DIR"
+        exit 1
+    fi
+
+    echo ""
+    # Re-exec from the extracted source. cwd is still the user's project dir,
+    # so TARGET_DIR will resolve correctly in the new process.
+    export BCOS_BOOTSTRAPPED=1
+    export BCOS_CLEANUP_DIR="$BOOTSTRAP_DIR"
+    exec bash "$EXTRACTED_DIR/install.sh"
+fi
 
 # ─── Pre-flight checks ──────────────────────────────────────────────
 
@@ -43,7 +112,7 @@ if [ -f "$TARGET_DIR/install.sh" ] && grep -q "CLEAR Context OS" "$TARGET_DIR/in
     exit 1
 fi
 
-# Check source exists
+# Check source exists (shouldn't trip after bootstrap, but belt-and-braces)
 if [ ! -f "$SCRIPT_DIR/CLAUDE.md" ] || [ ! -d "$SCRIPT_DIR/.claude" ]; then
     echo -e "${RED}Error: Can't find BCOS source files.${NC}"
     echo "Make sure you're running this from the business-context-os directory"
@@ -222,22 +291,30 @@ for f in "$SCRIPT_DIR"/docs/_bcos-framework/templates/*.md; do
     copy_if_missing "$f" "docs/_bcos-framework/templates/$(basename "$f")"
 done
 
+# Patterns (project-type Data Point Maps — client project, internal tool, GTM, etc.)
+for f in "$SCRIPT_DIR"/docs/_bcos-framework/patterns/*.md; do
+    copy_if_missing "$f" "docs/_bcos-framework/patterns/$(basename "$f")"
+done
+
 echo ""
 
 # ─── Install examples/ (optional) ───────────────────────────────────
+# examples/ was removed in v1.3 — superseded by the Data Point Maps pattern.
+# Loop is kept (guarded) so re-adding examples in future releases just works.
 
-echo -e "${BLUE}Installing examples/...${NC}"
-echo ""
-
-# Brand strategy example
-for f in "$SCRIPT_DIR"/examples/brand-strategy/*.md; do
-    copy_if_missing "$f" "examples/brand-strategy/$(basename "$f")"
-done
-for f in "$SCRIPT_DIR"/examples/brand-strategy/data-points/*.md; do
-    copy_if_missing "$f" "examples/brand-strategy/data-points/$(basename "$f")"
-done
-
-echo ""
+if [ -d "$SCRIPT_DIR/examples/brand-strategy" ]; then
+    echo -e "${BLUE}Installing examples/...${NC}"
+    echo ""
+    shopt -s nullglob
+    for f in "$SCRIPT_DIR"/examples/brand-strategy/*.md; do
+        copy_if_missing "$f" "examples/brand-strategy/$(basename "$f")"
+    done
+    for f in "$SCRIPT_DIR"/examples/brand-strategy/data-points/*.md; do
+        copy_if_missing "$f" "examples/brand-strategy/data-points/$(basename "$f")"
+    done
+    shopt -u nullglob
+    echo ""
+fi
 
 # ─── CLAUDE.md handling ─────────────────────────────────────────────
 

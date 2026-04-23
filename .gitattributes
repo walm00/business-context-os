@@ -1,0 +1,12 @@
+# Force LF line endings for shell scripts and Python regardless of the
+# cloner's core.autocrlf setting. Without this, Windows users with the default
+# autocrlf=true get CRLF-terminated scripts that bash refuses to run with:
+#   /usr/bin/env: 'bash\r': No such file or directory
+*.sh        text eol=lf
+*.py        text eol=lf
+
+# Also normalize markdown/JSON/YAML so diffs don't flip on Windows commits.
+*.md        text eol=lf
+*.json      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
