@@ -43,14 +43,17 @@
       "frontmatter-field-order",
       "trailing-whitespace",
       "eof-newline",
-      "broken-xref-single-candidate"
+      "broken-xref-single-candidate",
+      "prune-sessions",
+      "prune-diary"
     ]
   },
 
   "digest": {
     "write_file": true,
     "path": "docs/_inbox/daily-digest.md",
-    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl"
+    "auto_commit": false,
+    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl. Set auto_commit: true to commit generated artifacts (digest, index, diary, wake-up context) at the end of each run — but ONLY if the working tree has no other changes. Never pushes, never branches. Safe default is false; flip to true once you trust a week of clean runs."
   },
 
   "tuning": {

@@ -66,6 +66,26 @@ This file is the source of truth. The actual enforcement list lives in `schedule
 
 ---
 
+### `prune-sessions`
+
+**Detects:** Session capture files in `.claude/quality/sessions/` older than the retention window (default: 30 days) as reported by `python .claude/scripts/prune_sessions.py --dry-run`.
+
+**Fix:** Run `python .claude/scripts/prune_sessions.py` (no flag = apply). The script deletes files past the cutoff and prints a summary line that the dispatcher captures in `auto_fixed`.
+
+**Why it's safe:** The script is deterministic, only touches its own managed directory, and the content is already captured in git via `schedule-diary.jsonl` summaries if needed. Reversible via `git checkout` if the directory is tracked.
+
+---
+
+### `prune-diary`
+
+**Detects:** Session-diary entries in `docs/.session-diary.md` older than the retention window (default: 14 days) as reported by `python .claude/scripts/prune_diary.py --dry-run`.
+
+**Fix:** Run `python .claude/scripts/prune_diary.py` (no flag = apply). The script trims the oldest entries and prints a summary line.
+
+**Why it's safe:** Diary is an append-only convenience log, not a source of truth. Full history lives in git. Script is deterministic and idempotent.
+
+---
+
 ## Rules for adding new fix IDs
 
 Any proposed addition must satisfy ALL of the following:

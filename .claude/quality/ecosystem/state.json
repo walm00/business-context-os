@@ -1,10 +1,10 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-15",
-  "lastAudit": "2026-04-15",
+  "lastUpdated": "2026-04-23",
+  "lastAudit": "2026-04-23",
   "inventory": {
     "skills": {
-      "total": 14,
+      "total": 13,
       "list": [
         "context-onboarding",
         "context-ingest",
@@ -18,8 +18,7 @@
         "lessons-consolidate",
         "todo-utilities",
         "schedule-dispatcher",
-        "schedule-tune",
-        "schedule-migrate"
+        "schedule-tune"
       ],
       "overlayCapable": [
         "core-discipline"

@@ -197,6 +197,33 @@ Also echo a compressed version of this report to the chat output so the user see
 
 ---
 
+## Step 7b: Auto-Commit Generated Artifacts (optional, clean-tree only)
+
+If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), commit the generated artifacts so the next session starts from a clean tree and the diary/index are versioned.
+
+**Clean-tree rule (borrowed from the command-center update flow):**
+
+1. Run `git status --porcelain`. Collect all changed paths.
+2. Let `ALLOWED` = exactly these paths:
+   - `docs/document-index.md`
+   - `docs/.wake-up-context.md`
+   - `docs/.session-diary.md`
+   - `docs/.onboarding-checklist.md`
+   - `docs/_inbox/daily-digest.md`
+   - `.claude/hook_state/schedule-diary.jsonl`
+   - `.claude/quality/ecosystem/state.json` (if touched by ecosystem jobs)
+3. If **every** changed path is in `ALLOWED` → proceed to commit.
+   Otherwise → **skip** the commit entirely. Do not stage, do not branch. Record `auto_commit: skipped (tree not clean outside generated artifacts)` in the digest. The user will see the dirty state next session and decide manually.
+4. On commit:
+   - `git add` each `ALLOWED` path that actually changed (never `git add .`)
+   - `git commit -m "bcos: daily maintenance {YYYY-MM-DD}"` — no push, ever
+   - If commit fails (pre-commit hook, etc.), do not retry — record the error in the digest and continue
+5. Never create a new branch. Never push. Never skip hooks.
+
+This mirrors the update.py policy: "commit only if the tree is clean outside the files we own." If a user has in-progress work, the dispatcher stays out of the way entirely.
+
+---
+
 ## Step 8: Final Output — `AskUserQuestion` ONLY when there's something to decide
 
 The last thing the dispatcher does depends on whether the run produced anything that needs user judgement. The goal is to make the Claude Code dashboard useful as a priority inbox: sessions that show up as "Awaiting input" (yellow) should genuinely need attention; sessions that show up as "Ready" (blue) should be bulk-dismissable.
@@ -373,7 +400,6 @@ Never silently swallow errors. Every dispatcher run produces either a digest OR 
 ## Related Skills
 
 - `schedule-tune` — user-facing skill for changing config ("run audit twice a week")
-- `schedule-migrate` — one-time migration from pre-1.2 standalone task model
 - `context-audit`, `daydream`, `lessons-consolidate` — underlying skills the job references invoke
 
 ---

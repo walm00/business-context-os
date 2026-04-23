@@ -46,6 +46,13 @@ Scan `docs/*.md` (recursively) but **skip** these folders:
 - `docs/_collections/` — bulk files, no frontmatter required
 - `docs/_bcos-framework/` — framework, synced from upstream
 
+Also skip these **generated / convention files** (no frontmatter by design — flagging them is a false positive that recurs every run):
+
+- `docs/document-index.md` — auto-generated index
+- Any dot-prefixed basename (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`, and any other `docs/.*.md`)
+
+Note on `owner` field: `owner` is **not** a required frontmatter field (see `docs/_bcos-framework/methodology/document-standards.md`). Do not flag it as `missing-required-field`. The required list is exactly: `name, type, cluster, version, status, created, last-updated`.
+
 For each remaining file, check:
 
 | Issue ID                      | What to look for                                                     |

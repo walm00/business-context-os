@@ -60,8 +60,6 @@ docs/document-index.md
 # Schedule dispatcher runtime artifacts (v1.2+)
 # The template ships (schedule-config.template.json); the live config does not.
 .claude/quality/schedule-config.json
-# Migration trigger flag — written by update.py when v1.x tasks detected, deleted by schedule-migrate on success
-.claude/MIGRATION-NEEDED.md
 # Daily digest is runtime output, overwritten each morning
 docs/_inbox/daily-digest.md
 

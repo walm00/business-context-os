@@ -4,6 +4,39 @@ All notable changes to CLEAR Context OS will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.0] — 2026-04-23
+
+### Added
+
+- **Permission defaults for scheduled maintenance.** `.claude/settings.json` now pre-approves the Python maintenance scripts (`build_document_index.py`, `generate_wakeup_context.py`, `analyze_crossrefs.py`, `analyze_integration.py`, `prune_sessions.py`, `prune_diary.py`), the dispatcher-invoked skills (`schedule-dispatcher`, `context-audit`, `daydream`, `doc-lint`, `ecosystem-manager`, `lessons-consolidate`), read access across the repo (`Read(**)`, `Glob`, `Grep`), and writes to `docs/_inbox/**` / `.claude/quality/schedule-config.json`. Morning maintenance runs now complete without approval prompts.
+- **Scanner skip rules for generated files** in `job-index-health.md`: `document-index.md` and any dot-prefixed file under `docs/` (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`) are excluded from frontmatter checks. Eliminates the most-repeated false positive across multi-repo installs. Also clarifies that `owner` is not a required frontmatter field.
+- **`prune-sessions` and `prune-diary` on the default auto-fix whitelist.** Both scripts are deterministic, write only to their managed directories, and reversible via git. Documented in `auto-fix-whitelist.md`.
+- **Opt-in auto-commit for generated artifacts.** New `digest.auto_commit` flag in `schedule-config.json` (default: `false`). When enabled, the dispatcher commits its own generated files (digest, index, diary, wake-up context, onboarding-checklist, ecosystem state) at the end of a run — but **only if every changed path in the working tree is on the allowlist**. Otherwise it skips entirely. Never branches, never pushes, never `git add .`. Mirrors the command-center update policy: stay out of the way if the user has in-progress work.
+
+### Changed — Breaking
+
+- **Removed pre-v1.2 migration tooling.** The `schedule-migrate` skill, `run_migration_detection` in `update.py`, the `MIGRATION-NEEDED.md` flag file, the CLAUDE.md migration-check block, and the one-time framework-folder archival (`docs/architecture` → `docs/_bcos-framework/architecture`) are all deleted. `update.py` is ~300 lines lighter.
+- **Removed convention-file backfills** for `docs/.onboarding-checklist.md` and `docs/.session-diary.md` from `update.py`. Fresh installs get these from `install.sh`; existing post-v1.2 installs already have them.
+
+### Upgrading from pre-v1.2
+
+If you are still on a v1.0 / v1.1 install (five standalone scheduled tasks per repo rather than the single `bcos-{project}` dispatcher), **do not update directly to v1.3**. The migration helper shipped only in v1.2.x.
+
+Two-step upgrade:
+
+1. Check out BCOS at tag `v1.2.1` (or any `1.2.x`) and run `python .claude/scripts/update.py`. It detects your old tasks, writes `.claude/MIGRATION-NEEDED.md`, and the next Claude session offers to run `schedule-migrate`. Let it complete.
+2. Update to v1.3 (or newer) via `python .claude/scripts/update.py` as usual.
+
+Fresh installs (post-v1.2) — no action needed; you never had the old tasks.
+
+### Migration (post-v1.2 users)
+
+- Nothing required. Updates flow through `update.py` as usual.
+- New `auto_commit` flag is `false` by default — flip it on with the `schedule-tune` skill ("turn on auto_commit") once you've had a week of clean runs.
+- New whitelist entries (`prune-sessions`, `prune-diary`) apply to fresh installs only, since `update.py` does not overwrite your existing `schedule-config.json`. To adopt them on an existing install: `schedule-tune` → "add prune-sessions and prune-diary to the whitelist."
+
+---
+
 ## [1.2.1] — 2026-04-20
 
 ### Added
