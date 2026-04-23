@@ -92,6 +92,18 @@ bash <(curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/m
 
 Or tell Claude: *"Install CLEAR Context OS from https://github.com/walm00/business-context-os"*
 
+<details>
+<summary><b>Install failing on Windows?</b></summary>
+
+The installer auto-retries with `--ssl-no-revoke` if Windows Schannel blocks the initial download (common on corporate networks / VPNs). If the retry also fails, fetch the script manually and run it:
+
+```bash
+curl -fsSL --ssl-no-revoke https://raw.githubusercontent.com/walm00/business-context-os/main/install.sh -o /tmp/bcos-install.sh
+bash /tmp/bcos-install.sh
+```
+</details>
+
+
 **Already have docs?** SOPs, brand guidelines, strategy docs, processes — bring them all:
 
 > "Scan my repo and show me what business context already exists."
@@ -133,7 +145,8 @@ business-context-os/
 │   │   ├── methodology/         # CLEAR principles, ownership spec, standards
 │   │   ├── guides/              # Getting started, maintenance, scheduling
 │   │   ├── architecture/        # System design (for contributors)
-│   │   └── templates/           # Data point, cluster, architecture templates
+│   │   ├── templates/           # Data point, cluster, architecture templates
+│   │   └── patterns/            # Project-type Data Point Maps (client, GTM, internal tool, …)
 │
 ├── .claude/
 │   ├── skills/                  # 13 skills (see below)
@@ -145,7 +158,6 @@ business-context-os/
 ├── .github/
 │   └── workflows/ci.yml         # 4 automated checks on every PR
 │
-├── examples/brand-strategy/     # Complete worked example (8 data points)
 ├── CLAUDE.md                    # Claude Code instructions (lean — ~650 tokens)
 └── install.sh                   # One-command installer
 ```

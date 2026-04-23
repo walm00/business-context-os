@@ -33,9 +33,9 @@ New skills for context workflows. Follow the skill anatomy in `docs/_bcos-framew
 - Numbered workflow steps
 - Integration with Other Skills section
 
-### Examples
+### Patterns
 
-Worked examples for specific industries or functions. Follow the pattern in `examples/brand-strategy/`.
+Project-type Data Point Maps (client project, GTM, internal tool, etc.) live under `docs/_bcos-framework/patterns/`. Follow the shape of the existing files — one markdown file per project type, with the data-point inventory and ownership grid.
 
 ### Documentation
 
