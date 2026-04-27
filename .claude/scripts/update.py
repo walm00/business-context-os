@@ -45,6 +45,7 @@ FRAMEWORK_DIRS = [
     "docs/_bcos-framework/architecture",
     "docs/_bcos-framework/guides",
     "docs/_bcos-framework/methodology",
+    "docs/_bcos-framework/patterns",
     "docs/_bcos-framework/templates",
     "examples",
 ]
@@ -54,6 +55,9 @@ FRAMEWORK_DIRS = [
 # reasons but are owned by the framework.
 FRAMEWORK_FILES = [
     ".claude/quality/schedule-config.template.json",
+    ".claude/quality/ecosystem/config.json",
+    ".claude/quality/ecosystem/lessons-schema.md",
+    ".claude/ECOSYSTEM-MAP.md",
 ]
 
 # .gitignore — merged: new upstream entries are appended, nothing removed
@@ -327,6 +331,65 @@ def merge_reference_index(upstream_path: str, local_path: str) -> int:
         for key, path in entries.items():
             if key not in lc_cat:
                 lc_cat[key] = path
+                added += 1
+
+    if added > 0:
+        local["lastUpdated"] = datetime.date.today().isoformat()
+        with open(local_path, "w", encoding="utf-8") as f:
+            _json.dump(local, f, indent=2)
+            f.write("\n")
+
+    return added
+
+
+def merge_entities(upstream_path: str, local_path: str) -> int:
+    """Merge upstream entities.json categories into local. Additive only.
+    Preserves user-added entities; never removes any local entries.
+
+    Dedupes by `canonical` (for objects with that field) or by `term` (for
+    glossary entries). Returns total count of entries added across categories.
+    """
+    import json as _json
+
+    if not os.path.exists(upstream_path):
+        return 0
+
+    with open(upstream_path, "r", encoding="utf-8") as f:
+        upstream = _json.load(f)
+
+    if not os.path.exists(local_path):
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        shutil.copy2(upstream_path, local_path)
+        total = 0
+        for category in upstream.get("entities", {}).values():
+            if isinstance(category, list):
+                total += len(category)
+        return total
+
+    with open(local_path, "r", encoding="utf-8") as f:
+        local = _json.load(f)
+
+    added = 0
+    up_ents = upstream.get("entities", {})
+    lc_ents = local.setdefault("entities", {})
+
+    for category, entries in up_ents.items():
+        if not isinstance(entries, list):
+            continue
+        lc_list = lc_ents.setdefault(category, [])
+        existing_keys = set()
+        for e in lc_list:
+            if isinstance(e, dict):
+                key = e.get("canonical") or e.get("term")
+                if key:
+                    existing_keys.add(key)
+        for e in entries:
+            if not isinstance(e, dict):
+                continue
+            key = e.get("canonical") or e.get("term")
+            if key and key not in existing_keys:
+                lc_list.append(e)
+                existing_keys.add(key)
                 added += 1
 
     if added > 0:
@@ -687,6 +750,18 @@ def main():
                 print(f"  reference-index.json: added {ref_added} new entry/entries from upstream.")
             else:
                 print(f"  reference-index.json: all upstream entries already present.")
+
+        # ------------------------------------------------ merge entities.json
+        # Same additive pattern. Framework-shipped canonical entities stay
+        # current; user-added people/projects/terms are preserved.
+        upstream_ent = os.path.join(upstream_root, ".claude", "registries", "entities.json")
+        local_ent = str(local_root / ".claude" / "registries" / "entities.json")
+        if os.path.exists(upstream_ent):
+            ent_added = merge_entities(upstream_ent, local_ent)
+            if ent_added:
+                print(f"  entities.json: added {ent_added} new entry/entries from upstream.")
+            else:
+                print(f"  entities.json: all upstream entries already present.")
 
         # ----------------------------------------- convention infrastructure
         infra_created = ensure_convention_infrastructure(str(local_root), upstream_root)

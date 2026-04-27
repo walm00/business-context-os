@@ -220,12 +220,12 @@ for f in "$SCRIPT_DIR"/.claude/hooks/*; do
     fi
 done
 
-# Scripts
-for f in "$SCRIPT_DIR"/.claude/scripts/*.py; do
-    if [ -f "$f" ]; then
-        copy_if_missing "$f" ".claude/scripts/$(basename "$f")"
-    fi
-done
+# Scripts (recursive — top-level *.py plus subdirs like bcos-dashboard/)
+# Skip Python bytecode caches: machine-local artifacts that should never sync.
+while IFS= read -r f; do
+    rel="${f#$SCRIPT_DIR/.claude/scripts/}"
+    copy_if_missing "$f" ".claude/scripts/$rel"
+done < <(find "$SCRIPT_DIR/.claude/scripts" -type f ! -name "*.pyc" ! -path "*/__pycache__/*" 2>/dev/null)
 
 # Hook state directory (gitignored, machine-local)
 mkdir -p .claude/hook_state
@@ -269,7 +269,7 @@ echo ""
 copy_if_missing "$SCRIPT_DIR/docs/.onboarding-checklist.md" "docs/.onboarding-checklist.md"
 
 # Session diary (append-only, auto-pruned after 30 days)
-copy_if_missing "$SCRIPT_DIR/docs/.session-diary.md" "docs/.session-diary.md"
+copy_if_missing "$SCRIPT_DIR/docs/_bcos-framework/templates/session-diary-starter.md" "docs/.session-diary.md"
 
 # Architecture
 for f in "$SCRIPT_DIR"/docs/_bcos-framework/architecture/*.md; do

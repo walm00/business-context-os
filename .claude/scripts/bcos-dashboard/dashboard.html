@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <!-- Favicon. Replace dashboard-dir/favicon.svg with your own mark; server.py
+       serves whatever's on disk (or 204 No Content if the file is absent). -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <!-- Fonts load from Google if online; fall back to Georgia / ui-monospace
+       / system-ui offline. None are required for the dashboard to render. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@1,400;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <a href="#panels" class="skip-link">Skip to main content</a>
+  <header class="app-header">
+    <div class="app-header__brand">
+      <h1 class="app-header__title">{{TITLE}}</h1>
+      <span class="app-header__subtitle">{{SUBTITLE}}</span>
+    </div>
+    <div class="app-header__meta">
+      <a id="settings-link" class="app-header__settings" href="/settings/runs"
+         title="Settings — run history, file health, schedules, technical">⚙ Settings</a>
+      <span class="app-header__sep">·</span>
+      <span id="health-badge" class="health-badge health-badge--muted">loading…</span>
+      <span class="app-header__sep">·</span>
+      <span id="last-refresh" class="app-header__refresh">—</span>
+    </div>
+  </header>
+
+  <!-- Optional controls bar (filters, segmented range pickers, etc.).
+       Hidden by default; renders when meta.controls is provided by the server.
+       Contents are expected to contain [data-filter-key][data-filter-value]
+       elements — see references/design-principles.md "URL-driven filters". -->
+  <div id="controls" class="app-controls" hidden></div>
+
+  <!-- Most-important-today banner. Hidden by default; renders when
+       meta.headline is provided by the server. -->
+  <div id="headline-banner" class="headline-banner" hidden>
+    <div class="headline-banner__icon" aria-hidden="true">!</div>
+    <div>
+      <div id="headline-label" class="headline-banner__label">Most important today</div>
+      <div id="headline-text" class="headline-banner__text">—</div>
+    </div>
+    <div id="headline-meta" class="headline-banner__meta"></div>
+  </div>
+
+  <!-- Shared SVG defs. The hatch-forecast pattern is referenced by
+       chart renderers via fill="url(#hatch-forecast)". -->
+  <svg aria-hidden="true" focusable="false" width="0" height="0"
+       style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <pattern id="hatch-forecast" patternUnits="userSpaceOnUse"
+               width="6" height="6" patternTransform="rotate(-45)">
+        <line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="1.4"/>
+      </pattern>
+    </defs>
+  </svg>
+
+  <main id="panels" class="panel-grid" aria-live="polite">
+    <!-- Loading skeleton matches the cockpit shape so first paint doesn't
+         pop a generic "loading" banner. Real cockpit replaces this on
+         first /api/data response. -->
+    <div class="panel panel--span-12 panel--empty">
+      <div class="cockpit cockpit--ok cockpit--skeleton">
+        <div class="cockpit__hero">
+          <div class="cockpit__eyebrow skeleton skeleton--eyebrow"></div>
+          <div class="cockpit__headline skeleton skeleton--headline"></div>
+        </div>
+        <div class="cockpit__actions">
+          <div class="skeleton skeleton--row"></div>
+          <div class="skeleton skeleton--row"></div>
+          <div class="skeleton skeleton--row"></div>
+        </div>
+        <div class="cockpit__strip">
+          <div class="cockpit__strip-label skeleton skeleton--eyebrow"></div>
+          <div class="cockpit__dots">
+            <span class="skeleton skeleton--dot"></span>
+            <span class="skeleton skeleton--dot"></span>
+            <span class="skeleton skeleton--dot"></span>
+            <span class="skeleton skeleton--dot"></span>
+            <span class="skeleton skeleton--dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <span>Built with <code>local-dashboard-builder</code></span>
+    <span class="app-footer__sep">·</span>
+    <a href="/api/data" target="_blank">/api/data</a>
+    <span class="app-footer__sep">·</span>
+    <a href="/api/cache" target="_blank">/api/cache</a>
+    <span class="app-footer__sep">·</span>
+    <a href="/api/health" target="_blank">/api/health</a>
+  </footer>
+
+  <!-- Master-detail drawer. Hidden by default; dashboards opt in by
+       (a) adding data-drawer-target="<key>" to clickable elements and
+       (b) registering window.DASHBOARD_DRAWER = { renderBody: fn }
+       before or during page load. See references/design-principles.md
+       "Progressive disclosure" for the full contract. -->
+  <div id="drawer-overlay" class="drawer-overlay" aria-hidden="true"></div>
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true"
+         aria-labelledby="drawer-title" aria-hidden="true" hidden>
+    <header class="drawer__head">
+      <div class="drawer__identity">
+        <div id="drawer-key" class="drawer__key">—</div>
+        <h2 id="drawer-title" class="drawer__title">Detail</h2>
+        <div id="drawer-subtitle" class="drawer__subtitle">—</div>
+      </div>
+      <button id="drawer-close" class="drawer__close" type="button"
+              aria-label="Close detail panel">✕</button>
+    </header>
+    <div id="drawer-body" class="drawer__body">—</div>
+  </aside>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

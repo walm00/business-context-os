@@ -54,6 +54,9 @@ __pycache__/
 # Auto-generated wake-up context (regenerated per user)
 docs/.wake-up-context.md
 
+# Session diary (per-user accumulated session notes; starter created by install.sh)
+docs/.session-diary.md
+
 # Auto-generated document index (regenerated per user via build_document_index.py)
 docs/document-index.md
 
