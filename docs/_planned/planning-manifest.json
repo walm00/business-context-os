@@ -1,0 +1,64 @@
+{
+  "sessionId": "20260429_151206_context-atlas-viz",
+  "skill": "clear-planner",
+  "createdAt": "2026-04-29T15:12:06Z",
+  "currentStep": 8,
+  "discovery": {
+    "agentsFound": ["explore"],
+    "skillsFound": [
+      "clear-planner", "context-audit", "context-ingest", "context-mine",
+      "context-onboarding", "core-discipline", "daydream", "doc-lint",
+      "ecosystem-manager", "lessons-consolidate", "schedule-dispatcher",
+      "schedule-tune", "todo-utilities"
+    ],
+    "lessonsFound": "0 captured (lessons-starter.json empty)",
+    "ecosystemHealth": "HEALTHY (per state.json 2026-04-23)",
+    "relevantPriorWork": [
+      "file_health.py — already iterates docs/ + parses frontmatter (REUSE as ingest base)",
+      "single_repo.py — Panel/collector pattern + REPO_ROOT detection (REUSE)",
+      "bcos_sync.py — upstream tip cache → diff-from-upstream layer (CONSUME)",
+      "freshness.py — snapshot-canary pattern (PATTERN)",
+      "schedule-config.json — KNOWN_AUTO_FIX_IDS for skill/agent halo references",
+      "context-audit skill — already does CLEAR compliance scoring (potential data source)"
+    ]
+  },
+  "scenario": {
+    "primary": "AGENTING",
+    "secondary": null,
+    "rationale": "Work is entirely in .claude/scripts/bcos-dashboard/ (new modules + panels + frontend). Reads docs/ frontmatter but does NOT modify any docs."
+  },
+  "contextGathered": {
+    "architecture": "Python stdlib HTTP server + vanilla JS frontend; Panel(id, kind, ttl, collector) pattern; hidden panels via /api/panel/<id>; settings sub-pages already established (/settings/runs, /files, /schedules, /technical).",
+    "ingestionAnchor": "file_health._iter_docs() + _parse_frontmatter() — small, well-scoped, perfect to extract into a shared atlas_ingest.py that both file_health.py and the new atlas collectors consume.",
+    "renderingDecision": "HTML+CSS treemap (no SVG generator dep), Mermaid for relationship graph (client-side render, zero new deps), CSS Grid Kanban for lifecycle. Stays in the existing 'zero-dependency Python stdlib + vanilla JS' constraint.",
+    "iaDecision": "New top-level page /atlas (primary view, not a setting). Cockpit gets a small teaser tile linking into it. Three lenses are tabs within /atlas, not separate pages.",
+    "cachingDecision": "TTL panel cache (300-600s) inside the existing collector framework. No separate cron job. Atlas data is computed live on first request after TTL expiry.",
+    "drift_overlay": "Reuse bcos_sync.py's upstream-tip cache to color framework files (docs/_bcos-framework/**) by drift state — clean / locally-modified / behind-upstream."
+  },
+  "userIntent": {
+    "raw": "Plan the 'Context Atlas' visualization feature for the BCOS dashboard — a new layer on the existing Python+vanilla-JS dashboard that visualizes docs/context architecture (not code). Three lenses: Ownership Map (treemap by domain), Relationship Graph (force-directed from frontmatter), Lifecycle Flow (Kanban inbox→planned→docs→archive). Innovative additions: CLEAR compliance ring, skill/agent impact halo, freshness-vs-volatility coloring, diff-from-upstream layer. Tradeoff: start static (Python-generated SVG/Mermaid) vs interactive D3/Cytoscape. Should share one frontmatter-ingestion pass with parallel sync work in .claude/scripts/bcos-dashboard/.",
+    "filesInvolved": [
+      ".claude/scripts/bcos-dashboard/run.py",
+      ".claude/scripts/bcos-dashboard/single_repo.py",
+      ".claude/scripts/bcos-dashboard/bcos_sync.py",
+      ".claude/scripts/bcos-dashboard/dashboard.html",
+      ".claude/scripts/bcos-dashboard/dashboard.js",
+      ".claude/scripts/bcos-dashboard/dashboard.css",
+      "docs/ (read-only — frontmatter source)"
+    ],
+    "objective": "Add a Context Atlas view to the BCOS dashboard that surfaces semantics in YAML frontmatter (ownership, relationships, lifecycle, freshness, CLEAR compliance, upstream drift) — with one shared frontmatter ingestion pass and a static-first rendering pipeline.",
+    "clarity": "clear"
+  },
+  "workflow": {
+    "steps": [
+      { "step": 1, "name": "Understand Intent", "status": "completed", "result": "Intent parsed; AGENTING scenario likely (touches .claude/scripts/bcos-dashboard/, reads docs/ for data only). Session folder created." },
+      { "step": 2, "name": "Run Discovery", "status": "completed", "result": "1 agent (explore), 13 skills (no overlap), 0 lessons. Strong reuse anchors: file_health.py parser, single_repo Panel pattern, bcos_sync upstream cache." },
+      { "step": 3, "name": "Detect Scenario", "status": "completed", "result": "AGENTING (primary) — all changes inside .claude/scripts/bcos-dashboard/; docs/ read-only." },
+      { "step": 4, "name": "Gather Context", "status": "completed", "result": "Architecture documented in contextGathered. Static-first rendering, TTL panel cache, /atlas top-level page, drift overlay reuses existing cache." },
+      { "step": 5, "name": "Load Scenario Template", "status": "completed", "result": "Loaded AGENTING template: discovery → design → implementation → integration audit → ecosystem state → learnings." },
+      { "step": 6, "name": "Present Approach (Gate 1)", "status": "completed", "gate": { "response": "Proceed", "respondedAt": "2026-04-29T15:12:06Z" } },
+      { "step": 7, "name": "Create Plan Artifacts", "status": "completed", "result": "Created plan-manifest.json (7 phases, 30 tasks) and implementation-plan.md." },
+      { "step": 8, "name": "Present Full Plan (Gate 2)", "status": "completed", "gate": { "response": "Approve", "respondedAt": "2026-04-29T15:12:06Z", "condition": "Review latest dashboard edits before starting Phase 1 — parallel session made refinements during planning." } }
+    ]
+  }
+}

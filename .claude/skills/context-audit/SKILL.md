@@ -98,6 +98,7 @@ For small scopes (< 20 files), scan directly:
    - Docs in `_planned/` with incomplete cross-references = LOW (informational, not error)
 
 4. **Folder-based checks:**
+   - **Underscore opt-out convention:** any top-level `docs/_<name>/` folder is opted out of audit. Framework folders (`_inbox/_planned/_archive/_collections/_bcos-framework`) have specific handling below; user-created folders (e.g. `_drafts/`, `_vendor-notes/`) are skipped silently. The prefix is the rule, not a fixed list. See `docs/_bcos-framework/guides/folder-conventions.md`.
    - Document in `docs/_planned/` older than 6 months → flag: "Consider promoting to active (move to docs/ root) or discarding"
    - Active document in `docs/` that `depends-on` a `_planned/` document → flag: "Forward-looking dependency — not yet real"
    - Files in `docs/_inbox/` → skip audit entirely (raw material, no quality bar)

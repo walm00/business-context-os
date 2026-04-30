@@ -40,6 +40,14 @@ PLANNED_DIR = "docs/_planned"
 ARCHIVE_DIR = "docs/_archive"
 COLLECTIONS_DIR = "docs/_collections"
 
+# Underscore-prefix convention: any top-level `_<name>/` folder under docs/ is
+# opted out of indexing/validation. Four names are framework-categorized into
+# their own report buckets (above). `_bcos-framework` is framework code (silent
+# skip). Anything else is user opt-out — silently skipped, but counted so the
+# digest can surface "N custom folders skipped" without exposing contents.
+USER_HANDLED_UNDERSCORES = {"_inbox", "_planned", "_archive", "_collections"}
+FRAMEWORK_UNDERSCORE = "_bcos-framework"
+
 REQUIRED_FIELDS = ["name", "type", "cluster", "version", "status", "created", "last-updated"]
 
 # Zone markers
@@ -170,6 +178,16 @@ def is_collection(filepath):
     return rel.startswith(COLLECTIONS_DIR) or ("/_collections/" in rel)
 
 
+def get_underscore_top(filepath, scan_dir):
+    """Return the top-level folder name (relative to scan_dir) if it starts
+    with `_`, else None. Used to detect the underscore opt-out convention."""
+    rel = os.path.relpath(filepath, scan_dir).replace("\\", "/")
+    parts = rel.split("/")
+    if len(parts) <= 1:
+        return None
+    return parts[0] if parts[0].startswith("_") else None
+
+
 def scan_documents(scan_dir):
     """Scan directory for markdown files, extract metadata."""
     managed = []
@@ -179,6 +197,7 @@ def scan_documents(scan_dir):
     planned = []
     archive = []
     misplaced = []  # Files in custom (non-framework) subdirectories
+    skipped_custom = {}  # {folder_name: [filepaths]} — user `_*/` opt-out folders
 
     pattern = os.path.join(scan_dir, "**", "*.md")
     files = sorted(glob.glob(pattern, recursive=True))
@@ -187,6 +206,17 @@ def scan_documents(scan_dir):
         filepath = filepath.replace("\\", "/")
 
         if should_skip(filepath, scan_dir):
+            continue
+
+        # Underscore opt-out convention. Top-level `docs/_<name>/` folders
+        # signal "framework, hands off." `_inbox/_planned/_archive/_collections`
+        # are categorized below; `_bcos-framework` is framework code (silent
+        # skip); anything else is user opt-out — skip + count for the digest.
+        under = get_underscore_top(filepath, scan_dir)
+        if under == FRAMEWORK_UNDERSCORE:
+            continue
+        if under and under not in USER_HANDLED_UNDERSCORES:
+            skipped_custom.setdefault(under, []).append(filepath)
             continue
 
         # Inbox files go to a separate list (raw material, no quality bar)
@@ -277,12 +307,12 @@ def scan_documents(scan_dir):
             incomplete.append(doc)
         managed.append(doc)
 
-    return managed, unmanaged, incomplete, inbox, planned, archive, misplaced
+    return managed, unmanaged, incomplete, inbox, planned, archive, misplaced, skipped_custom
 
 
 # --- Report Generation ---
 
-def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, planned=None, archive=None, misplaced=None):
+def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_notes, inbox=None, planned=None, archive=None, misplaced=None, skipped_custom=None):
     """Generate the Document Index markdown with auto and user zones."""
     today = datetime.date.today().strftime("%Y-%m-%d")
     lines = []
@@ -449,6 +479,19 @@ def generate_report(managed, unmanaged, incomplete, scan_dir, existing_user_note
             lines.append(f"| {doc['path']} | {doc['subdir']}/ | Consider moving to `docs/` root, or keep if intentional |")
         lines.append("")
 
+    # --- Skipped custom underscore folders (opt-out convention) ---
+    if skipped_custom:
+        total_files = sum(len(v) for v in skipped_custom.values())
+        folder_list = ", ".join(f"`{k}/`" for k in sorted(skipped_custom.keys()))
+        lines.append("---")
+        lines.append("")
+        lines.append("## Skipped (Custom `_*` Folders)")
+        lines.append("")
+        lines.append(f"Skipped {len(skipped_custom)} underscore-prefixed folder(s), {total_files} file(s) total: {folder_list}")
+        lines.append("")
+        lines.append("These folders are opted out of indexing, validation, and lint by the underscore convention. See `docs/_bcos-framework/guides/folder-conventions.md`.")
+        lines.append("")
+
     # --- Inbox (raw material) ---
     if inbox is None:
         inbox = []
@@ -611,8 +654,8 @@ def main():
     # Preserve user notes from existing file
     existing_notes = extract_user_notes(OUTPUT_FILE) if not dry_run else None
 
-    managed, unmanaged, incomplete, inbox, planned, archive, misplaced = scan_documents(scan_dir)
-    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, planned, archive, misplaced)
+    managed, unmanaged, incomplete, inbox, planned, archive, misplaced, skipped_custom = scan_documents(scan_dir)
+    report = generate_report(managed, unmanaged, incomplete, scan_dir, existing_notes, inbox, planned, archive, misplaced, skipped_custom)
 
     if dry_run:
         print(report)
@@ -629,6 +672,9 @@ def main():
         print(f"  Archived items: {len(archive)}")
         if misplaced:
             print(f"  Note: {len(misplaced)} file(s) in custom subdirectories (recommended: flat in docs/ root)")
+        if skipped_custom:
+            total_skipped = sum(len(v) for v in skipped_custom.values())
+            print(f"  Custom _-folders skipped: {len(skipped_custom)} folder(s), {total_skipped} file(s)")
         if existing_notes:
             print(f"  User notes: preserved")
         else:

@@ -38,13 +38,22 @@ Non-fatal if this fails — note it but continue.
 
 ### 3. Scan docs for structural issues
 
-Scan `docs/*.md` (recursively) but **skip** these folders:
+Scan `docs/*.md` (recursively) but **skip any top-level `docs/_<name>/` folder** — the underscore prefix is the framework's opt-out convention. The framework-managed underscores are:
 
-- `docs/_inbox/` — raw material, no quality bar
-- `docs/_planned/` — future state, different rules
-- `docs/_archive/` — historical, untouched
-- `docs/_collections/` — bulk files, no frontmatter required
-- `docs/_bcos-framework/` — framework, synced from upstream
+- `docs/_inbox/` — raw material, no quality bar (categorized separately by the indexer)
+- `docs/_planned/` — future state, different rules (categorized separately)
+- `docs/_archive/` — historical, untouched (categorized separately)
+- `docs/_collections/` — bulk files, no frontmatter required (categorized separately)
+- `docs/_bcos-framework/` — framework, synced from upstream (silent skip)
+
+**Any other `docs/_<custom>/` folder a user creates is also skipped** — that's the whole point of the convention. The indexer counts them and reports a one-line summary in its stdout, e.g. `Custom _-folders skipped: 2 folder(s), 8 file(s)`. Surface that count in the `notes` field of your result so users see it in the digest. Do not list folder names or file contents — `_*` is opt-out from visibility, not just from validation.
+
+Also skip these **generated / convention files** (no frontmatter by design — flagging them is a false positive that recurs every run):
+
+- `docs/document-index.md` — auto-generated index
+- Any dot-prefixed basename (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`, and any other `docs/.*.md`)
+
+Note on `owner` field: `owner` is **not** a required frontmatter field (see `docs/_bcos-framework/methodology/document-standards.md`). Do not flag it as `missing-required-field`. The required list is exactly: `name, type, cluster, version, status, created, last-updated`.
 
 Also skip these **generated / convention files** (no frontmatter by design — flagging them is a false positive that recurs every run):
 
@@ -99,7 +108,7 @@ Return to the dispatcher:
   "actions_needed": [
     "missing-frontmatter: docs/new-playbook.md — has no YAML block, needs a template"
   ],
-  "notes": "Index rebuilt: 24 docs (unchanged from yesterday)."
+  "notes": "Index rebuilt: 24 docs (unchanged from yesterday). 2 custom _-folders skipped (8 files)."
 }
 ```
 
