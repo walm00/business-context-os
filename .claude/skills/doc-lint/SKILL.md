@@ -87,12 +87,15 @@ Runs automatically as part of scenario FIXED END phases.
 
 | Location                      | Handling           |
 | ----------------------------- | ------------------ |
+| `docs/_<name>/` (any underscore-prefixed top-level folder) | SKIP entirely — opt-out convention |
 | `_archive/`                   | SKIP entirely      |
 | `_inbox/`                     | SKIP entirely      |
 | `_planned/`                   | Relaxed validation |
 | `.claude/quality/sessions/*/` | SKIP (historical)  |
 | Inside example blocks         | Relaxed validation |
 | Intentionally invalid         | SKIP if marked     |
+
+**The `_*` rule is the prefix, not a fixed list.** A user-created `docs/_drafts/` or `docs/_vendor-evals/` is skipped just like the framework folders. See `docs/_bcos-framework/guides/folder-conventions.md`.
 
 **Content markers that skip validation:**
 

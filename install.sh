@@ -227,6 +227,15 @@ while IFS= read -r f; do
     copy_if_missing "$f" ".claude/scripts/$rel"
 done < <(find "$SCRIPT_DIR/.claude/scripts" -type f ! -name "*.pyc" ! -path "*/__pycache__/*" 2>/dev/null)
 
+# Templates (gitignore profile template, etc.)
+if [ -d "$SCRIPT_DIR/.claude/templates" ]; then
+    for f in "$SCRIPT_DIR"/.claude/templates/*; do
+        if [ -f "$f" ]; then
+            copy_if_missing "$f" ".claude/templates/$(basename "$f")"
+        fi
+    done
+fi
+
 # Hook state directory (gitignored, machine-local)
 mkdir -p .claude/hook_state
 touch .claude/hook_state/.gitkeep
@@ -356,6 +365,21 @@ chmod +x .claude/agents/agent-discovery/find_agents.sh 2>/dev/null || true
 chmod +x .claude/skills/skill-discovery/find_skills.sh 2>/dev/null || true
 chmod +x .claude/hooks/auto_save_session.sh 2>/dev/null || true
 chmod +x .claude/hooks/precompact_save.sh 2>/dev/null || true
+chmod +x .claude/scripts/set_profile.sh 2>/dev/null || true
+
+# ─── Gitignore profile (generate default if none) ───────────────────
+# If the target repo has no .gitignore yet, generate one from the "shared"
+# profile (current default behavior — keeps host codebase clean of BCOS
+# runtime artifacts). Users on personal knowledge repos can switch with:
+#   bash .claude/scripts/set_profile.sh personal
+GITIGNORE_GENERATED=""
+if [ ! -f "$TARGET_DIR/.gitignore" ] && [ -f ".claude/templates/gitignore.template" ] && [ -x ".claude/scripts/set_profile.sh" ]; then
+    if bash .claude/scripts/set_profile.sh shared >/dev/null 2>&1; then
+        GITIGNORE_GENERATED="shared"
+        echo -e "  ${GREEN}CREATE${NC}  .gitignore (profile: shared)"
+        echo ""
+    fi
+fi
 
 # ─── Summary ────────────────────────────────────────────────────────
 
@@ -372,6 +396,15 @@ echo ""
 echo "  Open Claude Code and say: \"Help me get started with my business context.\""
 echo "  Claude will figure out the rest."
 echo ""
+if [ "$GITIGNORE_GENERATED" = "shared" ]; then
+echo -e "  ${YELLOW}TIP:${NC} A .gitignore was generated using the 'shared' profile"
+echo "  (BCOS runtime artifacts ignored — best for team/multi-tenant repos)."
+echo "  If this is a personal knowledge repo and you want session diary,"
+echo "  lessons, and digests synced across machines, switch to 'personal':"
+echo ""
+echo "      bash .claude/scripts/set_profile.sh personal"
+echo ""
+fi
 if [ "$SKIPPED" -gt 0 ]; then
 echo -e "  ${YELLOW}NOTE:${NC} Some files were skipped (already existed)."
 echo "  If you have an existing CLAUDE.md, merge the BCOS sections from:"
