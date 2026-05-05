@@ -1,0 +1,163 @@
+# =============================================================================
+# Context Zones Registry
+# =============================================================================
+# Lives at: docs/.context-zones.yml (per-repo override; optional)
+#           docs/_bcos-framework/templates/_context-zones.yml.tmpl (framework default)
+#
+# This file is the DECLARATIVE COMPANION to the path classifier in
+# .claude/scripts/context_index.py (`_zone_for()`). The two MUST agree —
+# .claude/scripts/test_zone_registry.py is the drift test that enforces it.
+#
+# Read by:
+#   - context_search.py / context_bundle.py (cross-zone retrieval, P2/P5)
+#   - bcos-wiki / context-routing skills (zone-scoped operations)
+#   - validators (frontmatter, references, integration)
+#   - any future tooling that reasons about zones without re-implementing path logic
+#
+# Loader: .claude/scripts/load_zone_registry.py
+#   Resolution order:
+#     1. docs/.context-zones.yml (per-repo override) if present
+#     2. this template (framework default)
+#
+# THE DRIFT CONTRACT
+#   - Every zone returned by context_index.py._zone_for() on the test fixture
+#     MUST appear in the `zones:` list below.
+#   - Every entry in `zones:` MUST be exercised by at least one fixture under
+#     .claude/scripts/fixtures/zone_registry/.
+#   - Every entry MUST declare all eight fields (schema below).
+#   - test_zone_registry.py runs in CI to enforce this.
+#
+# PER-ENTRY SCHEMA
+#   id:                          stable zone name; matches _zone_for() outputs
+#   path-glob:                   zone footprint under docs/ (illustrative)
+#   frontmatter-fields-required: list of required base metadata; [] if not enforced
+#   freshness-field:             last-updated | last-reviewed | last-fetched | null
+#   freshness-model:             update-driven | review-driven | fetch-driven | none
+#   source-of-truth-role:        canonical | derived | evidence | future | historical | system | opted-out
+#   addressing:                  slug | path | manifest+row | path-only
+#   optional:                    true if zone may be absent from a fresh repo
+#
+# OPTIONAL PER-ENTRY FIELDS
+#   freshness-by-page-type:      inline list of `page-type=field` overrides for
+#                                zones where freshness depends on page-type. Used
+#                                by `wiki` (pages: last-reviewed; source-summary:
+#                                last-fetched). Consumers split each entry on `=`
+#                                and fall back to `freshness-field` when no
+#                                page-type matches.
+#
+# See: docs/_bcos-framework/architecture/context-zones.md (full prose reference)
+# =============================================================================
+
+schema-version: 1
+last-updated: 2026-05-04
+
+zones:
+
+  - id: active
+    path-glob: "docs/*.md"
+    frontmatter-fields-required: [name, type, cluster, version, status, created, last-updated]
+    freshness-field: last-updated
+    freshness-model: update-driven
+    source-of-truth-role: canonical
+    addressing: slug
+    optional: false
+
+  - id: framework
+    path-glob: "docs/_bcos-framework/**/*.md"
+    frontmatter-fields-required: []
+    freshness-field: last-updated
+    freshness-model: update-driven
+    source-of-truth-role: system
+    addressing: path
+    optional: false
+
+  - id: wiki
+    path-glob: "docs/_wiki/pages/**/*.md, docs/_wiki/source-summary/**/*.md"
+    frontmatter-fields-required: [name, type, page-type, cluster, version, status, created, last-updated, last-reviewed]
+    freshness-field: last-reviewed
+    freshness-model: review-driven
+    freshness-by-page-type: [explainer=last-reviewed, how-to=last-reviewed, source-summary=last-fetched]
+    source-of-truth-role: derived
+    addressing: slug
+    optional: true
+
+  - id: wiki-internal
+    path-glob: "docs/_wiki/raw/**, docs/_wiki/.archive/**, docs/_wiki/{queue,log,overview,README}.md, docs/_wiki/{.config,.schema}.yml"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: system
+    addressing: path-only
+    optional: true
+
+  - id: collection-manifest
+    path-glob: "docs/_collections/*/_manifest.md"
+    frontmatter-fields-required: [name, type, cluster, version, status, created, last-updated]
+    freshness-field: last-updated
+    freshness-model: update-driven
+    source-of-truth-role: derived
+    addressing: manifest+row
+    optional: true
+
+  - id: collection-sidecar
+    path-glob: "docs/_collections/*/*.meta.md"
+    frontmatter-fields-required: [name, type, cluster, version, status, created, last-updated]
+    freshness-field: last-updated
+    freshness-model: update-driven
+    source-of-truth-role: derived
+    addressing: path
+    optional: true
+
+  - id: collection-artifact
+    path-glob: "docs/_collections/*/*.md"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: evidence
+    addressing: path-only
+    optional: true
+
+  - id: inbox
+    path-glob: "docs/_inbox/**/*.md"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: opted-out
+    addressing: path-only
+    optional: true
+
+  - id: planned
+    path-glob: "docs/_planned/**/*.md"
+    frontmatter-fields-required: []
+    freshness-field: last-updated
+    freshness-model: update-driven
+    source-of-truth-role: future
+    addressing: path
+    optional: true
+
+  - id: archive
+    path-glob: "docs/_archive/**/*.md"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: historical
+    addressing: path-only
+    optional: true
+
+  - id: custom-optout
+    path-glob: "docs/_*/**/*.md (any user-created _-prefixed folder not in the known set)"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: opted-out
+    addressing: path-only
+    optional: true
+
+  - id: generated
+    path-glob: "docs/document-index.md, docs/_wiki/index.md, docs/.wake-up-context.md"
+    frontmatter-fields-required: []
+    freshness-field: null
+    freshness-model: none
+    source-of-truth-role: system
+    addressing: path-only
+    optional: false

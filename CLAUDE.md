@@ -36,6 +36,8 @@ Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/documen
 | `docs/_inbox/` | **Low** — needs processing | Raw material, session captures, brain dumps |
 | `docs/_planned/` | **Read only** | Polished ideas — not yet real |
 | `docs/_archive/` | **Historical** | Superseded — do not treat as current |
+| `docs/_collections/` | **Evidence — verbatim** | Artifacts as received: invoices, brand kits, signed agreements, call transcripts, exports. The file IS the truth — never paraphrase or edit. Each subdirectory has a required `_manifest.md` linking artifacts to data points |
+| `docs/_wiki/` | **Mixed — pages/source-summary are High; raw/queue are Mechanical** | Wiki pages and source summaries explain canonical data points via `builds-on:`. Raw captures, queue, index, and log are managed by `bcos-wiki`; see `wiki-zone.md` |
 | `docs/_<custom>/` | **Opted-out** | Any user-created `_`-prefixed folder. Skipped by all maintenance. Use for drafts, experiments, vendor notes |
 
 **The folder IS the signal.** `_planned/` = idea. `_archive/` = history. `_<anything>/` = framework-ignored. Don't confuse them with reality.
@@ -62,9 +64,9 @@ These apply when editing any file in `docs/`:
 - Touch the `created` date — it's immutable
 - Add content without checking which document OWNS that topic
 
-For full standards: `docs/_bcos-framework/methodology/document-standards.md`
+For full standards: `docs/_bcos-framework/methodology/document-standards.md`. For wiki-zone documents, `docs/_bcos-framework/architecture/wiki-zone.md` is authoritative.
 
 ---
 
-**Version**: 1.3.0
-**Last Updated**: 2026-04-23
+**Version**: 1.5.0
+**Last Updated**: 2026-05-04

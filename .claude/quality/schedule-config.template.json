@@ -32,6 +32,26 @@
       "enabled": true,
       "schedule": "1st",
       "_about": "Monthly full architecture + ecosystem pass. Quarterly is fine once context is mature — just change 'schedule' to a cron like '0 0 1 */3 *' or ask Claude to do it."
+    },
+    "wiki-stale-propagation": {
+      "enabled": true,
+      "schedule": "daily",
+      "_about": "Scan wiki pages whose builds-on sources changed after last-reviewed. Cheap metadata-only check; emits action items for human review."
+    },
+    "wiki-source-refresh": {
+      "enabled": true,
+      "schedule": "mon",
+      "_about": "Two-tier source-summary refresh: HEAD-only quick checks at stale_threshold_days/4, full refresh-must-rediscover at stale_threshold_days."
+    },
+    "wiki-graveyard": {
+      "enabled": true,
+      "schedule": "1st",
+      "_about": "Monthly archive-candidate scan for stale/orphaned/expired wiki pages. Suggests archive actions; only whitelisted post-mortem expiry is auto-fixable."
+    },
+    "wiki-coverage-audit": {
+      "enabled": true,
+      "schedule": "0 0 1 */3 *",
+      "_about": "Quarterly cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters not present in document-index as INFO."
     }
   },
 
@@ -45,7 +65,12 @@
       "eof-newline",
       "broken-xref-single-candidate",
       "prune-sessions",
-      "prune-diary"
+      "prune-diary",
+      "ecosystem-state-refresh",
+      "wiki-index-refresh",
+      "wiki-mark-queue-ingested",
+      "wiki-archive-expired-post-mortem",
+      "wiki-rewrite-citations-on-rename"
     ]
   },
 

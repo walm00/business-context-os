@@ -38,21 +38,28 @@ Collect:
 
 ### 3. Ecosystem check
 
-Run:
+**Refresh state.json from disk first.** This is the marker-based source of truth — it classifies directories with `SKILL.md` as skills, with `AGENT.md` as agents, and anything else (e.g., utility shell-script directories) as `inventory.utilities`. The refresh is on the `auto_fix.whitelist` as `ecosystem-state-refresh`, so apply it now if the whitelist allows:
 
 ```
-python .claude/scripts/analyze_integration.py --staged
+python .claude/scripts/refresh_ecosystem_state.py
 ```
 
-(If the script does not exist, skip.)
+If the script changed anything, capture its summary line for `auto_fixed` (e.g. `state.json refreshed: +1 skill(s)`). If the user disabled `ecosystem-state-refresh` in their whitelist, run it with `--dry-run` instead and surface the proposed change as an action item.
 
-Also check:
+**Then run the structural integration audit:**
 
-- Does `.claude/quality/ecosystem/state.json` match what actually exists in `.claude/skills/`, `.claude/agents/`, `.claude/hooks/`?
-- Are any skills referenced in `state.json` but missing on disk? Or vice versa?
-- Any hook referenced in `settings.json` whose file is missing?
+```
+python .claude/scripts/analyze_integration.py --ci
+```
 
-Treat mismatches as action items at HIGH severity.
+(If either script is missing, skip and note in `notes` — this can happen on very old installs that haven't run `update.py` since the framework added the script.)
+
+`analyze_integration.py --ci` checks for:
+
+- Skills/agents/hooks/scripts on disk that are not wired into `install.sh`, `settings.json`, `state.json`, or `.gitignore`
+- Cross-reference gaps where existing files mention paths that no longer exist
+
+Treat any remaining gaps as action items at HIGH severity. (The state.json freshness gap is now self-healing via the refresh step above and should not appear here.)
 
 ### 4. Lessons retention review
 
@@ -78,9 +85,9 @@ A rough 0-10 score based on:
 - -1 per critical finding (max -5)
 - -0.5 per high finding (max -3)
 - -0.25 per medium finding (max -1.5)
-- -1 if any ecosystem mismatch (skill/hook/agent drift)
+- -1 if `analyze_integration.py --ci` reports unresolved coverage gaps (e.g. a hook on disk not registered in `settings.json`). The state.json refresh in Step 3 already heals inventory drift, so drift in *that* file alone never costs a point.
 - -1 if `lessons.json` has > 50 active lessons and no recent consolidation
-- +1 if zero critical, zero high findings AND no ecosystem drift (bonus for clean month)
+- +1 if zero critical, zero high findings AND no integration coverage gaps (bonus for clean month)
 
 Floor at 0, cap at 10. Integer-round to one decimal.
 
@@ -106,9 +113,9 @@ If there are fewer than three worth flagging, surface fewer. Do not manufacture 
 
 ### 8. Determine verdict
 
-- 🟢 `green` — health score ≥ 8, zero critical, zero ecosystem drift
+- 🟢 `green` — health score ≥ 8, zero critical, zero integration coverage gaps (state.json refresh from Step 3 doesn't count as a finding when the auto-fix succeeded — that's a healed state, not drift)
 - 🟡 `amber` — health score 5-7, some findings, no criticals
-- 🔴 `red` — health score < 5, OR any critical finding, OR ecosystem drift
+- 🔴 `red` — health score < 5, OR any critical finding, OR `analyze_integration.py --ci` reports unresolved coverage gaps, OR the state.json refresh failed to apply (whitelist disabled OR script error)
 - ⚠️ `error` — audit or integration analysis crashed
 
 ### 9. Emit result
@@ -139,6 +146,7 @@ If there are fewer than three worth flagging, surface fewer. Do not manufacture 
 
 - Does not fix anything outside the whitelist — even "obvious" fixes stay as action items at this depth
 - Does not modify `lessons.json` — proposals only
-- Does not modify `.claude/quality/ecosystem/state.json` — flags drift, doesn't heal it
 - Does not re-audit a cluster just because it was flagged red — that's next week's `audit-inbox` work
 - Does not produce a health score more precise than one decimal — false precision is worse than no score
+
+State.json IS modified by this job — via the whitelisted `ecosystem-state-refresh` fix (see Step 3). Treating state.json as a derived artifact rather than authored truth is a deliberate design choice; see lesson L-INIT-20260404-009.

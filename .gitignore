@@ -66,6 +66,9 @@ __pycache__/
 .claude/hook_state/*
 !.claude/hook_state/.gitkeep
 
+# Agent worktrees (per-session ephemeral copies; large, machine-local)
+.claude/worktrees/
+
 # Schedule dispatcher live config (per-machine cron times)
 # The template ships (schedule-config.template.json); the live config does not.
 .claude/quality/schedule-config.json
@@ -88,9 +91,17 @@ __pycache__/
 # Umbrella node registration (per-installation; references local sibling repos)
 .bcos-umbrella.json
 
-# Dashboard & galaxy (in-development, not for public release yet)
-.claude/scripts/bcos-dashboard/
+# Galaxy (in-development, not for public release yet)
 .claude/scripts/bcos-galaxy/
+
+# Framework regression tests (dev-only — end users don't run these)
+.claude/scripts/test_*.py
+
+# Test fixtures (dev-only — used by the regression suite)
+.claude/scripts/fixtures/
+
+# Dashboard runtime state (per-machine; the code ships, the runtime doesn't)
+.claude/scripts/bcos-dashboard/__pycache__/
 
 # === SHARED ONLY ===
 # (BCOS dropped into a multi-tenant or team repo — keep host codebase clean

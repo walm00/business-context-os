@@ -1,0 +1,27 @@
+# Wiki Zone Configuration
+#
+# Lives at: docs/_wiki/.config.yml
+# Created by install.sh or `/wiki init`. Project-owned after creation.
+
+domain: "{{DOMAIN}}"
+created: "{{TODAY}}"
+last-updated: "{{TODAY}}"
+
+paths:
+  pages: pages
+  source-summary: source-summary
+  raw: raw
+  archive: .archive
+  queue: queue.md
+  index: index.md
+  overview: overview.md
+  log: log.md
+
+defaults:
+  detail-level: standard
+  review-cadence-days: 180
+  stale-threshold-days: 30
+
+policy:
+  path-b-binaries-stay-in-zone: true
+  no-auto-commit: true

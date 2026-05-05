@@ -291,6 +291,20 @@ The pattern is deliberately redundant. A frontmatter issue caught by a hook neve
 
 The goal is not zero findings at any layer. The goal is **no surprises** -- issues are small and expected, not large and alarming.
 
+### Derived Artifacts vs. Authored Truth
+
+A second, related principle: **state files that mirror disk should be regenerated, not authored.**
+
+`.claude/quality/ecosystem/state.json` is an inventory — it records which skills, agents, and utilities exist. The disk is the source of truth (which directories have `SKILL.md`, which have `AGENT.md`, which have neither). The file just records what discovery found.
+
+When a derived file is treated as authored truth and edited by hand, drift is inevitable. The file falls out of sync with disk the moment someone adds a directory and forgets to update the JSON. By the time the monthly architecture-review notices, the gap is large enough to be alarming.
+
+The fix is to refresh the file from disk on a regular cadence — daily via `index-health` and at every framework update via `update.py`. The mechanism is the `ecosystem-state-refresh` auto-fix, governed by the same safety rules as every other whitelisted fix (deterministic, idempotent, no business-content change, reversible by `git diff`).
+
+This principle generalizes: any registry, cache, or inventory file that mirrors a queryable source (disk, a database, an API) should follow the same pattern. The framework's `lessons.json` is the counter-example — it IS authored truth, and is therefore explicitly excluded from auto-refresh and only changed via the `lessons-consolidate` skill.
+
+See lesson `L-INIT-20260404-009`: *"Discovery scripts are the source of truth for what exists. State files record what discovery found, not the definition itself."*
+
 ---
 
 ## References

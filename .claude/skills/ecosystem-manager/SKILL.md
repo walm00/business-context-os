@@ -60,6 +60,9 @@ Check for:
 - **Conflicts**: multiple agents/skills claiming same responsibility
 - **Orphans**: agents/skills that nothing references
 - **Missing standards**: agents without proper AGENT.md structure
+- **Wiki awareness**: if `docs/_wiki/` exists, verify `bcos-wiki` is present,
+  `_wiki/.schema.yml` page-types are readable, and scheduled wiki jobs are wired
+  into `schedule-dispatcher`
 
 ### 4. Learnings Capture
 
@@ -177,6 +180,23 @@ For each skill, verify it references the skills, scripts, and files it SHOULD kn
 - Does `reference-index.json` list ALL skills, hooks, scripts, and agents?
 - Does `state.json` skill count match actual SKILL.md files on disk?
 - Does ECOSYSTEM-MAP.md list all components with accurate descriptions?
+- If `docs/_wiki/` exists, does the ecosystem inventory acknowledge `bcos-wiki`,
+  schema-governed page-types, and the wiki scheduled maintenance jobs?
+
+### 2b. Wiki Zone Awareness
+
+When the repo has `docs/_wiki/`, include the wiki zone in ecosystem scans:
+
+- Confirm `.claude/skills/bcos-wiki/SKILL.md` exists and dispatches `/wiki`.
+- Run `python .claude/scripts/wiki_schema.py list` to inspect page-types,
+  lint-checks, and auto-fixes from `_wiki/.schema.yml` or the framework fallback.
+- Check `schedule-config.template.json` and the active schedule config for
+  `wiki-stale-propagation`, `wiki-source-refresh`, `wiki-graveyard`, and
+  `wiki-coverage-audit`.
+- Treat wiki page-types as ecosystem vocabulary. If skill docs or scheduled
+  jobs mention a page-type that the schema does not register, flag drift.
+- Do not classify `docs/_wiki/raw/` as authored context; raw files are managed
+  by `bcos-wiki` protocols.
 
 ### 3. CI validation
 

@@ -72,6 +72,25 @@ Generate a health summary:
 - Tagged with relevant categories
 - Tied to a real experience (not hypothetical)
 
+### Boundary: Lessons vs Wiki
+
+Use this boundary when `bcos-wiki` exists:
+
+| Content | Owning surface |
+|---------|----------------|
+| Atomic, reusable rule for future agents or humans | `lessons.json` via ecosystem-manager |
+| Narrative incident explanation, timeline, causes, and follow-up context | Wiki `post-mortem` page-type |
+| Decision narrative, alternatives considered, and why a choice was made | Wiki `decision-log` page-type |
+| Step-by-step operational response | Wiki `how-to` or `runbook` page-type |
+
+Lessons should stay short and actionable. Wiki pages can carry the richer story.
+If consolidation finds a lesson that is really a narrative, recommend moving the
+detail to `/wiki create` and keeping only the distilled lesson in
+`lessons.json`.
+
+Cross-reference: `docs/_bcos-framework/architecture/wiki-zone.md` defines wiki
+page-type semantics and schema governance.
+
 **Remove or archive when:**
 - The lesson references something that no longer exists
 - The lesson has been superseded by a better one

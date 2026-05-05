@@ -1,0 +1,158 @@
+# =============================================================================
+# Task Profiles Catalog
+# =============================================================================
+# Lives at: docs/.context.task-profiles.yml (per-repo override; optional)
+#           docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl
+#                                          (framework default)
+#
+# This file is the DECLARATIVE CATALOG of task profiles consumed by
+# `.claude/scripts/context_bundle.py` and the `/context bundle <profile>`
+# skill surface. Each profile describes the SHAPE of context an agent needs
+# when about to do task `<profile-id>` — required zones, content families,
+# source-of-truth ranking, freshness thresholds, traversal hints, coverage.
+#
+# Read by:
+#   - context_bundle.py (resolves a bundle envelope per profile)
+#   - validate_task_profiles.py (CI / FIXED END schema check)
+#   - context-routing skill (`/context bundle <profile>`)
+#   - bcos-wiki skill (`/wiki bundle <profile>` zone-scoped sugar)
+#
+# Loader: .claude/scripts/load_task_profiles.py
+#   Resolution order:
+#     1. docs/.context.task-profiles.yml (per-repo override) if present
+#     2. this template (framework default)
+#
+# THE PRINCIPLE
+#   Profiles describe the SHAPE of context (patterns + thresholds), not the
+#   INSTANCES (specific slugs). The bundle resolver walks the typed-edge graph
+#   in context-index.json at runtime; profiles tell it *what* to look for and
+#   *how to rank* what it finds.
+#
+# PER-PROFILE SCHEMA
+#   id:                          stable profile identifier (e.g., market-report:write)
+#   description:                 one-line human description
+#   required-zones:              inline list of `<zone-id>=<true|false>` pairs
+#                                (true = required; false = optional/best-effort)
+#   content-families:            inline list of compact strings, one per family;
+#                                each is `name=<X>, pattern=<P>, required=<bool>, min-count=<N>`
+#                                Pattern grammar:
+#                                  - `cluster=<value>`      doc.cluster matches
+#                                  - `tag=<value>`          doc.tags contains value
+#                                  - `page-type=<value>`    doc.page_type matches
+#                                  - `type=<value>`         doc.type matches
+#   source-of-truth-ranking:     inline list of zone-ids in priority order
+#                                (first wins on conflict resolution)
+#   freshness-thresholds:        inline list of `<zone-id>=<days|never>` pairs
+#                                Hits past threshold get verdict: past-threshold
+#                                Hits within threshold but past 50% get: stale
+#                                Otherwise: fresh
+#   traversal-hints:             inline list of `from-edge=<edge>, depth-cap=<N>`
+#                                The resolver walks `builds-on` / `references` /
+#                                `depends-on` edges from any seed hit up to depth-cap.
+#   coverage-assertions:         inline list of `<family-name>=<min-count>` pairs;
+#                                families failing min-count surface in
+#                                missing-perspectives.
+#
+# See docs/_bcos-framework/architecture/context-routing.md for the full prose.
+# =============================================================================
+
+schema-version: 1
+last-updated: 2026-05-04
+
+profiles:
+
+  - id: market-report:write
+    description: Writing a market report. Pulls competitor / market / pricing context across active + wiki + planned. Canonical wins on conflict.
+    required-zones: [active=true, wiki=true, planned=false]
+    content-families:
+      - name=competitor-data, pattern=cluster=Competitive, required=true, min-count=1
+      - name=market-data, pattern=cluster=Market, required=true, min-count=1
+      - name=pricing-data, pattern=cluster=Revenue, required=true, min-count=1
+    source-of-truth-ranking: [active, wiki, planned]
+    freshness-thresholds: [active=30, wiki=90, planned=never]
+    traversal-hints: [from-edge=builds-on, depth-cap=2]
+    coverage-assertions: [competitor-data=1, market-data=1, pricing-data=1]
+
+  - id: engagement:plan
+    description: Planning customer engagement. Live context preferred; wiki supports but never beats canonical.
+    required-zones: [active=true, wiki=false]
+    content-families:
+      - name=engagement-data, pattern=tag=engagement, required=false, min-count=0
+      - name=customer-data, pattern=cluster=People, required=false, min-count=0
+    source-of-truth-ranking: [active, wiki]
+    freshness-thresholds: [active=14, wiki=60]
+    traversal-hints: [from-edge=builds-on, depth-cap=1]
+    coverage-assertions: []
+
+  - id: architecture:design
+    description: Architecture design. Framework spec + active data points + wiki explainers. Conflicts resolve to active.
+    required-zones: [active=true, framework=true, wiki=false]
+    content-families:
+      - name=design-spec, pattern=cluster=Architecture, required=true, min-count=1
+      - name=framework-spec, pattern=type=spec, required=false, min-count=0
+    source-of-truth-ranking: [active, framework, wiki]
+    freshness-thresholds: [active=60, framework=never, wiki=180]
+    traversal-hints: [from-edge=builds-on, depth-cap=2]
+    coverage-assertions: [design-spec=1]
+
+  - id: competitor:audit
+    description: Competitor audit. Heavy on wiki source-summary + collections (reports / exports). Active data points anchor.
+    required-zones: [active=true, wiki=false, collection-manifest=false]
+    content-families:
+      - name=competitor-data, pattern=cluster=Competitive, required=true, min-count=1
+      - name=competitor-evidence, pattern=tag=competitor, required=false, min-count=0
+    source-of-truth-ranking: [active, wiki, collection-manifest]
+    freshness-thresholds: [active=30, wiki=90]
+    traversal-hints: [from-edge=builds-on, depth-cap=2]
+    coverage-assertions: [competitor-data=1]
+
+  - id: customer:onboard
+    description: Customer onboarding. People + engagement context.
+    required-zones: [active=true, wiki=false]
+    content-families:
+      - name=customer-data, pattern=cluster=People, required=true, min-count=1
+      - name=process-data, pattern=type=process, required=false, min-count=0
+    source-of-truth-ranking: [active, wiki]
+    freshness-thresholds: [active=14, wiki=60]
+    traversal-hints: [from-edge=builds-on, depth-cap=1]
+    coverage-assertions: [customer-data=1]
+
+  - id: decision:log
+    description: Logging a decision. Frozen-at-time evidence wins; live data is supportive.
+    required-zones: [active=true, collection-artifact=false, wiki=false]
+    content-families:
+      - name=decision-evidence, pattern=tag=decision, required=false, min-count=0
+    source-of-truth-ranking: [collection-artifact, active, wiki]
+    freshness-thresholds: [active=never, collection-artifact=never, wiki=never]
+    traversal-hints: [from-edge=references, depth-cap=1]
+    coverage-assertions: []
+
+  - id: incident:postmortem
+    description: Incident post-mortem. Frozen-at-time evidence + decision context.
+    required-zones: [active=true, collection-artifact=false]
+    content-families:
+      - name=incident-evidence, pattern=tag=incident, required=false, min-count=0
+    source-of-truth-ranking: [collection-artifact, active]
+    freshness-thresholds: [active=never, collection-artifact=never]
+    traversal-hints: [from-edge=references, depth-cap=1]
+    coverage-assertions: []
+
+  - id: skill:author
+    description: Authoring or modifying a skill. Framework spec + ecosystem state authoritative.
+    required-zones: [framework=true]
+    content-families:
+      - name=framework-spec, pattern=type=spec, required=false, min-count=0
+    source-of-truth-ranking: [framework, active]
+    freshness-thresholds: [framework=never, active=180]
+    traversal-hints: [from-edge=references, depth-cap=2]
+    coverage-assertions: []
+
+  - id: plan:revise
+    description: Revising a planned proposal. Other plans + active data points.
+    required-zones: [planned=true, active=false]
+    content-families:
+      - name=plan-context, pattern=type=playbook, required=false, min-count=0
+    source-of-truth-ranking: [active, planned]
+    freshness-thresholds: [active=60, planned=never]
+    traversal-hints: [from-edge=builds-on, depth-cap=2]
+    coverage-assertions: []

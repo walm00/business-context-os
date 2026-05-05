@@ -76,6 +76,90 @@ This file is the source of truth. The actual enforcement list lives in `schedule
 
 ---
 
+### `ecosystem-state-refresh`
+
+**Detects:** `.claude/quality/ecosystem/state.json` does not match disk. Either skills/agents have been added, removed, or renamed since the last refresh, or the file's `lastUpdated`/`lastAudit` timestamps are older than today.
+
+**Fix:** Run `python .claude/scripts/refresh_ecosystem_state.py` (no flags = apply). The script regenerates `state.json` from disk by globbing `.claude/skills/*/SKILL.md` and `.claude/agents/*/AGENT.md`. Directories without those marker files become entries in `inventory.utilities`, not skills/agents. Preserves user-authored fields (`overlayCapable`, `discoveryCapable`, `health`, `maintenanceBacklog`).
+
+**Why it's safe:**
+
+1. **Deterministic.** Output is a function of the disk tree only — no judgement calls, no choice between alternatives.
+2. **No business-content change.** state.json is a registry of structure (which directories exist), not content. The fix never touches docs, frontmatter, or any user-authored prose.
+3. **Idempotent.** Running it twice with no disk changes produces identical output (only `lastUpdated`/`lastAudit` move forward; the rest is byte-stable).
+4. **Easy to audit.** A single file changes; `git diff state.json` shows exactly what was reconciled.
+5. **Reversible by git.** If the user disagrees with the result, `git checkout state.json` restores the prior version. The refresh script can then be re-run after the user adjusts disk state (e.g., adds a missing SKILL.md).
+
+**Why this is on the whitelist:** Without it, the framework's monthly `architecture-review` job had to flag drift as an action item every run, expecting the user to fix it manually — but the actual repair is purely mechanical. Treating state.json as a derived artifact (lesson L-INIT-20260404-009) means the dispatcher can reconcile it the same way it reconciles `eof-newline` or `trailing-whitespace`.
+
+**Requires:** `python .claude/scripts/refresh_ecosystem_state.py` must exist on disk. The script is shipped by the framework via `update.py`. If absent (e.g., very old install), the fix is skipped silently and the drift becomes an action item as before.
+
+---
+
+### `wiki-index-refresh`
+
+**Detects:** `docs/_wiki/index.md` does not match the on-disk page set. Either pages have been added/removed/renamed under `docs/_wiki/pages/` or `docs/_wiki/source-summary/`, or a page's frontmatter (title, page-type, cluster, status, last-reviewed) has changed since the last refresh.
+
+**Fix:** Run `python .claude/scripts/refresh_wiki_index.py` (no flags = apply). The script regenerates `_wiki/index.md` by reading frontmatter from every page under the two page-bearing folders. Pages are sorted by (page-type, slug) for stable output. The script no-ops cleanly when no `_wiki/` zone exists.
+
+**Why it's safe:**
+
+1. **Deterministic.** Output is a function of the page-frontmatter set only — no judgement calls.
+2. **No business-content change.** `index.md` is a registry of pages (which exist + their frontmatter facts), not authored content. The fix never touches page bodies, page frontmatter, or any other user-authored prose.
+3. **Idempotent.** Running it twice with no disk changes produces byte-identical output. The script verifies this and skips the write when the new content matches the existing file.
+4. **Easy to audit.** A single file changes; `git diff _wiki/index.md` shows exactly what was reconciled.
+5. **Reversible by git.** If the result looks wrong, `git checkout _wiki/index.md` restores the prior version. Re-running the script after fixing page frontmatter (the upstream source) produces the corrected index.
+
+**Why this is on the whitelist:** Same derived-artifact pattern as `ecosystem-state-refresh` (lesson L-INIT-20260404-009). The wiki zone has no other authoritative list of pages — `index.md` is the registry, and the registry must mirror disk. Without this auto-fix, every page add/remove/rename would create an action item that's purely mechanical to resolve.
+
+**Why-on-whitelist:** Derived index drift is mechanical registry drift, not content judgement. The dispatcher may repair it whenever `wiki-index-refresh` is enabled.
+
+**Requires:** `python .claude/scripts/refresh_wiki_index.py` must exist on disk. The script is shipped by the framework via `update.py`. If absent (e.g., very old install or pre-wiki repo), the fix is skipped silently. The `_wiki/` zone itself is optional — repos that haven't adopted the wiki get a no-op.
+
+---
+
+### `wiki-mark-queue-ingested`
+
+**Detects:** A URL line in `docs/_wiki/queue.md` that is already represented by a successfully created `source-summary` page but is missing an ingest marker.
+
+**Fix:** Append an HTML comment marker to the exact queue line, e.g. `<!-- ingested 2026-05-04 -->`. The fix never changes the URL text, queue ordering, or any unrelated queue line.
+
+**Why it's safe:** The source-summary page is the proof of completion. The marker is mechanical bookkeeping on the queue line and is idempotent because the job only applies it when no ingest marker is present.
+
+**Why-on-whitelist:** Without this fix, successful Path A runs leave low-value queue cleanup as recurring action items. The queue state should reflect completed ingest without requiring a human to edit comments by hand.
+
+**Requires:** `docs/_wiki/queue.md` must exist, the queue line URL must exactly match a `source-summary` page's `source-url`, and the source-summary page must pass `python .claude/scripts/wiki_schema.py validate`.
+
+---
+
+### `wiki-archive-expired-post-mortem`
+
+**Detects:** A wiki page with `page-type: post-mortem` whose page-type schema defines `auto-archive-after-days`, where the page age exceeds that threshold and `status` is not already `archived`.
+
+**Fix:** Change frontmatter `status: archived`, bump the patch `version`, and set `last-updated` to today's date. The file is not moved, deleted, renamed, or rewritten beyond those frontmatter fields.
+
+**Why it's safe:** Post-mortem expiry is declared in the page-type schema, so the action is deterministic. The fix keeps the page in place and preserves its body, links, and provenance.
+
+**Why-on-whitelist:** Expired post-mortems otherwise become repeated archive-candidate findings even though the schema already encodes the retention rule. The fix only applies the metadata state transition promised by that schema.
+
+**Requires:** `docs/_wiki/.schema.yml` or the framework schema template must register `post-mortem` with `auto-archive-after-days`; the target page must validate before and after the edit.
+
+---
+
+### `wiki-rewrite-citations-on-rename`
+
+**Detects:** A page rename event where the old and new wiki slugs are known from a migration entry, and other wiki pages still reference the old bare slug in intra-zone fields or wikilinks.
+
+**Fix:** Rewrite exact bare-slug references from the old slug to the new slug in wiki frontmatter fields (`references`, `subpages`, `parent-slug`) and exact `[[old-slug]]` wikilinks. It does not rewrite prose text, cross-zone paths, or fuzzy matches.
+
+**Why it's safe:** The migration gives a one-to-one old/new mapping. Exact slug and wikilink replacement is deterministic, scoped to wiki pages, and idempotent after the first rewrite.
+
+**Why-on-whitelist:** Rename migrations should not leave dangling intra-zone references behind. This is the same mechanical consistency repair as `broken-xref-single-candidate`, but constrained to schema-backed wiki rename operations.
+
+**Requires:** A migration record with exactly one `from` and `to` slug, a clean schema validation pass before rewrite, and a clean `python .claude/scripts/wiki_schema.py validate` after rewrite.
+
+---
+
 ### `prune-diary`
 
 **Detects:** Session-diary entries in `docs/.session-diary.md` older than the retention window (default: 14 days) as reported by `python .claude/scripts/prune_diary.py --dry-run`.

@@ -88,4 +88,5 @@ Automated checks run on every push and PR. Defined in `.github/workflows/ci.yml`
 - **Generate wake-up context:** `python .claude/scripts/generate_wakeup_context.py`
 - **Prune old sessions:** `python .claude/scripts/prune_sessions.py`
 - **Prune old diary entries:** `python .claude/scripts/prune_diary.py`
+- **Refresh ecosystem state.json from disk:** `python .claude/scripts/refresh_ecosystem_state.py`
 - **Update framework:** `python .claude/scripts/update.py`

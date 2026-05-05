@@ -213,87 +213,6 @@ def merge_gitignore(upstream_path: str, local_path: str) -> int:
     return len(new_entries)
 
 
-def merge_ecosystem_state(upstream_path: str, local_path: str) -> dict:
-    """Merge upstream skills/agents inventory into local state.json. Additive only.
-    Preserves user-added custom skills/agents and never touches user state
-    (`health`, `maintenanceBacklog`, `lastAudit`).
-
-    Returns dict with counts: {"skills_added": N, "agents_added": M}.
-    """
-    import json as _json
-
-    if not os.path.exists(upstream_path):
-        return {"skills_added": 0, "agents_added": 0}
-
-    with open(upstream_path, "r", encoding="utf-8") as f:
-        upstream = _json.load(f)
-
-    # Fresh install path — copy upstream wholesale.
-    if not os.path.exists(local_path):
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-        shutil.copy2(upstream_path, local_path)
-        up_skills = upstream.get("inventory", {}).get("skills", {}).get("list", [])
-        up_agents = sum(
-            len(v) for v in upstream.get("inventory", {}).get("agents", {}).get("byCategory", {}).values()
-        )
-        return {"skills_added": len(up_skills), "agents_added": up_agents}
-
-    with open(local_path, "r", encoding="utf-8") as f:
-        local = _json.load(f)
-
-    skills_added = 0
-    agents_added = 0
-
-    up_inv = upstream.get("inventory", {})
-    lc_inv = local.setdefault("inventory", {})
-
-    # ---- Skills: list + categorical lists (overlayCapable, discoveryCapable)
-    up_skills = up_inv.get("skills", {})
-    lc_skills = lc_inv.setdefault("skills", {
-        "total": 0, "list": [], "overlayCapable": [], "discoveryCapable": []
-    })
-
-    existing = set(lc_skills.get("list", []))
-    for s in up_skills.get("list", []):
-        if s not in existing:
-            lc_skills.setdefault("list", []).append(s)
-            existing.add(s)
-            skills_added += 1
-
-    for cat in ("overlayCapable", "discoveryCapable"):
-        existing_cat = set(lc_skills.get(cat, []))
-        for s in up_skills.get(cat, []):
-            if s not in existing_cat:
-                lc_skills.setdefault(cat, []).append(s)
-                existing_cat.add(s)
-
-    # Total is always derived from the list length — keep it accurate
-    lc_skills["total"] = len(lc_skills.get("list", []))
-
-    # ---- Agents: byCategory dict
-    up_agents = up_inv.get("agents", {})
-    lc_agents = lc_inv.setdefault("agents", {"total": 0, "byCategory": {}})
-
-    for cat, agents in up_agents.get("byCategory", {}).items():
-        lc_cat_list = lc_agents.setdefault("byCategory", {}).setdefault(cat, [])
-        existing_in_cat = set(lc_cat_list)
-        for a in agents:
-            if a not in existing_in_cat:
-                lc_cat_list.append(a)
-                existing_in_cat.add(a)
-                agents_added += 1
-
-    lc_agents["total"] = sum(len(v) for v in lc_agents.get("byCategory", {}).values())
-
-    if skills_added or agents_added:
-        local["lastUpdated"] = datetime.date.today().isoformat()
-        with open(local_path, "w", encoding="utf-8") as f:
-            _json.dump(local, f, indent=2)
-            f.write("\n")
-
-    return {"skills_added": skills_added, "agents_added": agents_added}
-
-
 def merge_reference_index(upstream_path: str, local_path: str) -> int:
     """Merge upstream reference-index entries into local. Additive only.
     Preserves user-added custom references; never removes any local entries.
@@ -719,25 +638,27 @@ def main():
             else:
                 print(f"  settings.json: all upstream entries already registered.")
 
-        # ------------------------------------------------ merge ecosystem state.json
-        # Additive merge — preserves user's custom skills/agents and user-state
-        # (health, maintenanceBacklog), only adds framework skills/agents not yet
-        # registered locally. Without this, framework releases that add new skills
-        # would leave existing installs out of sync, failing ecosystem CI checks.
-        upstream_state = os.path.join(upstream_root, ".claude", "quality", "ecosystem", "state.json")
-        local_state = str(local_root / ".claude" / "quality" / "ecosystem" / "state.json")
-        if os.path.exists(upstream_state):
-            counts = merge_ecosystem_state(upstream_state, local_state)
-            added = counts["skills_added"] + counts["agents_added"]
-            if added:
-                parts = []
-                if counts["skills_added"]:
-                    parts.append(f"{counts['skills_added']} skill(s)")
-                if counts["agents_added"]:
-                    parts.append(f"{counts['agents_added']} agent(s)")
-                print(f"  state.json: registered {' + '.join(parts)} from upstream.")
-            else:
-                print(f"  state.json: all upstream skills/agents already registered.")
+        # ------------------------------------------------ refresh ecosystem state.json
+        # state.json is a derived artifact — regenerated from disk every update.
+        # See lesson L-INIT-20260404-009: discovery is the source of truth, state
+        # files record what discovery found. The previous additive-merge model was
+        # disk-blind and caused systemic drift across deployed repos.
+        refresh_script = str(local_root / ".claude" / "scripts" / "refresh_ecosystem_state.py")
+        if os.path.exists(refresh_script):
+            try:
+                import subprocess as _sp
+                result = _sp.run(
+                    [sys.executable, refresh_script],
+                    cwd=str(local_root),
+                    capture_output=True, text=True, timeout=30,
+                )
+                summary = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
+                if result.returncode == 0 and summary:
+                    print(f"  {summary}")
+                elif result.returncode != 0:
+                    print(f"  state.json: refresh exited {result.returncode} (non-fatal)")
+            except Exception as e:
+                print(f"  state.json: could not refresh ({e}, non-fatal)")
 
         # ------------------------------------------------ merge reference-index.json
         # Same additive pattern. Framework references stay current; user custom

@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 'C:\\Users\\Mr Coders\\Documents\\GitHub\\business-context-os-dev\\.codex\\hooks\\post_edit_frontmatter_check.py'",
+            "timeout": 10,
+            "statusMessage": "Checking frontmatter compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 'C:\\Users\\Mr Coders\\Documents\\GitHub\\business-context-os-dev\\.codex\\hooks\\post_edit_frontmatter_check.py'",
+            "timeout": 10,
+            "statusMessage": "Checking frontmatter compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 'C:\\Users\\Mr Coders\\Documents\\GitHub\\business-context-os-dev\\.codex\\hooks\\post_commit_context_check.py'",
+            "timeout": 15,
+            "statusMessage": "Checking commit for context capture opportunities..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash 'C:\\Users\\Mr Coders\\Documents\\GitHub\\business-context-os-dev\\.codex\\hooks\\auto_save_session.sh'",
+            "timeout": 10,
+            "statusMessage": "Checking session capture checkpoint..."
+          }
+        ]
+      }
+    ]
+  }
+}

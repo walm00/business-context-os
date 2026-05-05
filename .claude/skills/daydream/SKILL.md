@@ -142,6 +142,8 @@ Based on what you found in Phase 1, ask:
 - Were any changes made directly to docs WITHOUT going through context-ingest? (Bypassed ownership?)
 - Are there new unmanaged files that appeared? What knowledge are they trying to capture?
 - What questions keep coming up that no data point answers?
+- Which active data points lack a wiki explainer, glossary entry, how-to, or source-summary that would help a new reader understand them?
+- Did the last `wiki-coverage-audit` scheduled job surface coverage gaps that should become `/wiki create` candidates?
 
 **About the big picture:**
 - Does table-of-context.md still describe the business accurately given recent changes?
@@ -159,6 +161,7 @@ Based on what you found in Phase 1, ask:
 - Did recent changes create new relationships between data points that aren't documented?
 - Are there clusters that should exist but don't?
 - Is anything isolated that should be integrated?
+- Are wiki pages connected back to their owning data points through `builds-on`, or are explainers drifting away from canonical reality?
 
 ### Phase 3: Imagine (10 min)
 
@@ -185,6 +188,11 @@ Without constraints, imagine:
 - **current-state.md** — Refresh "What Changed Recently" based on what was discovered
 - **Document Index** — Run `python .claude/scripts/build_document_index.py` if files changed
 - **Data points** — Compounding rule: any insights from this reflection that should be filed back into specific data points
+- **Wiki coverage** — If active data points need explainers, route to `/wiki create`; if `_inbox/` items should become wiki material, route to `/wiki promote`
+
+**wiki coverage signal:** Quarterly `wiki-coverage-audit` findings are input to
+daydream. Treat them as strategic gaps, not only maintenance noise: a missing
+wiki explainer can mean onboarding, support, or repeated-question friction.
 
 ---
 
