@@ -36,7 +36,54 @@ python .claude/scripts/generate_wakeup_context.py
 
 Non-fatal if this fails — note it but continue.
 
-### 3. Scan docs for structural issues
+### 3. Refresh ecosystem state
+
+Run:
+
+```
+python .claude/scripts/refresh_ecosystem_state.py --quiet
+```
+
+This regenerates `.claude/quality/ecosystem/state.json` from disk by globbing
+`.claude/skills/*/SKILL.md` and `.claude/agents/*/AGENT.md`. Anything in those
+trees without the marker file is recorded as a `utility`, not a skill/agent.
+
+Why daily: the script is cheap (a few globs + JSON write), keeps state.json
+within 24h of any user-added skill, and prevents the false-positive drift that
+would otherwise accumulate until the monthly architecture-review run.
+
+If the script changed anything, capture its summary line (e.g. `state.json
+refreshed: +1 skill(s)`) and add it to the `notes` field of your result so the
+digest shows what was reconciled. If the script errored, log the error in
+`notes` and continue — non-fatal.
+
+See `auto-fix-whitelist.md` (`ecosystem-state-refresh` ID) for the full safety
+rationale: deterministic, idempotent, no business-content change, reversible
+by `git diff`.
+
+### 4. Refresh wiki index
+
+Run:
+
+```
+python .claude/scripts/refresh_wiki_index.py --quiet
+```
+
+This regenerates `docs/_wiki/index.md` from the frontmatter of every page
+under `docs/_wiki/pages/` and `docs/_wiki/source-summary/`. Like `state.json`,
+the wiki index is a **derived artifact** — hand-edits get overwritten by
+design (lesson L-INIT-20260404-009; pre-flight decision D-11). The script
+no-ops cleanly when no `_wiki/` zone exists, so this step is safe on repos
+that haven't adopted the wiki.
+
+If the script reported a change, capture its summary line for `notes` (e.g.
+`refresh_wiki_index: docs/_wiki/index.md updated (12 page(s))`). If it
+errored, log the error in `notes` and continue — non-fatal.
+
+See `auto-fix-whitelist.md` (`wiki-index-refresh` ID) for the full safety
+rationale: same derived-artifact pattern as `ecosystem-state-refresh`.
+
+### 5. Scan docs for structural issues
 
 Scan `docs/*.md` (recursively) but **skip any top-level `docs/_<name>/` folder** — the underscore prefix is the framework's opt-out convention. The framework-managed underscores are:
 
@@ -77,7 +124,7 @@ For each remaining file, check:
 
 Use `build_document_index.py`'s output as the source of truth for "which files exist" — do not re-glob.
 
-### 4. Apply auto-fixes
+### 6. Apply auto-fixes
 
 For each issue, check against the dispatcher's `auto_fix.whitelist`. If allowed:
 
@@ -86,14 +133,14 @@ For each issue, check against the dispatcher's `auto_fix.whitelist`. If allowed:
 
 If not allowed, record it in `actions_needed`: one string per item, format: `{issue-id}: {relative-path} — {short description}`.
 
-### 5. Determine verdict
+### 7. Determine verdict
 
 - 🟢 `green` — no findings, or every finding was auto-fixed
 - 🟡 `amber` — one or more items remain in `actions_needed`, all non-critical (missing fields, broken xref without candidate, etc.)
 - 🔴 `red` — any critical item: missing-frontmatter entirely on an active doc, or index script errored
 - ⚠️ `error` — the scan itself failed (script crash, permission error, etc.)
 
-### 6. Emit result
+### 8. Emit result
 
 Return to the dispatcher:
 

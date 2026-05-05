@@ -113,6 +113,18 @@ Based on the answer:
 | **External system, not connected** | Note it — create an external reference data point later (Step 2) |
 | **Starting from scratch** | Skip to Step 1, use website/conversation to gather info |
 
+**First-run routing principle:** onboarding is allowed to identify all BCOS
+zones, but it should only create active data points after the user approves the
+architecture. Route material by what it *is*, not by file type alone:
+
+| Material | First-run handling |
+|---|---|
+| Canonical facts, current decisions, project/task/business reality | Draft active data points in `docs/*.md` |
+| Raw notes, unsorted snippets, uncertain material | Keep in `docs/_inbox/` until triaged |
+| Future ideas, plans, or maybes | Park in `docs/_planned/` |
+| Verbatim evidence artifacts: invoices, contracts, transcripts, exports, brand kits, reports as received | Route to `docs/_collections/<type>/` with manifest discipline, or map externally if too large |
+| Explanatory material: how-tos, glossaries, runbooks, post-mortems, decision narratives, source summaries | Route through `bcos-wiki`: `/wiki create`, `/wiki promote`, or `/wiki queue add` |
+
 **For connected external systems:**
 - Ask what kind of docs to look for — adapt the prompt to the project type from Step 0a:
   - **External product / service:** "Company info, processes, brand guidelines?"
@@ -132,7 +144,7 @@ Based on the answer:
 - Never delete anything — archive only, after user approval
 - Create alongside, not instead of — new data points coexist with originals
 - **NEVER create folders not defined in the architecture.** Valid folders are:
-  `docs/` (active), `_inbox/`, `_planned/`, `_archive/`, `_collections/`, `_collections/[type]/`
+  `docs/` (active), `_inbox/`, `_planned/`, `_archive/`, `_collections/`, `_collections/[type]/`, `_wiki/`
   If content doesn't fit these, ask the user — don't invent new folders
 
 ---
@@ -252,8 +264,15 @@ List every piece of content you found. For each item:
 | **Wrap** | Existing structured doc (SOP, process doc, policy, brand rules) | Add CLEAR frontmatter + ownership spec around existing content | **Yes — preserve original text exactly** |
 | **Catalog** | Reference material (templates, checklists, glossaries, inventories) | Add minimal frontmatter, keep content completely as-is | **Yes — preserve as-is** |
 | **Map** | External bulk collections too large to copy (call transcripts, invoices, reports in Drive/Notion) | Create a reference data point describing where and how to find them | N/A — nothing is copied locally |
+| **Wiki** | Explainers, how-tos, source summaries, decision narratives, post-mortems, or material the user asks to make into a wiki page | Route through `bcos-wiki` (`/wiki create`, `/wiki promote`, `/wiki queue add`) so schema, index, queue, and log stay aligned | Yes for source captures; page body is derivative explanation |
 
 **CRITICAL for wrap and catalog modes:** Never rewrite, shorten, rephrase, or "improve" the original content. SOPs and processes especially — changing a step could break a real workflow. Add CLEAR structure (frontmatter, ownership spec) AROUND the content but leave the content itself untouched. Flag contradictions or outdated items for the user to decide, but don't fix them yourself.
+
+**Wiki mode boundary:** Do not use wiki pages as canonical reality. Wiki pages
+explain, summarize, narrate, or teach; they cite data points through
+`builds-on:`. Path B binaries captured for wiki stay under
+`docs/_wiki/raw/local/`. Do not write them to `_collections/` unless the user
+explicitly asks for a collection/evidence operation.
 
 **Edge cases:**
 - Brand guidelines with rules → **policy**, mode: **wrap** (preserve the rules exactly)
@@ -264,6 +283,7 @@ List every piece of content you found. For each item:
 - If one source mixes types → split into separate data points, each with its own mode
 - 200 call transcripts in Google Drive → mode: **map** (create external reference, don't copy)
 - Bulk local files (reports, invoices) the user wants to keep → route to `docs/_collections/[type]/`, no frontmatter required
+- "Make this a wiki page" / "turn this into an explainer" / URL to summarize later → mode: **wiki** (`/wiki create`, `/wiki promote`, or `/wiki queue add`)
 
 ### 2b. Plan the data points
 
@@ -439,6 +459,8 @@ last-updated: "[today]"
 - Do NOT move, rename, or reorganize original source files
 - Create new CLEAR data points alongside originals — user decides when to archive
 - Pre-fill everything — user edits, they don't write from scratch
+- Add useful `tags` in frontmatter for every managed data point/wiki page. Tags are warning-only during adoption, but they power search, dashboard filters, Galaxy, and mechanical retrieval.
+- Use `last-updated` only when content/metadata changes. Use `last-reviewed` when a doc is checked and confirmed without changing content, especially when `review-cycle` is present. Folder-derived facets such as `zone`, `folder`, and `path-tags` are generated by `.claude/scripts/context_index.py`; do not duplicate them in YAML.
 
 ---
 
@@ -450,7 +472,7 @@ Before showing the user, verify the work yourself:
 2. **Ownership check** — every data point has a clear DOMAIN and EXCLUSIVELY_OWNS. No two data points claim the same topic.
 3. **Cross-reference check** — STRICTLY_AVOIDS entries point to real data points. Links resolve.
 4. **Content quality** — no placeholder text, no empty sections, no "TBD" entries. If you can't fill a section from sources, cut it.
-5. **Metadata** — all YAML frontmatter fields present and correct.
+5. **Metadata** — all required YAML frontmatter fields present and correct; tags present where possible; `last-reviewed` used when review happened without content mutation.
 
 Then present the results:
 

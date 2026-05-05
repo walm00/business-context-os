@@ -11,7 +11,7 @@ Every managed document in `docs/` (excluding `_inbox/`) MUST have these fields:
 | Field | Type | Rules | Enforced By |
 |-------|------|-------|-------------|
 | `name` | string | Non-empty, human-readable document name | hook, audit, index script |
-| `type` | enum | `context` &#124; `process` &#124; `policy` &#124; `reference` &#124; `playbook` | hook, audit |
+| `type` | enum | `context` &#124; `process` &#124; `policy` &#124; `reference` &#124; `playbook` &#124; `wiki` | hook, audit |
 | `cluster` | string | Non-empty, names the parent cluster this belongs to | audit, index script |
 | `version` | semver | `x.y.z` format. Bump on every change. | audit |
 | `status` | enum | `draft` &#124; `active` &#124; `under-review` &#124; `archived` | hook, audit |
@@ -38,8 +38,9 @@ last-updated: "2026-04-01"
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `tags` | list of strings | Free-form labels for search and filtering |
+| `tags` | list of strings | Free-form labels for search and filtering. Expected on managed docs and wiki pages; warning-only if absent during adoption. |
 | `review-cycle` | enum | `weekly` &#124; `monthly` &#124; `quarterly` &#124; `annual` &#124; `trigger-based` |
+| `last-reviewed` | ISO date | Last validation check. Separate from `last-updated`: review can happen without content changes or version bump. Expected when `review-cycle` exists. |
 | `next-review` | ISO date | When the next review is due |
 | `depends-on` | list of strings | Upstream documents (maps to BUILDS_ON in ownership spec) |
 | `consumed-by` | list of strings | Downstream documents (maps to PROVIDES in ownership spec) |
@@ -48,9 +49,80 @@ last-updated: "2026-04-01"
 
 ---
 
+## Wiki-Specific Extensions
+
+When `type: wiki`, the standard required fields above still apply, plus an additional set of wiki-only fields validated against `docs/_wiki/.schema.yml` (with framework-template fallback). The schema is the single source of truth for what's allowed; this section documents the field shapes.
+
+For the full architecture, see [`wiki-zone.md`](./wiki-zone.md). For governance, see the schema template at [`../templates/_wiki.schema.yml.tmpl`](../templates/_wiki.schema.yml.tmpl).
+
+### Always-required wiki fields
+
+| Field | Type | Rules | Enforced By |
+|-------|------|-------|-------------|
+| `page-type` | enum (from schema) | Default schema: `how-to` &#124; `glossary` &#124; `source-summary`. Repos add their own via `/wiki schema add page-type <name>`. | hook, audit |
+| `last-reviewed` | ISO date | `YYYY-MM-DD`. Separate from `last-updated` — resets when the page is checked and confirmed, even if no content changed. Drives propagation-based staleness. | hook, audit, scheduled jobs |
+| `domain` | string | Level 1 of the CLEAR ownership spec — one-sentence statement of what this page covers. | hook, audit |
+
+### Per-page-type required fields
+
+Each registered `page-type` may declare additional required-fields in `_wiki/.schema.yml`. Defaults at v1:
+
+| Page-type | Required (additional) |
+|-----------|-----------------------|
+| `how-to` | `builds-on` (must point to canonical data points) |
+| `glossary` | (none) |
+| `source-summary` | `source-url`, `last-fetched`, `detail-level`, `provenance` |
+
+### Wiki relationships (replaces the generic `depends-on`/`consumed-by`)
+
+| Field | Format (D-04) | Purpose |
+|-------|---------------|---------|
+| `builds-on` | List of relative paths with `.md` (cross-zone) — e.g. `../brand-voice.md` | Upstream data points or wiki pages this page depends on. Forbidden roots: `_planned/`, `_inbox/`, `_archive/` (configurable in schema). |
+| `references` | List of bare slugs, no `.md` (intra-zone) — e.g. `linkedin-best-practices` | Peer cross-references to other wiki pages. |
+| `provides` | List of relative paths with `.md` (cross-zone) | Downstream consumers. Rare for wiki — usually consumers, not producers. |
+
+### Source-summary shape discriminators (mutually exclusive)
+
+Only used when `page-type: source-summary`. Lint enforces that at most one shape is present:
+
+| Field | Type | Used by shape |
+|-------|------|---------------|
+| `source-url` | URL | All shapes |
+| `companion-urls` | list[URL] | **Unified** (web+github) |
+| `raw-files` | list[path with `.md`] | **Unified** |
+| `subpages` | list[bare slug] | **Umbrella** (multi-product hub) |
+| `parent-slug` | bare slug | **Sub** (multi-product child) |
+| `detail-level` | enum: `brief` &#124; `standard` &#124; `deep` | All shapes |
+| `last-fetched` | ISO date | All shapes |
+
+### Provenance (Path B local content)
+
+Required when `provenance.kind` is `inbox-promotion` or `local-document`:
+
+```yaml
+provenance:
+  kind: inbox-promotion       # url-fetch | inbox-promotion | local-document
+  source-path: docs/_inbox/2026-04-15_acme-onboarding-notes.md
+  captured-on: 2026-04-30
+  promoted-by: gunti
+  notes: ""                    # optional
+```
+
+### Schema-version drift
+
+The frontmatter hook reads `_wiki/.schema.yml` `schema-version:` and warns if the framework's expected version is newer. Run `/wiki schema migrate <from> <to>` to apply migrations with a dry-run diff.
+
+---
+
 ## Folder-Based Inference
 
 The file path supplements metadata. Claude uses the folder to determine trust level before opening the file.
+
+The canonical context index also emits folder-derived facets for automation,
+dashboard, Galaxy, and retrieval. These are mechanical fields, not YAML fields:
+`zone`, `bucket`, `folder`, `path-tags`, `trust-level`, and `is-canonical`.
+They let similar filenames in different folders remain distinguishable during
+search and filtering.
 
 | Location | What It Means | Metadata Requirements |
 |----------|--------------|----------------------|
@@ -58,6 +130,8 @@ The file path supplements metadata. Claude uses the folder to determine trust le
 | `docs/_inbox/` | Raw material -- meeting notes, brain dumps | No metadata required. Skip all validation. |
 | `docs/_planned/` | Polished ideas -- documented but not yet real | Frontmatter recommended. Relaxed staleness (180 days). Incomplete cross-references are informational, not errors. |
 | `docs/_archive/` | Superseded -- was real once, kept for reference | As-was when archived. Skip audit or report separately. |
+| `docs/_collections/**/_manifest.md` | Evidence inventory | Collection manifest frontmatter plus table rows. Indexed as collection metadata; binary files are not parsed. |
+| `docs/_wiki/pages/`, `docs/_wiki/source-summary/` | Explanatory layer | Standard base fields plus wiki schema fields. Indexed both in `docs/_wiki/index.md` and the repo-wide context index. |
 
 ### Document Movement
 
@@ -103,7 +177,7 @@ The file path supplements metadata. Claude uses the folder to determine trust le
 1. YAML frontmatter block exists (delimited by `---`)
 2. All 7 required fields are present
 3. `status` is one of: `draft`, `active`, `under-review`, `archived`
-4. `type` is one of: `context`, `process`, `policy`, `reference`, `playbook`
+4. `type` is one of: `context`, `process`, `policy`, `reference`, `playbook`, `wiki` (with extended wiki-only validation when `wiki` — see "Wiki-Specific Extensions" above)
 
 ### When It Fires
 

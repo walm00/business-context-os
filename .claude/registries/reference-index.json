@@ -74,8 +74,7 @@
       "post-edit-frontmatter-check": ".claude/hooks/post_edit_frontmatter_check.py",
       "auto-save-session": ".claude/hooks/auto_save_session.sh",
       "precompact-save": ".claude/hooks/precompact_save.sh",
-      "post-commit-context-check": ".claude/hooks/post_commit_context_check.py",
-      "pre-commit-validate": ".claude/hooks/pre_commit_validate.sh"
+      "post-commit-context-check": ".claude/hooks/post_commit_context_check.py"
     },
     "scripts": {
       "build-document-index": ".claude/scripts/build_document_index.py",
@@ -86,6 +85,7 @@
       "generate-wakeup-context": ".claude/scripts/generate_wakeup_context.py",
       "prune-sessions": ".claude/scripts/prune_sessions.py",
       "prune-diary": ".claude/scripts/prune_diary.py",
+      "refresh-ecosystem-state": ".claude/scripts/refresh_ecosystem_state.py",
       "update": ".claude/scripts/update.py",
       "validate-frontmatter": ".claude/scripts/validate_frontmatter.py",
       "validate-references": ".claude/scripts/validate_references.py"

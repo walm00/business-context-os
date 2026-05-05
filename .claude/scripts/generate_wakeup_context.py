@@ -97,6 +97,25 @@ def extract_diary_recent(content: str, max_entries: int = 3) -> list[str]:
     return entries[-max_entries:]
 
 
+def wiki_summary(docs: Path) -> str:
+    """Return a compact wiki-zone summary for wake-up context, or empty string."""
+    wiki = docs / "_wiki"
+    if not wiki.is_dir():
+        return ""
+
+    page_count = len(list((wiki / "pages").glob("*.md"))) if (wiki / "pages").is_dir() else 0
+    source_count = len(list((wiki / "source-summary").glob("*.md"))) if (wiki / "source-summary").is_dir() else 0
+    pending = 0
+    queue = wiki / "queue.md"
+    if queue.is_file():
+        text = queue.read_text(encoding="utf-8", errors="replace")
+        match = re.search(r"^## Pending\s*\n(.*?)(?=\n##\s|\Z)", text, re.MULTILINE | re.DOTALL)
+        if match:
+            pending = len([line for line in match.group(1).splitlines() if line.strip().startswith("-")])
+
+    return f"enabled; {page_count} page(s), {source_count} source summary page(s), {pending} pending queue item(s)"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate compressed wake-up context.")
     parser.add_argument("--dry-run", action="store_true", help="Print to stdout instead of writing file")
@@ -117,6 +136,7 @@ def main():
     priorities = []
     decisions = []
     diary_entries = []
+    wiki_status = ""
 
     if toc_path.is_file():
         toc = toc_path.read_text(encoding="utf-8", errors="replace")
@@ -149,6 +169,8 @@ def main():
     if diary_path.is_file():
         diary = diary_path.read_text(encoding="utf-8", errors="replace")
         diary_entries = extract_diary_recent(diary, 3)
+
+    wiki_status = wiki_summary(docs)
 
     # --- Build output ---
     lines = [
@@ -185,7 +207,11 @@ def main():
             lines.append(f"- {e}")
         lines.append("")
 
-    if not (business_name or priorities or decisions or diary_entries):
+    if wiki_status:
+        lines.append(f"**Wiki:** {wiki_status}")
+        lines.append("")
+
+    if not (business_name or priorities or decisions or diary_entries or wiki_status):
         lines.append("*No context sources found yet. Create table-of-context.md and current-state.md to populate this file.*")
         lines.append("")
 

@@ -17,8 +17,11 @@ CLEAR Context OS manages any document that represents organizational knowledge. 
 | **policy** | Rules and decisions that govern behavior | Data handling, pricing rules, expense approval, hiring criteria, brand usage, IP protection |
 | **reference** | Lookup information that rarely changes | Glossary, tool inventory, vendor contacts, org chart, key metrics definitions, tech stack |
 | **playbook** | Decision guides for recurring situations | Crisis comms, fundraising, product launch, competitive response, market entry, M&A integration |
+| **wiki** | Explanatory or source-summary page in `docs/_wiki/` | How-to pages, glossaries, decision logs, post-mortems, source summaries |
 
 All types follow the same metadata standard and quality bar. The ownership specification (DOMAIN, EXCLUSIVELY_OWNS, etc.) applies to all of them -- a process document needs clear boundaries just as much as a brand guide does.
+
+`type: wiki` documents are governed by the wiki-zone extension, not the normal flat active-doc model. Use `docs/_bcos-framework/architecture/wiki-zone.md` and `docs/_wiki/.schema.yml` for page-type-specific rules.
 
 ---
 
@@ -31,7 +34,7 @@ Every managed document MUST have a YAML frontmatter header. This is the machine-
 ```yaml
 ---
 name: "Document Name"
-type: context                   # context | process | policy | reference | playbook
+type: context                   # context | process | policy | reference | playbook | wiki
 cluster: "Parent Cluster"       # Which cluster this belongs to
 version: "1.0.0"               # Semantic versioning: major.minor.patch
 status: active                  # draft | active | under-review | archived
@@ -45,8 +48,9 @@ last-updated: "2026-04-05"     # ISO date, MUST update on every change
 ```yaml
 ---
 # ... required fields above ...
-tags: [brand, messaging, external]    # For search and filtering
+tags: [brand, messaging, external]    # Expected for search and filtering; warning-only if absent
 review-cycle: monthly                  # weekly | monthly | quarterly | annual | trigger-based
+last-reviewed: "2026-05-05"           # Last validation check, even when content did not change
 next-review: "2026-05-05"             # When the next review is due
 depends-on: [brand-identity]          # Documents this one requires as input
 consumed-by: [messaging-framework]    # Documents that use this one as input
@@ -66,13 +70,30 @@ confidentiality: internal             # public | internal | confidential | restr
 | `status` | Yes | Lifecycle state (see status definitions below) |
 | `created` | Yes | Date document was first created. Set once, never change. |
 | `last-updated` | Yes | Date content was last changed. MUST update on every edit. |
-| `tags` | No | Free-form labels for discovery and filtering |
+| `tags` | No | Free-form labels for discovery and filtering. Expected on managed docs and wiki pages; missing tags are warning-only during adoption. |
 | `review-cycle` | No | How often this should be reviewed |
+| `last-reviewed` | No | Last date the doc was checked and confirmed. This is not the same as `last-updated`; review can happen without content changes. Expected when `review-cycle` exists. |
 | `next-review` | No | Specific date for next scheduled review |
 | `depends-on` | No | Upstream documents (maps to BUILDS_ON in ownership spec) |
 | `consumed-by` | No | Downstream documents (maps to PROVIDES in ownership spec) |
 | `source` | No | Where the original content came from |
 | `confidentiality` | No | Access level classification |
+
+Wiki-zone pages add fields such as `page-type`, `domain`, `exclusively-owns`, `builds-on`, `references`, `last-reviewed`, and source-summary provenance fields. Source summaries also keep `last-fetched`; that records source refresh, while `last-reviewed` records validation of the authored summary. The authoritative list lives in `docs/_wiki/.schema.yml`; the framework fallback template is `docs/_bcos-framework/templates/_wiki.schema.yml.tmpl`.
+
+### Mechanical Index Facets
+
+The canonical context index derives fields from the path so authors do not duplicate them in frontmatter:
+
+| Derived field | Meaning |
+|---------------|---------|
+| `zone` | Active, wiki, collection-manifest, inbox, planned, archive, framework, generated, or custom opt-out |
+| `bucket` | Lifecycle bucket used by Atlas/Galaxy: `active`, `_inbox`, `_planned`, `_archive`, `_bcos-framework`, `_collections` |
+| `folder` | Parent path of the file |
+| `path-tags` | Folder components used as searchable facets |
+| `trust-level` | Derived trust class such as high, high-derived, future, historical, low, system, or evidence |
+
+These fields are emitted by `.claude/scripts/context_index.py` into `.claude/quality/context-index.json` and rendered into `docs/document-index.md`. Do not hand-maintain them in YAML.
 
 ### Mandatory Refinement Step
 
@@ -101,6 +122,8 @@ docs/
 ├── _inbox/                 # RAW MATERIAL — meeting notes, brain dumps, unprocessed
 ├── _planned/               # POLISHED IDEAS — documented but not yet real, may never be
 ├── _archive/               # SUPERSEDED — was real once, kept for reference
+├── _collections/           # MANAGED MATERIALS — binary/local assets with manifests
+├── _wiki/                  # EXPLANATORY LAYER — wiki pages, source summaries, raw captures
 ├── table-of-context.md     # Synthesis layer (stable, monthly)
 ├── current-state.md        # Operations layer (fluid, weekly)
 └── document-index.md       # Auto-generated inventory
@@ -112,6 +135,10 @@ docs/
 | `docs/_inbox/` | Raw dumps — meeting notes, transcripts, pasted content | None (no frontmatter required) | Process via `context-ingest`, not reference directly |
 | `docs/_planned/` | Polished ideas — defined concepts that may or may not happen | Frontmatter recommended, linking optional | Read but NOT treat as current reality |
 | `docs/_archive/` | Superseded docs — no longer current | As-was when archived | Reference for history only, not as current truth |
+| `docs/_collections/` | Managed binary/material collections | Manifest-driven, collection-specific | Treat manifests as authoritative, not binary filenames alone |
+| `docs/_wiki/pages/` | Wiki explainers | Wiki frontmatter schema + ownership fields | Use as high-trust explanatory context built on data points |
+| `docs/_wiki/source-summary/` | Source summaries | Wiki source-summary schema | Use as high-trust summaries of captured sources |
+| `docs/_wiki/raw/`, `queue.md`, `index.md`, `log.md` | Source captures and mechanical artifacts | Managed by `bcos-wiki` | Do not edit as canonical business truth |
 
 **Why folders instead of a status field?** When Claude searches for "pricing" and finds `docs/_planned/enterprise-pricing.md`, the path itself signals "this is an idea, not reality" — before the file is even opened. A status field buried in YAML frontmatter is easy to miss after the content is already in context.
 
@@ -120,6 +147,10 @@ docs/
 - `_inbox/ → _planned/` — raw idea polished into a documented concept
 - `_planned/ → docs/` — idea becomes reality (build full relationships and ownership spec)
 - `docs/ → _archive/` — superseded by newer version or no longer relevant
+- `_inbox/ → _wiki/pages/` — raw material promoted into an explanatory wiki page via `/wiki promote`
+- URL/local source → `_wiki/source-summary/` plus `_wiki/raw/` — source captured and summarized via `/wiki create` or `/wiki run`
+
+**Wiki-zone exception to flat active docs:** normal active data points stay flat under `docs/*.md`, but `docs/_wiki/` intentionally uses semantic subfolders. `docs/_wiki/pages/` and `docs/_wiki/source-summary/` are governed by `docs/_bcos-framework/architecture/wiki-zone.md`; `docs/_wiki/source-summary/` is the authorized exception to the flat active-doc folder rule.
 
 ---
 
@@ -164,6 +195,8 @@ Every document must meet these checks to be considered healthy. This is what `co
 **Documents in `docs/_planned/`** should have frontmatter but get relaxed rules: staleness threshold is 180 days (vs 90 for active), incomplete cross-references are informational (not errors), and linking is optional until promoted to active.
 
 **Documents in `docs/_inbox/`** don't need to meet any quality bar. They're raw material waiting to be processed by `context-ingest`. No frontmatter required.
+
+**Documents in `docs/_wiki/pages/` and `docs/_wiki/source-summary/`** must satisfy wiki-zone schema rules instead of the standard active-doc template. They still need clear ownership, bounded relationships, and current metadata, but their source-of-authority relationship is expressed with `builds-on:` and source provenance rather than by duplicating canonical data-point content.
 
 ---
 

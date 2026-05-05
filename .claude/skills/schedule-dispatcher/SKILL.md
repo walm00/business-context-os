@@ -113,6 +113,15 @@ Do NOT use `echo ... >> .claude/hook_state/schedule-diary.jsonl` — raw redirec
 
 If a job errors, catch the error, log `"verdict":"error"` with `"notes":"{short error message}"`, and continue to the next job. Do not stop the dispatcher on one job's failure.
 
+Wiki jobs are first-class job references and use the same dispatcher contract:
+
+| Job | Reference | Notes |
+|-----|-----------|-------|
+| `wiki-stale-propagation` | `references/job-wiki-stale-propagation.md` | Daily metadata scan for wiki pages whose `builds-on` sources changed after `last-reviewed`. |
+| `wiki-source-refresh` | `references/job-wiki-source-refresh.md` | Weekly two-tier refresh check: HEAD-only quick check at `stale_threshold_days/4`, full refresh-must-rediscover at `stale_threshold_days`. |
+| `wiki-graveyard` | `references/job-wiki-graveyard.md` | Monthly stale/orphan/archive-candidate scan. |
+| `wiki-coverage-audit` | `references/job-wiki-coverage-audit.md` | Quarterly cross-zone coverage scan and permissive cluster-drift INFO reporting. |
+
 ---
 
 ## Step 5: Apply Auto-Fixes

@@ -25,6 +25,7 @@ flowchart TD
     B -->|"Just save it"| C[docs/_inbox/<br><i>Raw dump, done</i>]
     B -->|"It's an idea"| D[docs/_planned/<br><i>Polished concept, done</i>]
     B -->|"Integrate it"| E[Classify + Route]
+    B -->|"Make a wiki page"| W[docs/_wiki/<br><i>Explainer or source summary</i>]
     B -->|"Not sure"| F[Claude reads,<br>summarizes,<br>recommends a path]
 
     F -->|User decides| B
@@ -68,54 +69,43 @@ Claude reads the content, shows a summary and its recommendation (inbox / planne
 
 ### Path 5: Collection
 
-**Trigger:** "I have a bunch of similar files" / uploading call transcripts, reports, invoices, meeting notes in bulk
+**Trigger:** "I have a bunch of similar files" / uploading call transcripts, reports, invoices, contracts, brand kits in bulk
 
-Collections are for high-volume similar files that don't fit the data point model. A call transcript doesn't own a domain. An invoice doesn't have an ownership specification. But they're valuable reference material that should be searchable.
+Collections are for **immutable evidence artifacts** that don't fit the data point model — invoices, signed agreements, brand kits, transcripts, exports. The file IS the truth; editing it corrupts evidence. They need a zone with three properties: immutable, inventoried, linked back to data points.
 
 **Where they go:** `docs/_collections/[type]/`
 
 ```
 docs/_collections/
   call-transcripts/
-  monthly-reports/
   invoices/
+  contracts/
+  brand-kits/
+  statements/
+  wiki-source-docs/   # binary docs ingested via _wiki/ Path C
 ```
+
+**Required per-subdirectory manifest:** every collection subdirectory carries a required `_manifest.md` with one row per file, BCOS frontmatter, and bidirectional links to active data points. We *manifest the directory, don't try to manifest the files* — because PDFs and zips can't carry frontmatter.
+
+For the full schema, sidecar pattern, soft-delete mechanism, scanning job, and integration rules, see [`collections-zone.md`](./collections-zone.md).
 
 **File naming:**
 
 - **Never rename user files.** If someone uploads `Acme Q3 Review.pdf`, keep that name.
-- **Optional prefix:** Users MAY adopt a date prefix convention going forward: `YYYY-MM-DD_original-name.ext`. This is a suggestion, not a requirement.
-- **Filename length:** Keep under 100 characters to avoid cross-platform issues.
+- **Soft convention** (suggested, not enforced): `YYYY-MM-DD_<descriptor>.<ext>`. The `collections-scan` job reports violations as INFO, never WARN.
+- **Filename length:** under 100 characters to avoid cross-platform issues.
 
-**What makes collections different from _inbox/:**
+**What makes collections different from `_inbox/` and `_wiki/`:**
 
-| | `_inbox/` | `_collections/` |
-|---|---|---|
-| **Purpose** | Temporary landing zone for processing | Permanent storage for reference material |
-| **Lifecycle** | Gets processed and deleted/archived | Stays and grows over time |
-| **Metadata** | None required | Optional lightweight index |
-| **Volume** | Small (a few files at a time) | Large (dozens to hundreds) |
-| **Frontmatter** | Not expected | Not expected |
+| | `_inbox/` | `_collections/` | `_wiki/` |
+|---|---|---|---|
+| **Purpose** | Temporary triage | Permanent immutable evidence | Derivative explanation |
+| **Lifecycle** | Processed and removed | Stays and grows; soft-archive when superseded | Reviewed periodically; archived when stale |
+| **Metadata** | None required | Required `_manifest.md` per subdirectory + optional sidecar `.meta.md` | Full BCOS frontmatter on every page |
+| **Volume** | Small | Large (dozens to hundreds) | Moderate, curated |
+| **Editable?** | Yes (raw text) | **No** — files are immutable evidence | Yes (the page; raw captures are immutable) |
 
-**Lightweight collection index (optional):**
-
-For collections that grow past ~20 files, a simple index helps Claude navigate without opening every file. Create an `_index.md` in the collection folder:
-
-```markdown
-# Call Transcripts
-## Naming: YYYY-MM-DD_entity_topic.ext (recommended, not required)
-## Total: 47 files
-
-| Date | File | Key Topics | Outcome |
-|------|------|------------|---------|
-| 2026-04-08 | acme-quarterly-review.md | Pricing, Q3 roadmap | Renewed |
-| 2026-04-05 | globex-onboarding.md | Integration, API access | 30-day plan |
-| ... | | | |
-```
-
-**Index maintenance:** Append new entries when files are added. Don't regenerate the full index every time — incremental append is fine. The `context-ingest` skill can do this when routing files to a collection.
-
-**How Claude searches collections:** File names are free in Glob results. Claude can `Glob("docs/_collections/call-transcripts/2026-04-*")` to find all April calls without reading any file content. Consistent naming conventions multiply this leverage.
+**How Claude searches collections:** at session start, the wake-up snapshot includes a one-line summary per collection (file counts, expiring-soon flags) computed from manifest frontmatter. For deeper retrieval, Claude reads `_manifest.md` first — never opens binary files unless the query specifically demands it. Filename Glob remains free (`Glob("docs/_collections/call-transcripts/2026-04-*")`) for date-bracketed lookups.
 
 ### Path 6: External Reference
 
@@ -135,6 +125,32 @@ Don't clone external collections into the repo. Instead, create a reference data
 **The external reference data point** describes the system, path, format, volume, access method, and when to fetch. See `context-onboarding` Step 2c (map mode) for the full template.
 
 **How Claude uses external references:** When a query might need data from an external collection, Claude reads the reference data point first. It learns: what's available, how to search for it, and which MCP tool to use. Then it fetches only what's needed for the specific query — not the entire collection.
+
+### Path 7: Wiki Promotion
+
+**Trigger:** "Make this a wiki page" / "Turn this into an explainer" /
+"Promote this inbox item to wiki" / URL or local material should become a
+source summary.
+
+Wiki promotion is for derivative explanation, not canonical reality. The page
+can summarize, teach, compare, narrate, or preserve source context, but it must
+link back to active data points using `builds-on:` when it depends on current
+business facts.
+
+**Where it goes:**
+
+| Source | Command | Destination |
+|--------|---------|-------------|
+| Existing file under `docs/_inbox/` | `/wiki promote <path>` | `docs/_wiki/pages/` or `docs/_wiki/source-summary/` |
+| Direct upload, local file, paste, or URL | `/wiki create <source>` | `docs/_wiki/pages/` or `docs/_wiki/source-summary/` |
+| URL to fetch later | `/wiki queue add <url>` | `docs/_wiki/queue.md` |
+
+For the full command surface and schema rules, see
+`.claude/skills/bcos-wiki/SKILL.md` and [`wiki-zone.md`](./wiki-zone.md).
+
+**Boundary with collections:** Path B binaries stay inside
+`docs/_wiki/raw/local/`. Do not write wiki-promoted files to `_collections/`
+unless the user explicitly asks for a collection operation.
 
 ---
 

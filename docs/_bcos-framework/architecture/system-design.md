@@ -26,7 +26,7 @@ BCOS is built on three distinct layers, each with a different rate of change and
 
 ## Folder Zones
 
-Documents live in four zones. The zone tells Claude what the content IS before the file is opened.
+Documents live in framework-defined zones. The zone tells Claude what the content IS before the file is opened.
 
 ```
 docs/
@@ -34,6 +34,9 @@ docs/
   _inbox/         Raw material -- meeting notes, brain dumps, unprocessed
   _planned/       Polished ideas -- documented but not yet real
   _archive/       Superseded -- was real once, kept for reference
+  _collections/   Managed binary/material collections
+  _wiki/          Explainers, source summaries, raw source captures, queue/log/index
+  _bcos-framework/ Framework documentation
 ```
 
 | Zone | Trust level | Quality bar |
@@ -42,16 +45,33 @@ docs/
 | `docs/_inbox/` | Low -- needs processing | None (no frontmatter required) |
 | `docs/_planned/` | Read, not current reality | Frontmatter recommended, linking optional |
 | `docs/_archive/` | Historical reference only | As-was when archived |
+| `docs/_collections/` | Mechanical/material | Collection manifest rules |
+| `docs/_wiki/pages/` and `docs/_wiki/source-summary/` | High explanatory layer | Wiki schema + `wiki-zone.md` rules |
+| `docs/_wiki/raw/`, `queue.md`, `index.md`, `log.md` | Mechanical | Managed by `bcos-wiki` |
+| `docs/_bcos-framework/` | Framework authority | Framework document standards |
 
 **The principle: path IS the signal.** When a search returns `docs/_planned/enterprise-pricing.md`, the path alone communicates that this is an idea, not reality. A status field buried in YAML frontmatter is easy to miss once content is already in the context window. The folder makes it impossible to miss.
 
-For the full folder structure specification, see `docs/methodology/document-standards.md`.
+For the full folder structure specification, see `docs/_bcos-framework/methodology/document-standards.md`. For wiki-specific zone rules, see `docs/_bcos-framework/architecture/wiki-zone.md`. **For the canonical zone classifier and its declarative companion, see [`context-zones.md`](./context-zones.md).**
+
+---
+
+## Cross-Zone Retrieval
+
+Zones are only useful if every consumer agrees on what they are. The canonical model lives in two paired representations:
+
+- [`context_index.py`](../../../.claude/scripts/context_index.py) — the path classifier (`_zone_for()`), the typed-edge graph builder (`builds-on`, `references`, `depends-on`, `provides`, `consumed-by`), the freshness computer (`age_days`, `reviewed_age_days`), and the JSON serializer. Stdlib-only, deterministic, ms-latency.
+- [`context-index.json`](../../../.claude/quality/context-index.json) — the already-built corpus: every doc under `docs/`, parsed, classified, edge-walked. This is the read-side source of truth.
+
+The declarative companion is [`_context-zones.yml.tmpl`](../templates/_context-zones.yml.tmpl) (or `docs/.context-zones.yml` per repo). It names every zone, declares its freshness model and source-of-truth role, and is read by every cross-zone consumer through [`load_zone_registry.py`](../../../.claude/scripts/load_zone_registry.py). A drift test ([`test_zone_registry.py`](../../../.claude/scripts/test_zone_registry.py)) enforces that the YAML and the Python agree.
+
+This pair — typed graph in JSON, declarative manifest in YAML — is the foundation that cross-zone search and task-driven bundle resolution build on. See [`context-zones.md`](./context-zones.md) for the full per-zone schema.
 
 ---
 
 ## The Skill Graph
 
-BCOS has 10 skills organized into two tiers. Skills are instructions stored in `.claude/skills/{name}/SKILL.md` that Claude follows when a specific type of work is needed.
+BCOS skills are organized into two tiers. Skills are instructions stored in `.claude/skills/{name}/SKILL.md` that Claude follows when a specific type of work is needed.
 
 ### Tier 1 -- Foundation (always active or frequently invoked)
 
@@ -71,6 +91,9 @@ BCOS has 10 skills organized into two tiers. Skills are instructions stored in `
 | `daydream` | Strategic reflection on the context architecture |
 | `ecosystem-manager` | Agent/skill ecosystem maintenance |
 | `lessons-consolidate` | Institutional knowledge maintenance |
+| `bcos-wiki` | Wiki zone authoring, source summaries, and schema governance |
+| `schedule-dispatcher` | Scheduled maintenance job dispatch |
+| `schedule-tune` | Schedule tuning and maintenance cadence adjustment |
 
 ### Reference (not invoked, only referenced)
 
@@ -86,15 +109,18 @@ Skills form three natural chains:
 graph LR
     subgraph Creation Chain
         onboarding[context-onboarding<br><i>discover</i>] --> ingest[context-ingest<br><i>integrate</i>] --> audit[context-audit<br><i>validate</i>]
+        ingest --> wiki[bcos-wiki<br><i>explain/source</i>]
     end
 
     subgraph Maintenance Loop
         daydream[daydream<br><i>reflect</i>] --> audit2[context-audit<br><i>find gaps</i>] --> ingest2[context-ingest<br><i>fill gaps</i>]
         ingest2 -.->|findings feed back| daydream
+        daydream -.->|coverage gaps| wiki
     end
 
     subgraph Planning Chain
         planner[clear-planner<br><i>plan work</i>] --> ecosystem[ecosystem-manager<br><i>modify system</i>]
+        ecosystem -.->|schema/job health| wiki
     end
 
     core[core-discipline<br><i>always active</i>] -.->|enforces skill discovery| onboarding
@@ -102,10 +128,12 @@ graph LR
     core -.-> audit
     core -.-> daydream
     core -.-> planner
+    core -.-> wiki
 
     todo[todo-utilities<br><i>pattern library</i>] -.->|patterns copied inline| onboarding
     todo -.-> ingest
     todo -.-> audit
+    todo -.-> wiki
 ```
 
 **core-discipline** sits across everything. It is not a step in a chain -- it is an always-active overlay that checks whether a relevant skill applies before any action is taken. It enforces the compounding rule (see below) and matches overhead to task size: small changes get no ceremony, significant changes get the full workflow.

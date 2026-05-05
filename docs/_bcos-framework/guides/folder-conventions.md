@@ -22,17 +22,20 @@ This is the rule, not a fixed list of names. `_drafts/`, `_experiments/`, `_vend
 
 ## Built-in Framework Folders
 
-Five `_`-prefixed folders are reserved for the framework:
+Six `_`-prefixed folders are reserved for the framework:
 
 | Folder | Purpose | Treatment |
 |--------|---------|-----------|
 | `docs/_inbox/` | Raw material, session captures, unprocessed dumps | Categorized in document index; audit-inbox job processes it |
 | `docs/_planned/` | Polished ideas, not yet active reality | Relaxed validation; flagged if older than 6 months |
 | `docs/_archive/` | Superseded documents, kept for reference | Skipped by all maintenance |
-| `docs/_collections/` | Bulk files (transcripts, exports, reports) | Skipped — no frontmatter required |
+| `docs/_collections/` | **Verbatim evidence artifacts** as received or generated — invoices, brand kits, signed agreements, call transcripts, monthly reports, Stripe exports. The file IS the truth — editing it corrupts evidence | Each subdirectory requires `_manifest.md` (rows per file + cross-zone links to data points); optional sidecar `.meta.md` per artifact when the row isn't enough; weekly `collections-scan` job for untracked/orphan/expiry detection. See `architecture/collections-zone.md` |
+| `docs/_wiki/` | **Derivative explanatory pages** — runbooks, how-tos, glossaries, post-mortems, FAQs, decision logs, project logs. Cite canonical data points via `builds-on:` frontmatter; never duplicate their content | Standard maintenance skips raw/queue/index/log, but `_wiki/pages/` and `_wiki/source-summary/` have wiki-specific frontmatter, schema, lint, and scheduled jobs. See `architecture/wiki-zone.md` |
 | `docs/_bcos-framework/` | Framework code (synced from upstream) | Skipped — never edit by hand; managed by `update.py` |
 
 Don't reuse these names for custom folders.
+
+**Distinguishing collections from wiki:** if I edit this file, am I making it more *wrong* or more *right*? More right (refining explanation) → wiki. More wrong (corrupting evidence) → collection. A signed contract is a collection; a page explaining how to read that contract is a wiki entry.
 
 ---
 
@@ -93,6 +96,11 @@ The framework treats it as **active context with a quirk**:
 
 If you want a folder for organization (not opt-out), it works — but expect the framework to nudge you toward flat structure. If you want a folder that the framework leaves alone, prefix it with `_`.
 
+**Exception:** `docs/_wiki/` intentionally uses semantic subfolders. Wiki pages live
+under `_wiki/pages/`, external captures live under `_wiki/source-summary/`, and
+raw source material stays under `_wiki/raw/`. Do not copy this pattern into
+normal active context; use flat `docs/*.md` plus `cluster:` there.
+
 ---
 
 ## What Scanners Actually Do (Quick Reference)
@@ -103,7 +111,7 @@ If you want a folder for organization (not opt-out), it works — but expect the
 | `index-health` (daily job) | Same as indexer | Same as indexer |
 | `doc-lint` | User-supplied path | Any `_*/` folder |
 | `context-audit` | User-supplied scope | Any `_*/` folder |
-| Frontmatter pre-edit hook | Files in `docs/` | Any path under `_*/` |
+| Frontmatter pre-edit hook | Files in `docs/`, plus wiki pages under `_wiki/pages/` and `_wiki/source-summary/` | Framework/internal underscore paths, `_wiki/raw/`, `_wiki/queue.md`, `_wiki/index.md`, `_wiki/log.md` |
 
 The rule is consistent across all of them: **the underscore prefix is the opt-out signal**.
 

@@ -1,24 +1,26 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-23",
-  "lastAudit": "2026-04-23",
+  "lastUpdated": "2026-05-04",
+  "lastAudit": "2026-05-04",
   "inventory": {
     "skills": {
-      "total": 13,
+      "total": 15,
       "list": [
-        "context-onboarding",
-        "context-ingest",
-        "context-mine",
-        "core-discipline",
-        "doc-lint",
+        "bcos-wiki",
         "clear-planner",
         "context-audit",
+        "context-ingest",
+        "context-mine",
+        "context-onboarding",
+        "context-routing",
+        "core-discipline",
         "daydream",
+        "doc-lint",
         "ecosystem-manager",
         "lessons-consolidate",
-        "todo-utilities",
         "schedule-dispatcher",
-        "schedule-tune"
+        "schedule-tune",
+        "todo-utilities"
       ],
       "overlayCapable": [
         "core-discipline"
@@ -32,12 +34,24 @@
       ]
     },
     "agents": {
-      "total": 1,
+      "total": 2,
       "byCategory": {
         "Exploration": [
           "explore"
+        ],
+        "Wiki": [
+          "wiki-fetch"
         ]
       }
+    },
+    "utilities": {
+      "total": 2,
+      "skills": [
+        "skill-discovery"
+      ],
+      "agents": [
+        "agent-discovery"
+      ]
     }
   },
   "health": {
