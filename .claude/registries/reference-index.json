@@ -1,6 +1,6 @@
 {
   "version": "1.2",
-  "lastUpdated": "2026-04-29",
+  "lastUpdated": "2026-05-05",
   "references": {
     "methodology": {
       "clear-principles": "docs/_bcos-framework/methodology/clear-principles.md",
@@ -88,7 +88,8 @@
       "refresh-ecosystem-state": ".claude/scripts/refresh_ecosystem_state.py",
       "update": ".claude/scripts/update.py",
       "validate-frontmatter": ".claude/scripts/validate_frontmatter.py",
-      "validate-references": ".claude/scripts/validate_references.py"
+      "validate-references": ".claude/scripts/validate_references.py",
+      "refresh-ecosystem-state": ".claude/scripts/refresh_ecosystem_state.py"
     }
   }
 }

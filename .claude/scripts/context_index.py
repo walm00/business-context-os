@@ -56,7 +56,12 @@ WIKI_INTERNAL_PREFIXES = (
     "docs/_wiki/.config.yml",
     "docs/_wiki/.schema.yml",
 )
-GENERATED_PATHS = {"docs/document-index.md", "docs/_wiki/index.md", "docs/.wake-up-context.md"}
+GENERATED_PATHS = {
+    "docs/bcos-control-map.md",
+    "docs/document-index.md",
+    "docs/_wiki/index.md",
+    "docs/.wake-up-context.md",
+}
 FRAMEWORK_PREFIX = "docs/_bcos-framework/"
 KNOWN_UNDERSCORES = {"_inbox", "_planned", "_archive", "_collections", "_wiki", "_bcos-framework"}
 

@@ -125,5 +125,13 @@ docs/document-index.md
 
 # Daily digest (runtime output, overwritten each morning)
 docs/_inbox/daily-digest.md
+docs/_inbox/daily-digest.json
+
+# Active plan workspaces — implementation plans, manifests, pre-flight notes,
+# and review captures live here while a feature is being built. The folder
+# itself is tracked (.gitkeep below) so installs scaffold it; the per-plan
+# subfolders stay local until the plan is folded back into framework docs.
+docs/_planned/*/
+!docs/_planned/.gitkeep
 
 # === PERSONAL ONLY ===

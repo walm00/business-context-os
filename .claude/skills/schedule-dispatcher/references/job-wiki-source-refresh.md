@@ -3,6 +3,13 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** weekly
 **Nature:** two-tier source freshness check for `source-summary` pages
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - source-summary-upstream-changed
+  - refresh-due
+```
+
 
 ---
 

@@ -303,6 +303,39 @@ Documents move between zones as their status changes. Each transition has differ
 
 ---
 
+## Path 6 — Outbound from active zone via lifecycle classifier
+
+The five paths above describe how content **enters** the active zone. Path 6 is the inverse: how content leaves it cleanly.
+
+Time-bounded docs that landed in `docs/` (sent proposals, captured decisions, dated meeting notes, research dumps awaiting wiki promotion, point-in-time snapshots) need exit triggers — without them, the active zone accumulates settled work indefinitely. Two mechanisms work together:
+
+1. **Declarative `lifecycle:` field** in frontmatter (optional). Authors declare exit triggers at capture time:
+   ```yaml
+   lifecycle:
+     archive_when: "proposal-sent"   # body marker SENT: triggers
+     fold_into: "docs/operations/sops/onboarding.md"
+     expires_after: 30d              # date-based fallback
+     route_to_wiki_after_days: 60    # for research docs
+   ```
+   The `context-ingest` skill prompts for these fields when content shape suggests time-bounded routing (Step 1.5 of the skill). Spec: [`docs/_bcos-framework/methodology/document-standards.md`](../methodology/document-standards.md) §"Lifecycle Triggers".
+
+2. **`lifecycle-sweep` job** runs Friday weekly. It walks `active`, `inbox`, and `planned` zones, classifies each doc against `.claude/quality/lifecycle-routing.yml`, and surfaces routing candidates to the dashboard cockpit. Four typed-event finding types feed four headless-action handlers:
+
+   | Finding | Action | Destination |
+   |---|---|---|
+   | `lifecycle-trigger-fired` | `lifecycle-route-archive` / `lifecycle-route-wiki` / `lifecycle-route-collection` / `lifecycle-fold-into` | `_archive/{bucket}/`, `_wiki/source-summary/`, `_collections/{type}/`, or fold-into target |
+   | `lifecycle-body-marker-confirmed` | same set | same set |
+   | `lifecycle-route-ambiguous` | (none — needs user judgement) | flagged in cockpit |
+   | `lifecycle-orphan-active` | (none — flag-only signal) | indicates missing lifecycle field |
+
+   **Surface-only burn-in:** the sweep ships with `surface_only: true` for the first 2 weeks. Findings appear as cockpit cards; nothing moves automatically until the user confirms 0 false-positives and flips the flag. After burn-in, tier-1 rules can auto-route via the headless-action handlers.
+
+The sweep never replicates move logic. Wiki promotion delegates to `bcos-wiki` `/wiki promote`; collection routing delegates to `context-ingest` Path 5; archive moves use `git mv`; fold-into is chat-confirmed. One source of truth per move type.
+
+Spec: [`docs/_bcos-framework/architecture/lifecycle-routing.md`](./lifecycle-routing.md). Job reference: [`.claude/skills/schedule-dispatcher/references/job-lifecycle-sweep.md`](../../../.claude/skills/schedule-dispatcher/references/job-lifecycle-sweep.md).
+
+---
+
 ## Ingest Summary Format
 
 Every completed ingest produces a summary report:

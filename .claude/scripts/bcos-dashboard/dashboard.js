@@ -547,11 +547,103 @@
     { id: "off",          label: "off",          matches: (s, j) => j && j.enabled === false },
   ];
 
+  // Repo profile section (shared | personal). Renders an inline section
+  // with current state, two radio-button toggles, and the description of
+  // each profile so the user knows what they're choosing. Calling the
+  // POST endpoint regenerates .gitignore via the same logic the bash
+  // helper script uses.
+  function _renderProfileSection() {
+    const wrap = el("div", { class: "settings-profile" });
+    wrap.appendChild(el("h2", { class: "settings-h2" }, "Repo profile"));
+    wrap.appendChild(el("p", { class: "settings-p settings-p--muted" },
+      "Tells BCOS whether this repo is a shared team codebase or your personal knowledge store. " +
+      "Switching regenerates .gitignore so the right files are tracked."));
+
+    const status = el("div", { class: "settings-profile__status" }, "Loading…");
+    wrap.appendChild(status);
+    const choices = el("div", { class: "settings-profile__choices" });
+    wrap.appendChild(choices);
+    const result = el("div", { class: "settings-profile__result" });
+    wrap.appendChild(result);
+
+    fetch("/api/profile?_=" + Date.now())
+      .then((r) => r.json())
+      .then((data) => {
+        const current = String(data.current || "shared");
+        const available = data.available || ["shared", "personal"];
+        const desc = data.descriptions || {};
+        status.textContent = "Current: " + current;
+        choices.innerHTML = "";
+        available.forEach((p) => {
+          const card = el("label", {
+            class: "profile-choice" + (p === current ? " profile-choice--active" : ""),
+          });
+          const radio = el("input", { type: "radio", name: "bcos-profile" });
+          if (p === current) radio.checked = true;
+          card.appendChild(radio);
+          const body = el("div", { class: "profile-choice__body" });
+          body.appendChild(el("div", { class: "profile-choice__name" },
+            p.charAt(0).toUpperCase() + p.slice(1)));
+          body.appendChild(el("div", { class: "profile-choice__desc" },
+            String(desc[p] || "")));
+          card.appendChild(body);
+          radio.addEventListener("change", async () => {
+            if (!radio.checked) return;
+            // Disable all radios while we commit.
+            choices.querySelectorAll("input[type=radio]").forEach((r) => { r.disabled = true; });
+            result.innerHTML = "";
+            result.appendChild(el("div", { class: "settings-profile__pending" }, "Switching to " + p + "…"));
+            const res = await _postJSON("/api/profile", { profile: p });
+            choices.querySelectorAll("input[type=radio]").forEach((r) => { r.disabled = false; });
+            result.innerHTML = "";
+            if (res && res.ok) {
+              status.textContent = "Current: " + res.after;
+              choices.querySelectorAll(".profile-choice").forEach((node) => node.classList.remove("profile-choice--active"));
+              card.classList.add("profile-choice--active");
+              const note = el("div", { class: "settings-profile__ok" });
+              if (res.before === res.after) {
+                note.textContent = "Already set to " + res.after + ". Nothing to change.";
+              } else if (res.gitignore_changed) {
+                note.textContent = "Switched to " + res.after + ". .gitignore regenerated — review with `git status`.";
+              } else {
+                note.textContent = "Switched to " + res.after + ". (.gitignore content unchanged.)";
+              }
+              result.appendChild(note);
+            } else {
+              radio.checked = (p === current);
+              const node = el("div", { class: "settings-profile__error" });
+              if (res && res.remediation) {
+                node.appendChild(_remediationToast(res));
+              } else {
+                node.textContent = "Couldn't switch: " + ((res && res.error) || "unknown error");
+              }
+              result.appendChild(node);
+            }
+          });
+          choices.appendChild(card);
+        });
+      })
+      .catch((err) => {
+        status.textContent = "Couldn't load profile: " + (err.message || err);
+      });
+
+    return wrap;
+  }
+
   function _renderSchedulePresets(job) {
     const wrap = el("div", { class: "schedule-presets" });
     wrap.appendChild(el("div", { class: "schedule-presets__label" }, "set schedule:"));
-    const row = el("div", { class: "schedule-presets__row" });
     const currentSchedule = String(job.schedule || "");
+    // If the current cadence doesn't match any preset (e.g. "wed", "1st",
+    // raw cron strings like "0 0 1 */3 *"), surface it as a "Currently:"
+    // line so the user can see what's set without opening the JSON.
+    const anyPresetMatches = SCHEDULE_PRESETS.some((p) => p.matches(currentSchedule, job));
+    if (!anyPresetMatches && currentSchedule && currentSchedule !== "off") {
+      const human = (job.display_schedule_long || job.display_schedule_short || currentSchedule);
+      wrap.appendChild(el("div", { class: "schedule-presets__current" },
+        "Currently: " + human));
+    }
+    const row = el("div", { class: "schedule-presets__row" });
     SCHEDULE_PRESETS.forEach((p) => {
       const isActive = p.matches(currentSchedule, job);
       const btn = el("button", {
@@ -1089,6 +1181,183 @@
     return link;
   }
 
+  // Render a friendly remediation card with copyable command + next-step.
+  // Used when a backend operation needs the user to do one thing first
+  // (e.g. run the framework installer).
+  function _remediationToast(res) {
+    const box = el("div", { class: "job-card__remediation" });
+    if (res.remediation && res.remediation.summary) {
+      box.appendChild(el("div", { class: "job-card__remediation-summary" }, String(res.remediation.summary)));
+    }
+    if (res.remediation && res.remediation.command) {
+      const row = el("div", { class: "job-card__remediation-cmd-row" });
+      const code = el("code", { class: "job-card__chat-cmd" }, String(res.remediation.command));
+      row.appendChild(code);
+      const copyBtn = el("button", { type: "button", class: "job-card__copy" }, "Copy");
+      copyBtn.addEventListener("click", () => {
+        try { navigator.clipboard.writeText(res.remediation.command); copyBtn.textContent = "✓"; }
+        catch (_) {}
+      });
+      row.appendChild(copyBtn);
+      box.appendChild(row);
+    }
+    if (res.remediation && res.remediation.then) {
+      box.appendChild(el("div", { class: "job-card__remediation-then" }, String(res.remediation.then)));
+    }
+    return box;
+  }
+
+  // Build one per-job card for the cockpit's "Your maintenance routine"
+  // section. Replaces the old single-glyph dot strip with a card showing
+  // status, last/next run, recent verdict history, and a Run-now button
+  // (when the job is mechanical enough to fire from the dashboard).
+  function _jobCardNode(d) {
+    // Severity goes on a marker class so the BORDER tint comes from sev-*
+    // but the title text stays the default color. Verdict glyph carries
+    // the actual color signal.
+    const card = el("div", { class: "job-card job-card--sev-" + String(d.severity || "muted") });
+    if (d.verdict === "error") card.classList.add("job-card--error");
+    if (!d.enabled) card.classList.add("job-card--disabled");
+
+    // Header row: name + verdict glyph (clicking opens the job drawer)
+    const head = el("div", { class: "job-card__head" });
+    const titleBtn = el("button", {
+      type: "button",
+      class: "job-card__title",
+      title: (d.hint || "Click for details"),
+      "data-job-id": String(d.job || ""),
+    }, String(d.label || d.job || ""));
+    titleBtn.addEventListener("click", () => {
+      if (window.JOB_DRAWER && d.job) window.JOB_DRAWER.open(d.job);
+    });
+    head.appendChild(titleBtn);
+    const verdict = el("span", { class: "job-card__verdict sev-" + String(d.severity || "muted") }, String(d.dot || "○"));
+    head.appendChild(verdict);
+    card.appendChild(head);
+
+    // Status line: "Not run yet · next: tomorrow 09:00" / "Last: yesterday · 0 findings"
+    const status = el("div", { class: "job-card__status" });
+    const verdictText = d.placeholder || d.display_verdict || "Not run yet";
+    status.appendChild(el("span", { class: "job-card__verdict-text" }, verdictText));
+    if (d.last_run && d.last_run !== "—") {
+      status.appendChild(el("span", { class: "job-card__sep" }, " · "));
+      status.appendChild(el("span", null, "last: " + d.last_run));
+    }
+    if (d.next_run && d.next_run !== "—" && d.enabled) {
+      status.appendChild(el("span", { class: "job-card__sep" }, " · "));
+      status.appendChild(el("span", null, "next: " + d.next_run));
+    }
+    if (typeof d.last_findings_count === "number" && d.last_findings_count > 0) {
+      status.appendChild(el("span", { class: "job-card__sep" }, " · "));
+      status.appendChild(el("span", { class: "job-card__findings" },
+        d.last_findings_count + (d.last_findings_count === 1 ? " finding" : " findings")));
+    }
+    card.appendChild(status);
+
+    // Recent verdict history (last 5, oldest→newest)
+    const recent = Array.isArray(d.recent_verdicts) ? d.recent_verdicts : [];
+    const dotRow = el("div", { class: "job-card__history" });
+    // Pad with empty placeholders so width is stable across cards.
+    const history = recent.slice(-5);
+    for (let i = 0; i < 5 - history.length; i++) {
+      dotRow.appendChild(el("span", { class: "job-card__hist-dot job-card__hist-dot--empty" }, "·"));
+    }
+    history.forEach((h) => {
+      const v = h.verdict || "";
+      const glyph = ({ green: "●", amber: "◐", red: "✕", error: "⚠" })[v] || "○";
+      const klass = "job-card__hist-dot job-card__hist-dot--" + (v || "muted");
+      const span = el("span", {
+        class: klass,
+        title: (h.ts || "") + " — " + (v || "no verdict") +
+               (h.findings_count ? " · " + h.findings_count + " finding(s)" : ""),
+      }, glyph);
+      dotRow.appendChild(span);
+    });
+    card.appendChild(dotRow);
+
+    // Action row: Run now / Run via chat / Schedule.
+    // - "Schedule" — when nothing is scheduled OR run yet. One click enables
+    //   the maintenance routine (writes schedule-config.json from template).
+    // - "Run now" — mechanical jobs we can fire from here.
+    // - "Run via chat" — judgement jobs that need Claude.
+    const actions = el("div", { class: "job-card__actions" });
+    const hasAnySignal = d.enabled || d.verdict || (recent && recent.length > 0);
+    if (!hasAnySignal) {
+      const schedBtn = el("button", {
+        type: "button",
+        class: "card-action-btn card-action-btn--primary",
+        title: "Enable BCOS's daily maintenance routine — runs all checks on a sensible default cadence",
+      }, "Schedule");
+      schedBtn.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        schedBtn.disabled = true;
+        schedBtn.textContent = "…";
+        const res = await _postJSON("/api/onboard/schedule", {});
+        if (res && res.ok) {
+          schedBtn.textContent = res.status === "already_scheduled" ? "Already scheduled" : "✓ Scheduled";
+          // Reload data so all 9 cards switch from Schedule → Run now.
+          setTimeout(() => { if (typeof loadData === "function") loadData(); }, 600);
+        } else {
+          // Render remediation inline rather than a generic error.
+          schedBtn.disabled = false;
+          schedBtn.textContent = "Couldn't schedule";
+          if (res && res.remediation) {
+            card.appendChild(_remediationToast(res));
+          } else if (res && res.error) {
+            card.appendChild(el("div", { class: "job-card__toast" }, String(res.error)));
+          }
+        }
+      });
+      actions.appendChild(schedBtn);
+    } else {
+      const runBtn = el("button", {
+        type: "button",
+        class: "card-action-btn card-action-btn--primary",
+        title: d.headless_runnable
+          ? "Run this check now"
+          : "Open chat to run this check (needs Claude)",
+      }, d.headless_runnable ? "Run now" : "Run via chat");
+      runBtn.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        runBtn.disabled = true;
+        runBtn.textContent = "…";
+        const res = await _postJSON("/api/jobs/run-now", { job: d.job });
+        if (res && res.ok) {
+          if (res.ran === "script") {
+            runBtn.textContent = "✓ Ran";
+            const msg = el("div", { class: "job-card__toast" }, String(res.summary || "Done."));
+            card.appendChild(msg);
+            setTimeout(() => { runBtn.disabled = false; runBtn.textContent = "Run now"; }, 4000);
+          } else if (res.ran === "chat-hint") {
+            runBtn.textContent = "Tell Claude";
+            const msg = el("div", { class: "job-card__toast" });
+            msg.appendChild(el("span", null, "Tell Claude in chat: "));
+            const code = el("code", { class: "job-card__chat-cmd" }, res.chat_hint);
+            msg.appendChild(code);
+            const copyBtn = el("button", { type: "button", class: "job-card__copy" }, "Copy");
+            copyBtn.addEventListener("click", () => {
+              try {
+                navigator.clipboard.writeText(res.chat_hint);
+                copyBtn.textContent = "✓";
+              } catch (_) {}
+            });
+            msg.appendChild(copyBtn);
+            card.appendChild(msg);
+            setTimeout(() => { runBtn.disabled = false; runBtn.textContent = "Run via chat"; }, 30000);
+          }
+        } else {
+          runBtn.disabled = false;
+          runBtn.textContent = "✗ retry";
+          runBtn.title = (res && res.error) || "failed";
+        }
+      });
+      actions.appendChild(runBtn);
+    }
+    card.appendChild(actions);
+
+    return card;
+  }
+
   function renderCockpit(data) {
     const tone = String(data?.tone || "ok");
     const isFirstRun = !!(data && data.first_run);
@@ -1100,19 +1369,23 @@
     });
 
     // --- Hero row: headline sentence (no CTA; the inbox is inline below) ---
+    // The "configured-and-running, no actions" headline gets suppressed —
+    // it's noise on a healthy day. We only render the headline when there's
+    // actual user value: critical / warn states, freshness anomalies, or
+    // the genuine first-run welcome (no jobs scheduled yet). The Settings
+    // link in the page header is the single canonical entry point — no
+    // per-state inline link.
+    const headlineText = String(data?.headline || "");
+    const tone = String(data?.tone || "");
+    const suppressHeadline = (
+      tone === "ok"
+      || tone === "info"
+      || (tone === "first_run" && /configured/i.test(headlineText))
+    );
     const hero = el("div", { class: "cockpit__hero" });
     hero.appendChild(el("div", { class: "cockpit__eyebrow" }, "Your knowledge system"));
-    hero.appendChild(el("p", { class: "cockpit__headline" }, String(data?.headline || "")));
-    if (isFirstRun) {
-      const link = el("a", {
-        class: "cockpit__first-run-link",
-        href: "/settings/technical",
-      }, "Open settings →");
-      link.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        if (typeof navigateTo === "function") navigateTo("/settings/technical");
-      });
-      hero.appendChild(link);
+    if (!suppressHeadline) {
+      hero.appendChild(el("p", { class: "cockpit__headline" }, headlineText));
     }
     wrap.appendChild(hero);
 
@@ -1184,41 +1457,16 @@
         (hidden === 1 ? "" : "s") + " hidden."));
     }
 
-    // --- Maintenance strip: one dot per check ---
+    // --- Maintenance routine: per-job cards with status + Run now ---
+    // (Replaces the old dot strip. Always rendered, even before any run,
+    // so the future layout is visible from the moment BCOS is installed.)
     const dots = Array.isArray(data?.dots) ? data.dots : [];
     if (dots.length) {
       const strip = el("div", { class: "cockpit__strip" });
       strip.appendChild(el("div", { class: "cockpit__strip-label" }, "Your maintenance routine"));
-      const row = el("div", { class: "cockpit__dots" });
-      dots.forEach((d) => {
-        const isErr = d.verdict === "error";
-        const sev = isErr ? "warn" : String(d.severity || "muted");
-        const cell = el("div", { class: "cockpit__dot-cell" });
-        const dotGlyph = isErr ? "⚠" : (d.dot || "○");
-        const errReason = isErr ? "collect failed — see job detail" : "";
-        const btn = el("button", {
-          type: "button",
-          class: "cockpit__dot sev-" + sev +
-                 (d.verdict ? "" : " cockpit__dot--dim") +
-                 (isErr ? " cockpit__dot--error" : ""),
-          "data-job-id": String(d.job || ""),
-          "aria-label": String(d.label || "") + " — " +
-                        (d.placeholder || d.display_verdict || "Not yet run"),
-          title: (d.label || "") + " · " +
-                 (d.placeholder || d.display_verdict || "Not yet run") +
-                 (d.schedule ? " · " + d.schedule : "") +
-                 (d.last_run && d.last_run !== "—" ? " · last: " + d.last_run : "") +
-                 (d.next_run && d.next_run !== "—" ? " · next: " + d.next_run : "") +
-                 (errReason ? " · " + errReason : ""),
-        }, String(dotGlyph));
-        btn.addEventListener("click", () => {
-          if (window.JOB_DRAWER && d.job) window.JOB_DRAWER.open(d.job);
-        });
-        cell.appendChild(btn);
-        cell.appendChild(el("div", { class: "cockpit__dot-label" }, String(d.label || "")));
-        row.appendChild(cell);
-      });
-      strip.appendChild(row);
+      const list = el("div", { class: "cockpit__job-cards" });
+      dots.forEach((d) => list.appendChild(_jobCardNode(d)));
+      strip.appendChild(list);
       wrap.appendChild(strip);
     }
 
@@ -2493,20 +2741,33 @@
       const cfgObj = cfgRes && cfgRes.config;
       const cfgPresent = cfgObj && typeof cfgObj === "object" && Object.keys(cfgObj).length > 0;
       if (!cfgPresent) {
+        // Single-CTA empty state. The "Schedule routine" button calls the
+        // same /api/onboard/schedule endpoint the cockpit cards use, so
+        // there's one path to enabling — the user can't end up half-onboarded.
         const card = el("div", { class: "settings-card settings-empty" });
-        card.appendChild(el("h2", { class: "settings-h2" }, "BCOS isn't set up in this repo yet"));
+        card.appendChild(el("h2", { class: "settings-h2" }, "Set up your maintenance routine"));
         card.appendChild(el("p", { class: "settings-p" },
-          "There's no schedule-config.json — which means the framework's maintenance " +
-          "schedule, auto-fix policy, and dispatcher haven't been initialised here. " +
-          "These settings only become editable once BCOS is onboarded."));
-        card.appendChild(el("p", { class: "settings-p settings-p--muted" },
-          "Run the BCOS onboarding flow (install.py or the context-onboarding skill in " +
-          "Claude Code) and reload this page."));
-        const expected = el("p", { class: "settings-p settings-p--muted" });
-        expected.appendChild(el("span", null, "Expected file: "));
-        expected.appendChild(el("code", null,
-          String((cfgRes && cfgRes.config_path) || ".claude/quality/schedule-config.json")));
-        card.appendChild(expected);
+          "BCOS will run nine maintenance checks on a sensible default cadence. " +
+          "You can tune the schedule any time — start with the defaults."));
+        const cta = el("button", { type: "button", class: "card-action-btn card-action-btn--primary" }, "Schedule routine");
+        const result = el("div", { class: "settings-empty__result" });
+        cta.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          cta.disabled = true; cta.textContent = "…";
+          const res = await _postJSON("/api/onboard/schedule", {});
+          if (res && res.ok) {
+            cta.textContent = "✓ Scheduled";
+            result.innerHTML = "";
+            result.appendChild(el("p", { class: "settings-p" }, "Done. Reload the page to see your routine."));
+          } else {
+            cta.disabled = false; cta.textContent = "Couldn't schedule";
+            result.innerHTML = "";
+            if (res && res.remediation) result.appendChild(_remediationToast(res));
+            else if (res && res.error) result.appendChild(el("p", { class: "settings-p" }, String(res.error)));
+          }
+        });
+        card.appendChild(cta);
+        card.appendChild(result);
         mount.appendChild(card);
         return;
       }
@@ -2563,34 +2824,19 @@
       acWrap.appendChild(el("code", { class: "settings-whitelist__id" }, "auto-commit"));
       mount.appendChild(acWrap);
 
-      // Auto-fix whitelist
-      mount.appendChild(el("h2", { class: "settings-h2" }, "Auto-fix whitelist"));
-      mount.appendChild(el("p", { class: "settings-p settings-p--muted" },
-        "Toggle which mechanical fixes BCOS may apply automatically (no review)."));
-      const wl = new Set(cfgRes.auto_fix_whitelist || []);
-      const known = cfgRes.known_auto_fix_ids || [];
-      const wlList = el("div", { class: "settings-whitelist" });
-      known.forEach((fixId) => {
-        const wrap = el("label", { class: "settings-whitelist__row" });
-        const cb = el("input", { type: "checkbox" });
-        if (wl.has(fixId)) cb.checked = true;
-        cb.addEventListener("change", async () => {
-          cb.disabled = true;
-          const action = cb.checked ? "add" : "remove";
-          const body = { add: [], remove: [] };
-          body[action] = [fixId];
-          const res = await _postJSON("/api/schedule/whitelist", body);
-          cb.disabled = false;
-          if (!res || !res.ok) {
-            cb.checked = !cb.checked;
-            wrap.title = (res && res.error) || "save failed";
-          }
-        });
-        wrap.appendChild(cb);
-        wrap.appendChild(el("code", { class: "settings-whitelist__id" }, fixId));
-        wlList.appendChild(wrap);
-      });
-      mount.appendChild(wlList);
+      // Auto-fix whitelist UI removed 2026-05-05 — most users don't recognise
+      // the technical fix-IDs (eof-newline, frontmatter-field-order, …) and
+      // the toggles read as gibberish. The whitelist is still maintained in
+      // schedule-config.json and follows the auto-commit toggle: when
+      // auto-commit is ON, the framework defaults are applied; when OFF,
+      // safe-defaults still apply but nothing gets committed automatically.
+      // Power users can still edit the JSON directly. Surface it back if
+      // user research shows it's missed.
+
+      // Repo profile — shared (drop-in to a team repo) vs personal
+      // (knowledge sync). Toggling regenerates .gitignore from the
+      // template; same logic as `bash .claude/scripts/set_profile.sh`.
+      mount.appendChild(_renderProfileSection());
     } catch (err) {
       mount.innerHTML = "";
       mount.appendChild(el("div", { class: "settings-error sev-warn" },
@@ -2995,17 +3241,17 @@
     }
     wrap.appendChild(sched);
 
-    const timing = el("p", { class: "job-detail__line job-detail__line--muted" });
-    const lastTxt = d.display_last_run && d.display_last_run !== "—" ? d.display_last_run : "never";
+    // Next run — last-ran is implicit in the "Recent runs" section below.
+    // (When there's no run history, the empty Recent runs block carries the
+    // "never" signal; duplicating it here adds noise per the audit on
+    // 2026-05-05.)
     const nextTxt = d.display_next_run && d.display_next_run !== "—" ? d.display_next_run : "—";
-    timing.textContent = "Last ran: " + lastTxt + " · Next run: " + nextTxt;
+    const timing = el("p", { class: "job-detail__line job-detail__line--muted" });
+    timing.textContent = "Next run: " + nextTxt;
     wrap.appendChild(timing);
 
-    // What it does
-    if (d.description) {
-      wrap.appendChild(el("h3", { class: "job-detail__h" }, "What it does"));
-      wrap.appendChild(el("p", { class: "job-detail__p" }, String(d.description)));
-    }
+    // "What it does" used to render here, but it duplicated the subtitle
+    // shown right under the title. Removed 2026-05-05 — see audit feedback.
 
     // Today's result (digest body for this job)
     if (d.today_body && d.today_body.trim()) {

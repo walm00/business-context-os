@@ -4,6 +4,19 @@
 **Default cadence:** daily
 **Nature:** mechanical — rebuild inventory, scan for structural issues, apply whitelisted fixes
 
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - missing-frontmatter
+  - missing-required-field
+  - missing-last-updated
+  - frontmatter-field-order
+  - broken-xref
+  - broken-xref-single-candidate
+  - trailing-whitespace
+  - eof-newline
+```
+
 ---
 
 ## Purpose

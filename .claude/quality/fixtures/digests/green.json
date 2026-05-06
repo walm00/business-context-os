@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
+  "schema_version": "1.0.0",
+  "date": "2026-05-05",
+  "overall_verdict": "green",
+  "run_at": "2026-05-05T07:00:00Z",
+  "findings": [],
+  "auto_fixed": [],
+  "jobs": [
+    { "job": "audit-inbox", "verdict": "green", "finding_count": 0 },
+    { "job": "index-health", "verdict": "green", "finding_count": 0 },
+    { "job": "wiki-stale-propagation", "verdict": "green", "finding_count": 0 },
+    { "job": "wiki-source-refresh", "verdict": "green", "finding_count": 0 }
+  ]
+}

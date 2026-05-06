@@ -87,7 +87,7 @@ This is the fastest feedback loop -- problems caught in seconds, not days.
 
 From v1.2 onward, BCOS installs a **single scheduled task per repo** — `bcos-{project}` — that runs daily and acts as a dispatcher. It reads `.claude/quality/schedule-config.json` to decide which maintenance jobs are due today, runs them in sequence, and produces one consolidated digest at `docs/_inbox/daily-digest.md`.
 
-Five jobs, one dispatch:
+Eleven jobs, one dispatch:
 
 | Job                   | Default cadence | Purpose                                                        |
 |-----------------------|-----------------|----------------------------------------------------------------|
@@ -95,7 +95,13 @@ Five jobs, one dispatch:
 | `daydream-lessons`    | Mon             | Weekly operational reflection + lessons capture                |
 | `daydream-deep`       | Wed             | Deeper structural reflection (splits, merges, retirements)     |
 | `audit-inbox`         | Fri             | Light CLEAR audit across all clusters + inbox aging + lessons triage |
+| `auto-fix-audit`      | Fri             | Self-learning safety brake — surfaces high-reversal-rate rules |
+| `lifecycle-sweep`     | Fri             | Classifier — routes outbound/decisions/research from active zone via `lifecycle:` field + body markers |
 | `architecture-review` | 1st             | Full audit + ecosystem drift + health score + 3 priorities     |
+| `wiki-stale-propagation` | daily        | Flag wiki pages whose `builds-on` sources moved on (cheap metadata-only check) |
+| `wiki-source-refresh` | Mon             | Two-tier source-summary freshness check + upstream HEAD probe  |
+| `wiki-graveyard`      | 1st             | Monthly archive-candidate scan for stale / orphan / retired-type wiki pages |
+| `wiki-coverage-audit` | quarterly       | Cross-zone coverage scan — surfaces data points without wiki explainers |
 
 Every dispatcher run writes one diary line per job to `.claude/hook_state/schedule-diary.jsonl` — an append-only, gitignored history that the dispatcher reads to generate frequency-tuning suggestions (never auto-applies them).
 

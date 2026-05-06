@@ -106,6 +106,9 @@ cluster: "[Best guess]"
 status: draft
 created: "[today]"
 last-updated: "[today]"
+# Optional: declare an exit trigger if the idea has a natural staleness clock
+# lifecycle:
+#   expires_after: 90d   # if untouched for 90d, lifecycle-sweep flags as idea-dead
 ---
 
 ## Concept
@@ -120,6 +123,26 @@ last-updated: "[today]"
 
 - [What needs to be figured out before this becomes active]
 ```
+
+### Step 1.5: Time-Bounded Content — Declare a Lifecycle Trigger
+
+Whenever the captured content has a **natural exit point** — a proposal that will be sent, a meeting note that will fold into an SOP, a research dump that will become a wiki page, a dated snapshot that will be replaced — **prompt the user to declare a `lifecycle:` frontmatter field**. This is what makes the content self-describing for the `lifecycle-sweep` job (see [`docs/_bcos-framework/methodology/document-standards.md`](../../../docs/_bcos-framework/methodology/document-standards.md) §"Lifecycle Triggers").
+
+**When to prompt** (the captured content matches one of these shapes):
+
+| Content shape | Suggested lifecycle |
+|---|---|
+| Outbound draft (proposal, pitch, post, application) | `archive_when: "proposal-sent"` + `expires_after: 60d` |
+| Meeting / call notes | `fold_into: <target-sop-or-engagement-doc>` + `expires_after: 14d` |
+| Research dump with external URL(s) | `route_to_wiki_after_days: 30` |
+| Dated analysis / point-in-time snapshot | `archive_when: "decision-made"` + `expires_after: 90d` |
+| Call transcript or evidence file | `route_to_collection: "<type>"` + `archive_when: "outcome-known"` |
+
+**How to prompt** — use the `AskUserQuestion` tool:
+- Question: "This looks time-bounded. Declare a lifecycle exit trigger?"
+- Options: **Yes — pick the suggested shape** / **Yes — let me specify** / **No — leave it open** / **Not sure — explain**
+
+If the user declines, the doc still works — the sweep will fall back to routing-rule pattern match. Adding a trigger upgrades it from "guessed" to "self-describing".
 
 ### Step 2: Classify the Content
 
@@ -325,5 +348,6 @@ After ingest completes, **automatically do these** (don't wait for the user to a
 | **core-discipline** | Compounding rule triggers ingest: "file this insight back into context" |
 | **clear-planner** | Large ingests (10+ sources) may need a plan first |
 | **bcos-wiki** | Wiki-promotion route for explanatory pages, source summaries, and direct `/wiki promote` or `/wiki create` handoff |
+| **lifecycle-sweep** (job) | Consumes the `lifecycle:` frontmatter declared at capture time. Step 1.5 prompts for it on time-bounded content. |
 
 > **Architecture docs:** For routing design context, see [`docs/_bcos-framework/architecture/content-routing.md`](../../docs/_bcos-framework/architecture/content-routing.md)

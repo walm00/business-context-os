@@ -56,6 +56,8 @@ depends-on: [brand-identity]          # Documents this one requires as input
 consumed-by: [messaging-framework]    # Documents that use this one as input
 source: "https://..."                 # Original source if migrated from elsewhere
 confidentiality: internal             # public | internal | confidential | restricted
+lifecycle:                             # Exit-trigger declaration; consumed by lifecycle-sweep job
+  archive_when: "proposal-sent"        # See "Lifecycle Triggers" section below
 ---
 ```
 
@@ -78,6 +80,158 @@ confidentiality: internal             # public | internal | confidential | restr
 | `consumed-by` | No | Downstream documents (maps to PROVIDES in ownership spec) |
 | `source` | No | Where the original content came from |
 | `confidentiality` | No | Access level classification |
+| `lifecycle` | No | Nested object declaring an exit trigger — when/where this doc should move out of the active zone. Consumed by the `lifecycle-sweep` job (see "Lifecycle Triggers" section below). |
+
+Wiki-zone pages add fields such as `page-type`, `domain`, `exclusively-owns`, `builds-on`, `references`, `last-reviewed`, and source-summary provenance fields. Source summaries also keep `last-fetched`; that records source refresh, while `last-reviewed` records validation of the authored summary. The authoritative list lives in `docs/_wiki/.schema.yml`; the framework fallback template is `docs/_bcos-framework/templates/_wiki.schema.yml.tmpl`.
+
+### Lifecycle Triggers
+
+The `lifecycle` field declares **when and where a document should leave the active zone** — its exit contract. It is consumed by the `lifecycle-sweep` job (see `docs/_bcos-framework/architecture/lifecycle-routing.md`), which classifies each active doc by composing the declared trigger with body-signal markers and reality cross-checks before routing to `_archive/`, `_wiki/`, `_collections/`, or folding into a sibling doc.
+
+The field is **optional**. Documents without it are evaluated by routing-rule pattern match alone (see `lifecycle-routing.yml`). Adding a lifecycle declaration upgrades a doc from "guessed" to "self-describing".
+
+#### Trigger types
+
+Each is independently optional. Compose freely.
+
+| Trigger | Type | Semantics |
+|---|---|---|
+| `archive_when` | string (named marker) | Body marker name. Sweep matches against the marker table below. When matched + reality check passes, route to `_archive/<bucket>/`. |
+| `fold_into` | path (relative to repo root) | Sibling doc that should absorb this doc's content. Sweep folds source into target, archives source. Trigger fires when target exists AND source has non-trivial content + age. |
+| `expires_after` | duration (`Nd`, `Nw`, `Nm`) | Date-based fallback. When `last-updated + duration < today`, doc is candidate for routing. Pairs with another trigger to specify destination; alone, defaults to `_archive/abandoned/`. |
+| `route_to_wiki_after_days` | int | After N days, sweep treats this as a wiki-promotion candidate (calls `/wiki promote`). Used for research dumps that should become referenceable explainers. |
+| `route_to_collection` | string (collection type) | Doc represents evidence (a transcript, signed contract, export). After body-marker confirms or `expires_after` fires, route to `_collections/<type>/` with manifest row. |
+
+#### Body-marker table
+
+Trigger names map to body markers the sweep scans for. Markers must appear at the start of a line (case-sensitive) and are followed by a colon + value:
+
+| `archive_when` value | Body marker pattern | Example match |
+|---|---|---|
+| `proposal-sent` / `outbound-sent` | `^SENT: ` | `SENT: 2026-04-12 to acme@example.com` |
+| `decision-made` | `^DECISION: ` or `^RESOLVED: ` | `DECISION: pivot to enterprise tier` |
+| `outcome-known` | `^OUTCOME: ` | `OUTCOME: closed-won, $40K ARR` |
+| `published` | `^PUBLISHED: ` | `PUBLISHED: 2026-04-15 https://blog.example.com/post` |
+| `abandoned` | `^ABANDONED: ` | `ABANDONED: stakeholder pivoted, not pursuing` |
+
+Custom marker names are allowed; sweep treats unknown values as a synonym for "match any of the standard markers AND require reality cross-check".
+
+#### Reality cross-check
+
+For each declared trigger, the sweep also verifies the world matches the body's claim. Examples:
+
+- `archive_when: proposal-sent` — if body has `SENT:`, sweep confirms by checking `git log` for a sibling "as-sent" version (or a referenced URL).
+- `fold_into: docs/operations/sops/onboarding.md` — sweep confirms the target file exists AND that the target either references this doc's date OR contains content overlap above a threshold.
+- `route_to_wiki_after_days: 60` — sweep confirms an external URL exists in the body (otherwise it's not source-summary material).
+
+If the trigger fires but reality contradicts (body says `SENT:` but no sibling exists), the finding is `lifecycle-route-ambiguous` — needs user decision, not auto-route.
+
+#### Five worked examples
+
+**Example 1 — outbound proposal that gets sent or abandoned:**
+
+```yaml
+---
+name: "Acme Enterprise Proposal v3"
+type: process
+cluster: outbound
+version: "1.0.0"
+status: active
+created: "2026-05-01"
+last-updated: "2026-05-01"
+lifecycle:
+  archive_when: "proposal-sent"   # body adds SENT: when actually sent
+  expires_after: 60d              # if no SENT: in 60d → _archive/abandoned/
+---
+```
+
+**Example 2 — meeting notes that fold into an SOP:**
+
+```yaml
+---
+name: "Onboarding Process Tweaks — 2026-04-12 sync"
+type: reference
+cluster: operations
+version: "1.0.0"
+status: active
+created: "2026-04-12"
+last-updated: "2026-04-12"
+lifecycle:
+  fold_into: "docs/operations/sops/employee-onboarding.md"
+  expires_after: 14d              # fold within 2 weeks or auto-archive raw
+---
+```
+
+**Example 3 — research dump that should become a wiki explainer:**
+
+```yaml
+---
+name: "Competitor X Pricing Teardown"
+type: reference
+cluster: market-intelligence
+version: "1.0.0"
+status: active
+created: "2026-04-08"
+last-updated: "2026-04-08"
+source: "https://competitor-x.com/pricing"
+lifecycle:
+  route_to_wiki_after_days: 30    # after 30d, promote into _wiki/source-summary/
+---
+```
+
+**Example 4 — point-in-time analysis with a decision in it:**
+
+```yaml
+---
+name: "Q1 2026 Pipeline Analysis"
+type: reference
+cluster: revenue
+version: "1.0.0"
+status: active
+created: "2026-04-01"
+last-updated: "2026-04-01"
+lifecycle:
+  archive_when: "decision-made"   # body adds DECISION: when conclusion reached
+  expires_after: 90d              # auto-archive after a quarter
+---
+```
+
+**Example 5 — call transcript that's evidence:**
+
+```yaml
+---
+name: "Customer Discovery Call — Mid-Market Buyer (Acme)"
+type: reference
+cluster: market-intelligence
+version: "1.0.0"
+status: active
+created: "2026-04-10"
+last-updated: "2026-04-10"
+lifecycle:
+  route_to_collection: "call-transcripts"   # → _collections/call-transcripts/ with manifest row
+  archive_when: "outcome-known"               # body adds OUTCOME: when call's signal is captured elsewhere
+---
+```
+
+#### What lifecycle is NOT
+
+- **Not a workflow tracker.** It declares an *exit trigger*, not the doc's current operational state. Use `status` for state.
+- **Not required.** A doc without `lifecycle` is still valid; the sweep falls back to routing-rule pattern match.
+- **Not the only signal.** The sweep composes lifecycle + body-markers + reality cross-check + routing-rule pattern match. A trigger fires only when at least two of these agree (configurable confidence tier in `lifecycle-routing.yml`).
+
+### Mechanical Index Facets
+
+The canonical context index derives fields from the path so authors do not duplicate them in frontmatter:
+
+| Derived field | Meaning |
+|---------------|---------|
+| `zone` | Active, wiki, collection-manifest, inbox, planned, archive, framework, generated, or custom opt-out |
+| `bucket` | Lifecycle bucket used by Atlas/Galaxy: `active`, `_inbox`, `_planned`, `_archive`, `_bcos-framework`, `_collections` |
+| `folder` | Parent path of the file |
+| `path-tags` | Folder components used as searchable facets |
+| `trust-level` | Derived trust class such as high, high-derived, future, historical, low, system, or evidence |
+
+These fields are emitted by `.claude/scripts/context_index.py` into `.claude/quality/context-index.json` and rendered into `docs/document-index.md`. Do not hand-maintain them in YAML.
 
 Wiki-zone pages add fields such as `page-type`, `domain`, `exclusively-owns`, `builds-on`, `references`, `last-reviewed`, and source-summary provenance fields. Source summaries also keep `last-fetched`; that records source refresh, while `last-reviewed` records validation of the authored summary. The authoritative list lives in `docs/_wiki/.schema.yml`; the framework fallback template is `docs/_bcos-framework/templates/_wiki.schema.yml.tmpl`.
 

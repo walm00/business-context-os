@@ -3,6 +3,12 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** daily
 **Nature:** mechanical scan — detect source updates that should trigger human wiki review
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - stale-propagation
+```
+
 
 ---
 

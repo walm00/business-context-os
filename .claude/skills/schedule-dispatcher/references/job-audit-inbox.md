@@ -4,6 +4,19 @@
 **Default cadence:** weekly (Friday)
 **Nature:** structural — deep CLEAR audit + inbox aging + lessons consolidation
 
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - missing-frontmatter
+  - boundary-violation
+  - broken-xref
+  - stale-marker
+  - duplication-obvious
+  - inbox-aged
+  - lesson-overlap-proposal
+  - lesson-orphaned
+```
+
 ---
 
 ## Purpose

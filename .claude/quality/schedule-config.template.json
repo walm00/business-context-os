@@ -1,12 +1,10 @@
 {
   "version": "1.0",
   "_comment": "BCOS schedule configuration. To change anything here, ask Claude: 'run audit twice a week', 'turn off architecture review', 'switch to weekdays-only index'. Claude will use the schedule-tune skill to edit this file safely. Manual editing works too but is not recommended.",
-
   "dispatcher": {
     "time_hint": "09:00",
     "_comment": "Informational only — the actual cron is on the scheduled task itself (bcos-{PROJECT}). If you change the cron, update this hint too so docs stay in sync."
   },
-
   "jobs": {
     "index-health": {
       "enabled": true,
@@ -52,9 +50,18 @@
       "enabled": true,
       "schedule": "0 0 1 */3 *",
       "_about": "Quarterly cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters not present in document-index as INFO."
+    },
+    "auto-fix-audit": {
+      "enabled": true,
+      "schedule": "fri",
+      "_about": "Friday weekly safety brake on the self-learning ladder. Surfaces amber cards when a learned rule reversal rate crosses 5% in 7 days. Recommend-only at v0.1."
+    },
+    "lifecycle-sweep": {
+      "enabled": true,
+      "schedule": "fri",
+      "_about": "Friday weekly classifier of active-zone docs against lifecycle-routing.yml. Surface-only for the first 2 weeks (default); flip lifecycle-routing.yml > global.surface_only=false after 0 false-positives confirmed to enable auto-routing."
     }
   },
-
   "auto_fix": {
     "enabled": true,
     "_about": "Fixes the dispatcher is allowed to apply without asking. Anything NOT on this list becomes an action item instead. See references/auto-fix-whitelist.md for exact semantics of each ID.",
@@ -73,14 +80,14 @@
       "wiki-rewrite-citations-on-rename"
     ]
   },
-
   "digest": {
     "write_file": true,
     "path": "docs/_inbox/daily-digest.md",
     "auto_commit": false,
-    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl. Set auto_commit: true to commit generated artifacts (digest, index, diary, wake-up context) at the end of each run — but ONLY if the working tree has no other changes. Never pushes, never branches. Safe default is false; flip to true once you trust a week of clean runs."
+    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl. Set auto_commit: true to commit generated artifacts (digest, index, diary, wake-up context) at the end of each run — but ONLY if the working tree has no other changes. Never pushes, never branches. Safe default is false; flip to true once you trust a week of clean runs.",
+    "auto_commit_block_on_red": true,
+    "_about_block_on_red": "When true (default), auto_commit is skipped on red verdict runs even if the tree is otherwise clean. Surfaces an Auto-commit paused chip in the cockpit. Set to false to opt back into committing on red days."
   },
-
   "tuning": {
     "suggest_reduce_after_green_runs": 3,
     "suggest_increase_if_findings_trending_up": true,

@@ -52,6 +52,14 @@ JOB_LABELS: dict[str, tuple[str, str]] = {
         "Wiki coverage audit",
         "Quarterly scan for gaps where active data points lack a wiki explainer.",
     ),
+    "auto-fix-audit": (
+        "Self-learning audit",
+        "Friday safety brake: surfaces learned rules whose reversal rate has spiked.",
+    ),
+    "lifecycle-sweep": (
+        "Lifecycle sweep",
+        "Classifies active-zone docs against lifecycle-routing rules; surfaces archive / wiki / fold-into candidates.",
+    ),
     # Umbrella / portfolio jobs — in case they surface via diary:
     "portfolio-index-health":     ("Portfolio index",    "Rebuilds the cross-repo index for a multi-project setup."),
     "portfolio-brief":            ("Portfolio brief",    "Synthesizes a CEO-level summary across all projects."),
@@ -198,6 +206,105 @@ FIX_LABELS: dict[str, str] = {
 
 def fix_display(fix_id: str | None) -> str:
     return FIX_LABELS.get(fix_id or "", "Apply fix")
+
+
+# ---------------------------------------------------------------------------
+# Finding types (typed-event sidecar IDs from typed-events.md)
+# ---------------------------------------------------------------------------
+#
+# Single translation map per L-DASHBOARD-20260425-010: collectors emit raw
+# kebab-case IDs (the same strings recorded in resolutions.jsonl), renderers
+# prefer the human-friendly display form, and Tier-3 settings views can
+# surface the technical ID on demand.
+#
+# Coverage is enforced by .claude/scripts/test_finding_type_coverage.py:
+# every finding_type declared in any job-*.md `emits-finding-types` block
+# must have an entry here. Adding a new finding_type without a label
+# fails the wiring test.
+
+FINDING_TYPE_LABELS: dict[str, str] = {
+    # audit-inbox (8)
+    "missing-frontmatter":       "Missing metadata",
+    "boundary-violation":        "Boundary crossed",
+    "broken-xref":               "Broken cross-reference",
+    "stale-marker":              "Stale TODO/FIXME marker",
+    "duplication-obvious":       "Duplicate heading across docs",
+    "inbox-aged":                "Inbox item past triage threshold",
+    "lesson-overlap-proposal":   "Overlapping lessons",
+    "lesson-orphaned":           "Lesson references missing concept",
+    # index-health (8 — 2 shared with audit-inbox)
+    "missing-required-field":      "Frontmatter missing required field",
+    "missing-last-updated":        "Missing last-updated date",
+    "frontmatter-field-order":     "Frontmatter field order off",
+    "broken-xref-single-candidate":"Broken xref with single candidate",
+    "trailing-whitespace":         "Trailing whitespace",
+    "eof-newline":                 "Missing end-of-file newline",
+    # architecture-review (6)
+    "integration-coverage-gap":    "Skill/agent/hook not wired in",
+    "xref-broken-ecosystem":       "Ecosystem cross-reference broken",
+    "lesson-retirement-candidate": "Lesson candidate for retirement",
+    "lesson-sharp-still":          "Lesson still actively violated",
+    "lesson-merge-candidate":      "Lessons candidate for merge",
+    "lessons-count-high":          "lessons.json over consolidation threshold",
+    # daydream-deep (6)
+    "architecture-misalignment":   "Two docs claim same topic",
+    "datapoint-should-split":      "Data point grew beyond single ownership",
+    "datapoint-should-merge":      "Data points heavily overlap",
+    "datapoint-should-retire":     "Data point no longer reflects reality",
+    "datapoint-missing":           "Knowledge missing from structured docs",
+    "cluster-needs-restructuring": "Cluster shape no longer fits",
+    # daydream-lessons (3)
+    "daydream-observation":        "Reflection-surfaced drift",
+    "lesson-duplicate-candidate":  "New lesson overlaps existing",
+    "lesson-new-capture":          "New lesson surfaced",
+    # wiki-coverage-audit (3)
+    "coverage-gap-data-point":     "Data point lacks wiki explainer",
+    "coverage-gap-inbox-term":     "Inbox term lacks wiki page",
+    "cluster-mismatch":            "Wiki cluster value not in index",
+    # wiki-graveyard (3)
+    "graveyard-stale":             "Wiki page past graveyard threshold",
+    "orphan-pages":                "Wiki page with no inbound links",
+    "retired-page-type":           "Wiki page-type retired in schema",
+    # wiki-source-refresh (2)
+    "source-summary-upstream-changed": "Source summary upstream changed",
+    "refresh-due":                     "Source summary refresh due",
+    # wiki-stale-propagation (1)
+    "stale-propagation":          "Wiki page out of sync with source",
+    # dispatcher meta (1)
+    "frequency-suggestion":       "Job cadence suggestion",
+    # auto-fix-audit (2)
+    "rule-reversal-spike":        "Rule reversal rate spike",
+    "rule-downstream-error":      "Fix batch preceded downstream error",
+    # lifecycle-sweep (4)
+    "lifecycle-trigger-fired":           "Lifecycle trigger ready to route",
+    "lifecycle-body-marker-confirmed":   "Body marker confirms lifecycle route",
+    "lifecycle-route-ambiguous":         "Lifecycle routing needs your call",
+    "lifecycle-orphan-active":           "Active doc with no lifecycle field",
+}
+
+
+def finding_type_display(finding_type: str | None) -> str:
+    """Return the human-friendly label for a typed-event finding_type ID.
+
+    Falls back to a title-cased rendering of the ID so an unmapped emitter
+    still produces something sensible while the wiring test flags it.
+    """
+    if not finding_type:
+        return "—"
+    if finding_type in FINDING_TYPE_LABELS:
+        return FINDING_TYPE_LABELS[finding_type]
+    return finding_type.replace("-", " ").replace("_", " ").capitalize()
+
+
+def decorate_finding(finding: dict) -> dict:
+    """Add display_* fields to a typed-event Finding dict."""
+    ft = finding.get("finding_type")
+    finding["display_finding_type"] = finding_type_display(ft)
+    finding["display_verdict"] = verdict_display(finding.get("verdict"))
+    finding["display_dot"] = verdict_dot(finding.get("verdict"))
+    if "emitted_by" in finding:
+        finding["display_emitted_by"] = job_display(finding["emitted_by"])[0]
+    return finding
 
 
 # ---------------------------------------------------------------------------
