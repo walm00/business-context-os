@@ -19,6 +19,7 @@ python .claude/scripts/context_search.py --query "<query>" \
     [--top-k N] \
     [--token-budget N] \
     [--semantic [--dry-run]] \
+    [--explain] \
     [--json]
 ```
 
@@ -30,6 +31,7 @@ python .claude/scripts/context_search.py --query "<query>" \
 | `--token-budget N` | Aggregate summary token budget across hits. Default `8000`. Hits are truncated with `truncated: true` when exceeded. |
 | `--semantic` | **Explicit opt-in** to LLM query reformulation (D-10). No auto-trigger. **Currently requires `--dry-run`** — the 3-candidate reformulation path is specified but the LLM client wiring is deferred. Non-dry-run `--semantic` exits non-zero with a clear error rather than silently running mechanical search. |
 | `--dry-run` | With `--semantic`, record the opt-in (`escalation: semantic-dry-run`) without firing the LLM. The only currently supported `--semantic` mode. |
+| `--explain` | Include a per-hit `score-breakdown` with matched/missing terms, field scores, match tier, and boosts. |
 | `--json` | Emit JSON to stdout (otherwise human-readable). |
 | `--index PATH` | Override the index path. Defaults to `.claude/quality/context-index.json`. |
 
@@ -52,23 +54,49 @@ python .claude/scripts/context_search.py --query "<query>" \
       "last-reviewed": null,
       "score": 1.97,
       "citation-id": "active:pricing",
-      "truncated": false
+      "truncated": false,
+      "score-breakdown": {
+        "match-tier": "T5",
+        "matched-terms": ["billing", "stripe"],
+        "missing-terms": [],
+        "field-scores": {"title": 0.0, "filename": 0.0, "path": 0.0, "headings": 0.0, "meta": 9.1, "ownership": 7.2, "body": 0.0},
+        "phrase-matches": [],
+        "coverage": 1.0,
+        "role-boost": 1.5,
+        "relation-boost": 0.0,
+        "freshness-boost": 1.49,
+        "final": 36.4
+      }
     }
   ],
   "escalation": null
 }
 ```
 
+`score-breakdown` appears only when `--explain` or API `explain=true` is set.
+
 ## Ranking model (mechanical, deterministic)
 
 For each candidate doc:
 
-1. Tokenize query and the doc's *searchable text* (name + filename + cluster + type + page-type + status + DOMAIN + tags + EXCLUSIVELY_OWNS + STRICTLY_AVOIDS + path-tags).
-2. BM25-style score: per-term `tf × idf` summed across query tokens.
-3. Apply zone-priority boost from the registry's `source-of-truth-role`:
+1. Tokenize query and indexed fields with conservative normalization: case-folding, punctuation/hyphen splitting, stopword removal, and entity possessive/plural alignment (`Arnold`, `Arnolds`, `Arnold's`).
+2. Score fields separately with weighted `tf × idf`:
+   - title/name highest
+   - filename/path/path-tags very high
+   - headings high
+   - tags/type/status/cluster medium
+   - DOMAIN / EXCLUSIVELY_OWNS / STRICTLY_AVOIDS medium-low
+   - first paragraph lower
+3. Assign a match tier before sorting by raw score:
+   - `T5`: exact phrase or all query terms in title/name
+   - `T4`: all terms covered by filename/path/entity fields
+   - `T3`: all terms matched anywhere in indexed fields
+   - `T2`: phrase or majority match in authoritative fields
+   - `T1`: partial match
+4. Apply zone-priority boost from the registry's `source-of-truth-role`:
    - `canonical` ×1.5, `derived` ×1.2, `evidence` ×1.1, `system` ×1.0, `future` ×0.9, `historical` ×0.7, `opted-out` ×0.5.
-4. Apply gentle recency boost based on `age_days` (`last-updated` distance).
-5. Sort descending; take top-K; format hits.
+5. Apply relation/freshness boosts inside the same match tier. Freshness is a tie-breaker signal; it cannot make a one-term partial match outrank a title/path/entity all-term match.
+6. Sort by match tier, then boosted score, then stable citation id; take top-K; format hits.
 
 Latency target: <500ms on the 52-doc canonical corpus. Deterministic given a fixed corpus — same query at the same git ref returns byte-identical output (modulo `score` floats that are deliberately rounded).
 
@@ -87,6 +115,9 @@ python .claude/scripts/context_search.py --query "launch" --zone planned
 
 # JSON for programmatic consumption:
 python .claude/scripts/context_search.py --query "pricing" --top-k 3 --json
+
+# Explain why the ranker ordered hits:
+python .claude/scripts/context_search.py --query "arnolds nda" --explain --json
 
 # Opt into semantic reformulation, dry-run (no LLM call):
 python .claude/scripts/context_search.py --query "fuzzy phrase" --semantic --dry-run
@@ -116,4 +147,4 @@ Auto-triggers were specifically removed in the wiki-missing-layers cleanup pass 
 
 ## Tests
 
-`python .claude/scripts/test_context_search.py` — 15 assertions covering schema, ranking, zone filter, top-K cap, citation stability, D-10 escalation rules, empty-corpus handling, and CLI smoke tests.
+`python .claude/scripts/test_context_search.py` — regression coverage for schema, field-aware ranking, title/entity/all-term priority, zone filter, top-K cap, citation stability, D-10 escalation rules, empty-corpus handling, service wrapper behavior, and CLI smoke tests.

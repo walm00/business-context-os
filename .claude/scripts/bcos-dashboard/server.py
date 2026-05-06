@@ -534,7 +534,10 @@ def _make_handler(
                         )
                     if not isinstance(result, dict):
                         result = {"result": result}
-                    status = 200 if result.get("ok", True) and "error" not in result else 404
+                    explicit_status = result.pop("_status", None)
+                    status = int(explicit_status) if explicit_status else (
+                        200 if result.get("ok", True) and "error" not in result else 404
+                    )
                     return self._send_json(result, status=status)
 
             if path == "/api/health":

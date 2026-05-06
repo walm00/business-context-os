@@ -26,6 +26,7 @@ python .claude/scripts/context_search.py --query "<query>" --zone wiki [other fl
 | `--top-k N` | Maximum hits returned. Default `10`. |
 | `--token-budget N` | Aggregate summary token budget. Default `8000`. |
 | `--semantic [--dry-run]` | **Explicit opt-in** to LLM query reformulation (D-10). No auto-trigger. |
+| `--explain` | Include the shared search `score-breakdown` for rank debugging. |
 | `--json` | Emit JSON to stdout. |
 | `--index PATH` | Override path to `context-index.json`. |
 
@@ -37,6 +38,8 @@ Same shared schema as `/context search` — see [`context-routing/search.md`](..
 
 Citation IDs follow the `wiki:<slug>` pattern, where `<slug>` is the file stem (e.g., `wiki:linkedin-tone`, `wiki:stripe-integration`). Stable across whitespace edits.
 
+The dashboard command `wiki-search` is a compatibility wrapper around this same backend. Browser-side filtering inside the Wiki tab is only a local page-list filter, not the ranked `/wiki search` implementation.
+
 ## Examples
 
 ```
@@ -45,6 +48,9 @@ python .claude/scripts/context_search.py --query "linkedin tone" --zone wiki
 
 # Top hit only, JSON output:
 python .claude/scripts/context_search.py --query "stripe" --zone wiki --top-k 1 --json
+
+# Explain rank order:
+python .claude/scripts/context_search.py --query "stripe" --zone wiki --top-k 3 --explain --json
 
 # Opt into semantic reformulation (no LLM fires under --dry-run):
 python .claude/scripts/context_search.py --query "fuzzy phrase" --zone wiki --semantic --dry-run
