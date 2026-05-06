@@ -8,11 +8,15 @@
     <a href="#install">Install</a> &nbsp;·&nbsp;
     <a href="#what-it-does">What it does</a> &nbsp;·&nbsp;
     <a href="#the-wiki-zone">Wiki zone</a> &nbsp;·&nbsp;
+    <a href="#what-ships">What ships</a> &nbsp;·&nbsp;
     <a href="docs/_bcos-framework/guides/getting-started.md">Getting Started</a>
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/claude_code-ready-blueviolet" alt="Claude Code">
     <img src="https://img.shields.io/badge/methodology-CLEAR-green" alt="CLEAR Methodology">
+    <img src="https://img.shields.io/badge/install-one_command-success" alt="One-command install">
+    <img src="https://img.shields.io/badge/skills-17-blue" alt="17 skills">
+    <img src="https://img.shields.io/badge/maintenance_jobs-12-orange" alt="12 maintenance jobs">
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT">
   </p>
 </p>
@@ -62,6 +66,29 @@ Your `docs/` and `.private/` are never touched. Only the framework files (skills
 | **Use** | `/context search` and `/context bundle <task>` give Claude curated, freshness-aware, source-of-truth-ranked context for the job at hand. | Your AI works from real, current knowledge — not whatever it last saw. |
 
 The folder IS the signal: `docs/*.md` is current truth, `_planned/` is intent-not-yet-real, `_archive/` is history, `_inbox/` is unprocessed, `_collections/` is verbatim evidence (invoices, contracts, transcripts), `_wiki/` is explanatory derivative knowledge.
+
+```text
+docs/
+├── *.md                  ← canonical data points (one source of truth per topic)
+├── document-index.md     ← auto-generated TOC
+├── current-state.md      ← what's true right now + what changed recently
+├── table-of-context.md   ← high-level cluster map for orientation
+├── _inbox/               ← drop zone — Claude triages on demand
+├── _planned/             ← polished ideas, not yet real
+├── _archive/             ← superseded — kept, not deleted
+├── _collections/         ← verbatim evidence (invoices, contracts, transcripts)
+│   └── <type>/_manifest.md   (each collection has a manifest)
+├── _wiki/                ← derivative knowledge (how-tos, source summaries)
+│   ├── pages/            ← user-authored explainers
+│   ├── source-summary/   ← external captures with citation banners
+│   ├── raw/              ← original artifacts (PDFs, HTML)
+│   └── queue.md          ← URLs awaiting fetch
+└── _bcos-framework/      ← framework docs — never user content
+    ├── architecture/     ← 12 zone + system architecture docs
+    ├── methodology/      ← 5 CLEAR + ownership + standards docs
+    ├── patterns/         ← 8 project-type starting templates
+    └── templates/        ← 15 frontmatter / schema / starter files
+```
 
 ---
 
@@ -118,17 +145,45 @@ The dashboard is read-mostly: data flows from the dispatcher's diary, the schedu
 
 ## Maintenance
 
-Five scheduled tasks keep your knowledge alive — set up automatically during onboarding:
+One scheduled task per repo. The dispatcher reads `schedule-config.json`, runs the jobs due today, writes one consolidated digest at `docs/_inbox/daily-digest.md`, and surfaces findings as one-click cards in the dashboard.
 
-| Cadence | What runs |
-|---|---|
-| Daily | Index + health check, frontmatter validation, wiki staleness propagation |
-| Weekly | Strategic reflection (daydream), lessons capture, deep cluster audit, wiki source refresh |
-| Monthly | Architecture review with health score, wiki coverage audit |
+```text
+                       schedule-dispatcher (one cron, daily 09:00)
+                                        │
+        ┌───────────────┬───────────────┼───────────────┬─────────────┐
+        ▼               ▼               ▼               ▼             ▼
+       DAILY            MON             WED             FRI          1st of month
+        │               │               │               │             │
+   ┌────┴────┐    ┌─────┴─────┐    ┌────┴────┐   ┌──────┴──────┐  ┌───┴────┐
+   │ index-  │    │ daydream- │    │daydream-│   │ audit-inbox │  │ arch-  │
+   │ health  │    │ lessons   │    │  deep   │   │ auto-fix-   │  │ review │
+   │         │    │ wiki-     │    │         │   │   audit     │  │ wiki-  │
+   │ wiki-   │    │ source-   │    │         │   │ lifecycle-  │  │  grave-│
+   │ stale-  │    │ refresh   │    │         │   │   sweep     │  │  yard  │
+   │ propag. │    │           │    │         │   │             │  │        │
+   │         │    │           │    │         │   │             │  │ wiki-  │
+   │ wiki-   │    │           │    │         │   │             │  │ cover- │
+   │ canon.- │    │           │    │         │   │             │  │ age    │
+   │ drift   │    │           │    │         │   │             │  │ (qtrly)│
+   └─────────┘    └───────────┘    └─────────┘   └─────────────┘  └────────┘
+        │               │               │               │             │
+        └───────────────┴───────────────┴───────────────┴─────────────┘
+                                        │
+                                        ▼
+                        docs/_inbox/daily-digest.md   (prose)
+                       docs/_inbox/daily-digest.json  (typed events)
+                       .claude/hook_state/schedule-diary.jsonl  (history)
+                                        │
+                                        ▼
+                            local dashboard cards
+                       (mark-done · auto-fix · open-for-edit · archive)
+```
 
 You can tune any of it in plain English:
 
 > *"Run the audit twice a week."*  · *"Move dispatcher to 08:30."*  · *"Turn off deep daydream."*
+
+The system learns from your clicks. After three consistent uses of the same fix, the dashboard pre-selects it as a "✨ suggested" action — you accept or reject. Reversals trigger an automatic safety brake.
 
 ---
 
@@ -143,6 +198,27 @@ Five principles, one rule each:
 - **R** — **Refinement** · structured maintenance, not ad-hoc fixes.
 
 The whole framework is the mechanical implementation of these five rules.
+
+---
+
+## What ships
+
+Everything below installs as one repo drop-in. No third-party services, no logins, no telemetry — all state lives in your `.claude/` and `docs/` folders.
+
+| Layer | Count | Examples |
+|---|---|---|
+| **Skills** (chat-invokable via slash command) | 17 | `clear-planner` · `bcos-wiki` · `context-routing` · `context-audit` · `context-ingest` · `daydream` · `learning` · `schedule-tune` · `lessons-consolidate` · `ecosystem-manager` |
+| **Sub-agents** (delegated bounded tasks) | 3 | `wiki-fetch` · `explore` · plus one optional |
+| **Scripts** (mechanical Python) | 46 | `lifecycle_sweep` · `run_wiki_*` (5) · `cmd_wiki_*` (7) · `auto_fix_audit` · `bcos_inventory` · `digest_sidecar` · `record_resolution` |
+| **Hooks** (auto-validation on edit) | 4 | post-edit frontmatter check · post-commit context check · pre-compact save · auto-save session |
+| **Maintenance jobs** (scheduled, one dispatcher) | 12 | `index-health` · `audit-inbox` · `daydream-lessons` · `daydream-deep` · `architecture-review` · `auto-fix-audit` · `lifecycle-sweep` · `wiki-stale-propagation` · `wiki-source-refresh` · `wiki-graveyard` · `wiki-coverage-audit` · `wiki-canonical-drift` |
+| **Auto-fix IDs** (silent dispatcher fixes) | 12 | `missing-last-updated` · `eof-newline` · `frontmatter-field-order` · `wiki-mark-queue-ingested` · `wiki-archive-expired-post-mortem` |
+| **Architecture docs** | 12 | `wiki-zone.md` · `lifecycle-routing.md` · `typed-events.md` · `context-zones.md` · `content-routing.md` · `wiki-headless-scripts.md` |
+| **Methodology docs** | 5 | CLEAR principles · context architecture · decision framework · document standards · ownership specification |
+| **Project patterns** (starting templates by project type) | 8 | client-project · gtm · marketing · operational · product-development · product-service · internal-tool-app · internal-tool-automation |
+| **Templates** (frontmatter, schema, starters) | 15 | data-point · cluster · current-state · table-of-context · wiki-schema · wiki-config · session-diary-starter |
+
+Every script and skill is documented at the source. Every job has a reference doc under `.claude/skills/schedule-dispatcher/references/job-*.md`. Every typed-event finding maps to a renderer in the dashboard cockpit. Adding a new check means dropping a `cmd_*.py` or `run_*.py`, registering it in one map, and the dashboard picks it up.
 
 ---
 
