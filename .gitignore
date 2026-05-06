@@ -134,4 +134,20 @@ docs/_inbox/daily-digest.json
 docs/_planned/*/
 !docs/_planned/.gitkeep
 
+# Top-level tests/ — fixtures + integration helpers used by gitignored
+# .claude/scripts/test_*.py. Without the test scripts (which never ship),
+# fixtures are dead weight on the public repo. Convention: all test
+# scaffolding stays local; rebuild fixtures from the framework's own
+# documented schemas if you need them.
+tests/
+
+# Derived artifacts — regenerated from disk on every install via
+# refresh_ecosystem_state.py / build_document_index.py / bcos_inventory.py.
+# Shipping the dev's snapshot of these would push the framework repo's
+# own state to every install, which is misleading and noisy. Each one
+# carries a regenerator script that runs as part of update.py / install.sh.
+.claude/quality/bcos-inventory.json
+.claude/quality/context-index.json
+docs/bcos-control-map.md
+
 # === PERSONAL ONLY ===
