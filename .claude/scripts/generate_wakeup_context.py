@@ -116,6 +116,36 @@ def wiki_summary(docs: Path) -> str:
     return f"enabled; {page_count} page(s), {source_count} source summary page(s), {pending} pending queue item(s)"
 
 
+def wiki_top_clusters(docs: Path, top_n: int = 5) -> list[str]:
+    """Return the top N clusters by page count in the wiki, or empty list."""
+    wiki = docs / "_wiki"
+    if not wiki.is_dir():
+        return []
+    counts: dict[str, int] = {}
+    for sub in ("pages", "source-summary"):
+        d = wiki / sub
+        if not d.is_dir():
+            continue
+        for page in d.glob("*.md"):
+            try:
+                text = page.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            m = YAML_BLOCK_RE.match(text)
+            if not m:
+                continue
+            for fm in YAML_FIELD_RE.finditer(m.group(1)):
+                if fm.group(1) == "cluster":
+                    cluster = fm.group(2).strip().strip('"').strip("'")
+                    if cluster:
+                        counts[cluster] = counts.get(cluster, 0) + 1
+                    break
+    if not counts:
+        return []
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    return [name for name, _count in ranked[:top_n]]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate compressed wake-up context.")
     parser.add_argument("--dry-run", action="store_true", help="Print to stdout instead of writing file")
@@ -209,6 +239,17 @@ def main():
 
     if wiki_status:
         lines.append(f"**Wiki:** {wiki_status}")
+        # Schema 1.2 — authority hierarchy framing.
+        # Explicit anti-pattern: do NOT add "always check the wiki first".
+        lines.append(
+            "**Wiki authority:** `docs/*.md` is canonical. `_wiki/pages/` "
+            "(authority: canonical-process) is operational truth. "
+            "`_wiki/source-summary/` is reference-only — if it conflicts "
+            "with active context, active wins."
+        )
+        clusters = wiki_top_clusters(docs, top_n=5)
+        if clusters:
+            lines.append(f"**Wiki topics:** {', '.join(clusters)}")
         lines.append("")
 
     if not (business_name or priorities or decisions or diary_entries or wiki_status):

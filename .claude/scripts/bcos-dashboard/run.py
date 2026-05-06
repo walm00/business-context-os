@@ -495,6 +495,50 @@ def _post_profile(body: dict, ctx: dict) -> dict:
     return result
 
 
+def _get_commands(suffix: str, params: dict) -> dict:
+    """GET /api/commands — list user-triggered commands the dashboard can fire."""
+    commands = []
+    for cmd_id, spec in COMMAND_REGISTRY.items():
+        commands.append({
+            "id": cmd_id,
+            "label": spec.get("label", cmd_id),
+            "args": [
+                {"flag": flag, "key": key, "required": required}
+                for flag, key, required in spec.get("args", [])
+            ],
+            "destructive": bool(spec.get("destructive")),
+            "script": spec["script"],
+        })
+    return {"ok": True, "commands": commands}
+
+
+def _get_wiki_pages(suffix: str, params: dict) -> dict:
+    """GET /api/wiki/pages — list wiki page slugs for slug pickers in command cards."""
+    pages = []
+    for sub in ("pages", "source-summary"):
+        base = REPO_ROOT / "docs" / "_wiki" / sub
+        if not base.is_dir():
+            continue
+        for path in sorted(base.rglob("*.md")):
+            slug = path.stem
+            try:
+                _scripts = REPO_ROOT / ".claude" / "scripts"
+                if str(_scripts) not in sys.path:
+                    sys.path.insert(0, str(_scripts))
+                from _wiki_yaml import parse_frontmatter  # type: ignore[import-not-found]
+                fm = parse_frontmatter(path) or {}
+            except Exception:  # noqa: BLE001
+                fm = {}
+            pages.append({
+                "slug": slug,
+                "name": (fm.get("name") or slug),
+                "subdir": sub,
+                "page_type": (fm.get("page-type") or fm.get("type") or ""),
+                "status": (fm.get("status") or "active"),
+            })
+    return {"ok": True, "pages": pages, "count": len(pages)}
+
+
 GET_ROUTES = {
     "/api/job/": _get_job_detail,
     "/api/schedule/config": _get_schedule_config,
@@ -502,6 +546,8 @@ GET_ROUTES = {
     "/api/profile": _get_profile,
     "/api/bcos/run/": _get_bcos_run,
     "/api/atlas": _get_atlas,
+    "/api/commands": _get_commands,
+    "/api/wiki/pages": _get_wiki_pages,
 }
 
 
@@ -597,10 +643,12 @@ def _post_run_job_now(body: dict, ctx: dict) -> dict:
     SCRIPTABLE = {
         "index-health":           ["python", ".claude/scripts/build_document_index.py"],
         "auto-fix-audit":         ["python", ".claude/scripts/auto_fix_audit.py"],
+        "lifecycle-sweep":        ["python", ".claude/scripts/lifecycle_sweep.py"],
         "wiki-stale-propagation": ["python", ".claude/scripts/run_wiki_stale_propagation.py"],
         "wiki-source-refresh":    ["python", ".claude/scripts/run_wiki_source_refresh.py"],
         "wiki-graveyard":         ["python", ".claude/scripts/run_wiki_graveyard.py"],
         "wiki-coverage-audit":    ["python", ".claude/scripts/run_wiki_coverage_audit.py"],
+        "wiki-canonical-drift":   ["python", ".claude/scripts/run_wiki_canonical_drift.py"],
     }
 
     cmd = SCRIPTABLE.get(job_id)
@@ -641,9 +689,139 @@ def _post_run_job_now(body: dict, ctx: dict) -> dict:
     }
 
 
+def _post_run_command(body: dict, ctx: dict) -> dict:
+    """POST /api/commands/run — execute a user-action command from the dashboard.
+
+    Body: {"id": "<command-id>", "args": {...}}
+
+    Mirrors _post_run_job_now but for user-triggered commands (mechanical
+    equivalents of slash subcommands like /wiki review, /wiki archive). Each
+    entry in COMMAND_REGISTRY declares:
+      - script: path to a cmd_*.py
+      - args: ordered list of (flag, value) pairs to pass; flags map to body.args keys
+      - confirm_flag: optional flag (e.g. "--confirm") added when body.args.confirmed=True
+      - destructive: bool — UI must show a confirmation modal before posting
+
+    The script's stdout JSON is returned verbatim under `result`; non-zero exit
+    sets ok=False. Cockpit + jobs_panel caches are invalidated so any sidecar
+    findings the script wrote land immediately.
+    """
+    import subprocess
+
+    command_id = (body or {}).get("id")
+    args = (body or {}).get("args") or {}
+    if not isinstance(command_id, str) or not command_id.strip():
+        return {"ok": False, "error": "id required", "status": 400}
+    command_id = command_id.strip()
+
+    spec = COMMAND_REGISTRY.get(command_id)
+    if spec is None:
+        return {"ok": False, "error": f"unknown command: {command_id}", "status": 404}
+
+    if spec.get("destructive") and not args.get("confirmed"):
+        return {
+            "ok": False, "command": command_id, "status": "needs_confirm",
+            "error": "Destructive command — set args.confirmed=true after user approval.",
+            "destructive": True,
+        }
+
+    cmd: list[str] = ["python", spec["script"]]
+    missing: list[str] = []
+    for flag, key, required in spec.get("args", []):
+        val = args.get(key)
+        if val is None or (isinstance(val, str) and not val.strip()):
+            if required:
+                missing.append(key)
+            continue
+        cmd.extend([flag, str(val)])
+    if spec.get("destructive") and args.get("confirmed"):
+        cmd.append("--confirm")
+
+    if missing:
+        return {
+            "ok": False, "command": command_id, "status": "missing_args",
+            "error": f"missing required args: {missing}",
+        }
+
+    try:
+        proc = subprocess.run(
+            cmd, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "command": command_id, "error": "script timed out (60s)"}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "command": command_id, "error": f"{type(exc).__name__}: {exc}"}
+
+    stdout = (proc.stdout or "").strip()
+    stderr = (proc.stderr or "").strip()
+    parsed: dict | None = None
+    if stdout:
+        try:
+            import json as _json
+            parsed = _json.loads(stdout.splitlines()[-1])
+        except Exception:  # noqa: BLE001
+            parsed = None
+
+    ctx["invalidate_panel"]("cockpit")
+    ctx["invalidate_panel"]("jobs_panel")
+    return {
+        "ok": proc.returncode == 0,
+        "command": command_id,
+        "exit_code": proc.returncode,
+        "result": parsed,
+        "raw_stdout": stdout if not parsed else None,
+        "raw_stderr": stderr if proc.returncode != 0 else None,
+    }
+
+
+# Registry of mechanical user-triggered commands. Each entry maps to a
+# cmd_*.py script. The args list is (cli-flag, body-arg-key, required) tuples
+# applied in order. Adding a new command = adding a script + one entry here.
+COMMAND_REGISTRY: dict[str, dict] = {
+    "wiki-init": {
+        "script": ".claude/scripts/cmd_wiki_init.py",
+        "args": [],
+        "label": "Initialize wiki zone",
+    },
+    "wiki-review": {
+        "script": ".claude/scripts/cmd_wiki_review.py",
+        "args": [("--slug", "slug", True)],
+        "label": "Mark page reviewed",
+    },
+    "wiki-archive": {
+        "script": ".claude/scripts/cmd_wiki_archive.py",
+        "args": [("--slug", "slug", True)],
+        "label": "Archive page",
+    },
+    "wiki-queue-add": {
+        "script": ".claude/scripts/cmd_wiki_queue_add.py",
+        "args": [("--url", "url", True)],
+        "label": "Queue URL for fetch",
+    },
+    "wiki-lint": {
+        "script": ".claude/scripts/cmd_wiki_lint.py",
+        "args": [],
+        "label": "Lint wiki schema",
+    },
+    "wiki-search": {
+        "script": ".claude/scripts/cmd_wiki_search.py",
+        "args": [("--query", "query", True)],
+        "label": "Search wiki pages",
+    },
+    "wiki-remove": {
+        "script": ".claude/scripts/cmd_wiki_remove.py",
+        "args": [("--slug", "slug", True)],
+        "label": "Remove page (destructive)",
+        "destructive": True,
+    },
+}
+
+
 POST_ROUTES = {
     "/api/actions/resolve":   _post_mark_resolved,
     "/api/actions/unresolve": _post_unmark_resolved,
+    "/api/commands/run":      _post_run_command,
     "/api/jobs/run-now":      _post_run_job_now,
     "/api/onboard/schedule":  _post_onboard_schedule,
     "/api/profile":           _post_profile,

@@ -76,6 +76,8 @@ strictly-avoids: []
 # Wiki extensions
 page-type: {{PAGE_TYPE}}
 last-reviewed: {{TODAY}}
+authority: {{AUTHORITY}}                   # schema 1.2 — derived if absent (path + page-type)
+                                           # see wiki-zone.md "Authority semantics"
 
 # Relationships (D-04 reference-format rule)
 builds-on:                                 # cross-zone: paths with .md
@@ -95,6 +97,9 @@ provenance:
 source-url: {{...}}
 detail-level: {{effective_detail_level}}
 last-fetched: {{TODAY}}
+source-published: {{IF KNOWN — schema 1.2; YYYY-MM-DD when source itself was published}}
+supersedes: []                             # schema 1.2 — populated by Class B triage in Step 7.5
+superseded-by: ""                          # schema 1.2 — populated by Class B triage on the predecessor
 
 {{IF SHAPE = unified web+github}}
 source-url: {{web URL}}
@@ -144,6 +149,10 @@ For Path B local-document (`page-type: source-summary`): use the standalone web/
 `references:` lists slugs (no `.md`, per D-04) of existing wiki pages with substantial conceptual overlap. Read each candidate's summary paragraph to judge overlap. Casual mentions don't count.
 
 **Bidirectional update:** for every slug `Y` you add to this page's `references`, also append this page's slug to `Y`'s `references` list. Update `Y`'s `last-updated` to today. Without this, references drift one-way.
+
+**Schema 1.2 — `supersedes` / `superseded-by` follow the same bidirectional rule.** When you write `supersedes: [Y]` on this page, also write `superseded-by: <this-slug>` on page `Y` (and bump its `last-updated`). When you write `superseded-by: Y` on this page, append this page's slug to `Y`'s `supersedes:` list. Either side adds, the other side mirrors. Class B triage in Step 7.5 calls `_wiki_triage.write_supersedes_link()` which performs both writes atomically and aborts on cycle (`A -> supersedes B -> supersedes A` is rejected as `supersession-cycle` ERROR).
+
+A page can be a chain head (`supersedes:` non-empty) OR a chain tail (`superseded-by:` non-empty), not both — the hook emits `BOTH-SUPERSEDES-AND-SUPERSEDED-BY` (ERROR) on save and `/wiki lint` enforces the same on bulk runs.
 
 After 2a, continue with **Step 2b** (cluster/product grouping), then **Step 4**.
 
@@ -309,6 +318,33 @@ For Path A, after a successful ingest:
 6. Write.
 
 For Path B, there is no queue. Provenance lives in the page frontmatter (Step 2a).
+
+---
+
+## Step 7.5 — Triage (4-class conflict detection) — schema 1.2
+
+Call `_wiki_triage.classify(new_page=<the page just written>, root=<repo root>)` for every page produced by this ingest (umbrella + each sub for multi-product). Findings are mechanical, cluster-scoped, and cheap (D-09).
+
+Routing per `wiki-zone.md` "Triage classes":
+
+| Class | Action |
+|---|---|
+| **A — authority-asymmetry** | If `confidence ≥ 0.85`, append a one-line annotation to the wiki page: `> Note: <canonical-doc> states differently — see [<canonical-name>](<relative-path-to-canonical>).` Emit a `wiki-authority-asymmetry` finding for the digest. Otherwise queue for review. |
+| **B — temporal-supersession-candidate** | If `confidence ≥ 0.85`, call `_wiki_triage.write_supersedes_link(successor=..., predecessor_slug=..., root=...)` to atomically write `supersedes:` on the successor and `superseded-by:` on the predecessor. Bump both pages' `last-updated`. No callout, no interrupt. Otherwise queue for review. |
+| **C — true-contradiction** | **Always interrupt.** Use `AskUserQuestion` with options: *Reconcile A vs B* / *Archive A* / *Archive B* / *Accept conflict (mark for review)*. Do not auto-apply. Halt the post-ingest report until user answers. |
+| **D — canonical-drift-suggestion** | Never auto-edits canonical `docs/*.md`. Emit a `wiki-canonical-drift-suggestion` finding into the morning digest sidecar (the daily `wiki-canonical-drift` job does the same scan; ingest-time emission catches drift as it lands). |
+
+Confidence scoring is documented in `references/triage-confidence.md`. Cluster-scoping is the default per D-04; pass `strict=True` only when the user explicitly asks for cross-cluster comparison.
+
+Surface a one-line summary in the post-ingest report:
+
+```
+Triage: 0 findings
+Triage: 2 findings (A:1 B:1) — 1 auto-applied, 1 queued
+Triage: 1 finding (C:1) — INTERRUPTED
+```
+
+If the runner halted due to Class C, do NOT proceed to Step 8 until the user resolves.
 
 ---
 

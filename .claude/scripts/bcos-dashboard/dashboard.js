@@ -2524,6 +2524,9 @@
       const known = ATLAS_LENSES.find((x) => x.id === lens);
       return { mode: "atlas", lens: known ? lens : "ownership" };
     }
+    if (p === "/wiki" || p === "/wiki/") {
+      return { mode: "wiki" };
+    }
     if (p === "/settings" || p === "/settings/") {
       return { mode: "settings", sub: "runs" };
     }
@@ -2546,6 +2549,8 @@
     const route = _currentRoute();
     if (route.mode === "atlas") {
       renderAtlas(route.lens);
+    } else if (route.mode === "wiki") {
+      renderWikiTab();
     } else if (route.mode === "settings") {
       renderSettings(route.sub);
     } else {
@@ -2988,6 +2993,14 @@
 
   // Settings link in the global app header — hijack to use the SPA router.
   document.addEventListener("DOMContentLoaded", () => {
+    const wikiLink = document.getElementById("wiki-link");
+    if (wikiLink) {
+      wikiLink.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        navigateTo("/wiki");
+      });
+    }
+
     const atlasLink = document.getElementById("atlas-link");
     if (atlasLink) {
       atlasLink.addEventListener("click", (ev) => {
@@ -3515,6 +3528,225 @@
   });
 
   document.addEventListener("DOMContentLoaded", initFilterState);
+
+  // ---------------------------------------------------------------------
+  // Wiki tab — user-action commands rendered as input + button cards
+  //
+  // Each command card mirrors a /wiki sub-command. Mechanical commands
+  // (cmd_wiki_*.py scripts via /api/commands/run) get a real button.
+  // LLM-judgment commands (run, create, promote, refresh, schema) get
+  // a "Copy and run via chat" affordance instead — honest about what
+  // can and can't fire headlessly.
+  // ---------------------------------------------------------------------
+
+  // Mechanical commands — registry-driven, will render dynamically from /api/commands.
+  const _WIKI_COMMAND_META = {
+    "wiki-init":      { icon: "🌱", desc: "Scaffold docs/_wiki/ with starter pages, source-summary, raw, queue.md, schema, config.", inputs: [] },
+    "wiki-review":    { icon: "✓",  desc: "Bump last-reviewed: today on a wiki page (frontmatter only).", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+    "wiki-archive":   { icon: "📦", desc: "Soft-delete a wiki page (sets status: archived, file stays). Reversible.", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+    "wiki-queue-add": { icon: "🔗", desc: "Add a URL to docs/_wiki/queue.md without fetching. Process later via /wiki run in chat.", inputs: [{ key: "url", placeholder: "https://...", type: "url" }] },
+    "wiki-lint":      { icon: "🔍", desc: "Validate docs/_wiki/.schema.yml + frontmatter on all wiki pages.", inputs: [] },
+    "wiki-search":    { icon: "🔎", desc: "Search wiki page slugs and frontmatter names.", inputs: [{ key: "query", placeholder: "search term…", type: "text" }] },
+    "wiki-remove":    { icon: "🗑️", desc: "Permanently delete a wiki page + its raw files (git rm). Cannot be undone outside git.", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+  };
+
+  // LLM-judgment commands — chat-only fallback cards. Each carries a
+  // copyable command string the user pastes into chat to run.
+  const _WIKI_CHAT_COMMANDS = [
+    { id: "wiki-run",      icon: "🌐", label: "Fetch URL into wiki",          desc: "Fetch a URL, classify content, generate frontmatter, save as a wiki page. Needs Claude in the loop for page-type classification + citation banner authoring.", chat: "/wiki run <url>" },
+    { id: "wiki-create",   icon: "📝", label: "Create from local content",    desc: "Ingest a local file or pasted text into the wiki. Page-type classification is judgment-driven.",                                                  chat: "/wiki create from <path-or-paste>" },
+    { id: "wiki-promote",  icon: "⬆️", label: "Promote inbox capture",        desc: "Convert a docs/_inbox/ capture into a wiki page. Picks the right page-type and authors the source-summary banner.",                          chat: "/wiki promote <inbox-path>" },
+    { id: "wiki-refresh",  icon: "♻️", label: "Refresh existing source",      desc: "Re-fetch an existing source-summary page, diff content, decide if rewrite is needed. Diff judgment requires Claude.",                          chat: "/wiki refresh <slug>" },
+    { id: "wiki-schema",   icon: "📐", label: "Govern schema vocabulary",     desc: "Add / rename / retire wiki page-types. Schema migration is judgment-driven.",                                                                  chat: "/wiki schema add|rename|retire <args>" },
+    { id: "wiki-bundle",   icon: "🎁", label: "Build context bundle",         desc: "Resolve a task into a curated context bundle across zones.",                                                                                  chat: "/wiki bundle <task>" },
+  ];
+
+  let _wikiPageCache = null;
+
+  async function _fetchWikiPages() {
+    if (_wikiPageCache !== null) return _wikiPageCache;
+    try {
+      const r = await fetch("/api/wiki/pages?_ts=" + Date.now(), { cache: "no-store" });
+      const json = await r.json();
+      _wikiPageCache = json.pages || [];
+    } catch (err) {
+      _wikiPageCache = [];
+    }
+    return _wikiPageCache;
+  }
+
+  async function _fetchCommands() {
+    try {
+      const r = await fetch("/api/commands?_ts=" + Date.now(), { cache: "no-store" });
+      const json = await r.json();
+      return json.commands || [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function _renderWikiHeader() {
+    const repo = (_lastData && _lastData.meta && _lastData.meta.subtitle) || "";
+    const head = el("header", { class: "settings-header" });
+    const back = el("button", { type: "button", class: "settings-back" }, "← Back to dashboard");
+    back.addEventListener("click", () => navigateTo("/"));
+    head.appendChild(back);
+    if (repo) head.appendChild(el("span", { class: "settings-repo" }, repo));
+    head.appendChild(el("h1", { class: "settings-title" }, "Wiki actions"));
+    return head;
+  }
+
+  function _renderCommandCard(cmd, meta, allPages) {
+    const card = el("section", { class: "wiki-cmd-card", "data-cmd-id": cmd.id });
+    const head = el("header", { class: "wiki-cmd-head" });
+    head.appendChild(el("span", { class: "wiki-cmd-icon" }, meta.icon || "•"));
+    head.appendChild(el("h3", { class: "wiki-cmd-title" }, cmd.label));
+    if (cmd.destructive) {
+      head.appendChild(el("span", { class: "wiki-cmd-badge wiki-cmd-badge--destructive" }, "DESTRUCTIVE"));
+    }
+    card.appendChild(head);
+    card.appendChild(el("p", { class: "wiki-cmd-desc" }, meta.desc || ""));
+
+    const form = el("form", { class: "wiki-cmd-form" });
+    const inputs = {};
+    (meta.inputs || []).forEach((spec) => {
+      const wrap = el("label", { class: "wiki-cmd-field" });
+      wrap.appendChild(el("span", { class: "wiki-cmd-field-label" }, spec.key));
+      let input;
+      if (spec.picker === "wiki-page") {
+        input = el("select", { class: "wiki-cmd-input", name: spec.key });
+        input.appendChild(el("option", { value: "" }, "— pick a page —"));
+        allPages.forEach((p) => {
+          input.appendChild(el("option", { value: p.slug },
+            p.slug + "  (" + p.subdir + (p.status === "archived" ? ", archived" : "") + ")"));
+        });
+      } else {
+        input = el("input", {
+          class: "wiki-cmd-input",
+          type: spec.type || "text",
+          name: spec.key,
+          placeholder: spec.placeholder || "",
+        });
+      }
+      inputs[spec.key] = input;
+      wrap.appendChild(input);
+      form.appendChild(wrap);
+    });
+
+    const status = el("div", { class: "wiki-cmd-status" });
+    const btn = el("button", { type: "submit", class: "wiki-cmd-btn" }, cmd.label);
+    if (cmd.destructive) btn.classList.add("wiki-cmd-btn--destructive");
+    form.appendChild(btn);
+    form.appendChild(status);
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const args = {};
+      let missing = false;
+      (meta.inputs || []).forEach((spec) => {
+        const v = (inputs[spec.key].value || "").trim();
+        if (!v) missing = true;
+        args[spec.key] = v;
+      });
+      if (missing) {
+        status.className = "wiki-cmd-status wiki-cmd-status--red";
+        status.textContent = "Fill in all fields.";
+        return;
+      }
+      if (cmd.destructive) {
+        const ok = window.confirm(
+          "Destructive: " + cmd.label + "\nThis cannot be undone outside git.\nContinue?"
+        );
+        if (!ok) return;
+        args.confirmed = true;
+      }
+      btn.disabled = true;
+      status.className = "wiki-cmd-status wiki-cmd-status--pending";
+      status.textContent = "Running…";
+      try {
+        const r = await fetch("/api/commands/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cmd.id, args: args }),
+        });
+        const json = await r.json();
+        const inner = json.result || {};
+        const verdict = inner.status || (json.ok ? "green" : "red");
+        const note = inner.notes || json.error || (json.ok ? "Done." : "Failed.");
+        status.className = "wiki-cmd-status wiki-cmd-status--" + verdict;
+        status.textContent = (verdict === "green" ? "✓ " : verdict === "amber" ? "! " : "✗ ") + note;
+        // Reset cached page list so fresh data shows next time card is opened
+        _wikiPageCache = null;
+      } catch (err) {
+        status.className = "wiki-cmd-status wiki-cmd-status--red";
+        status.textContent = "Error: " + (err.message || err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    card.appendChild(form);
+    return card;
+  }
+
+  function _renderChatFallbackCard(spec) {
+    const card = el("section", { class: "wiki-cmd-card wiki-cmd-card--chat" });
+    const head = el("header", { class: "wiki-cmd-head" });
+    head.appendChild(el("span", { class: "wiki-cmd-icon" }, spec.icon));
+    head.appendChild(el("h3", { class: "wiki-cmd-title" }, spec.label));
+    head.appendChild(el("span", { class: "wiki-cmd-badge wiki-cmd-badge--chat" }, "via chat"));
+    card.appendChild(head);
+    card.appendChild(el("p", { class: "wiki-cmd-desc" }, spec.desc));
+
+    const wrap = el("div", { class: "wiki-cmd-chathint" });
+    wrap.appendChild(el("code", { class: "wiki-cmd-chatcmd" }, spec.chat));
+    const copy = el("button", { type: "button", class: "wiki-cmd-btn wiki-cmd-btn--ghost" }, "Copy");
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(spec.chat);
+        copy.textContent = "Copied ✓";
+        setTimeout(() => { copy.textContent = "Copy"; }, 1200);
+      } catch (err) {
+        copy.textContent = "Manual copy please";
+      }
+    });
+    wrap.appendChild(copy);
+    card.appendChild(wrap);
+    return card;
+  }
+
+  async function renderWikiTab() {
+    const main = document.getElementById("dashboard-main") || document.body;
+    main.innerHTML = "";
+    main.appendChild(_renderWikiHeader());
+
+    const intro = el("p", { class: "settings-p settings-p--muted" },
+      "User-triggered wiki actions. Mechanical commands (top section) run instantly via the dashboard. Judgment-required commands (bottom section) need Claude in the loop — copy the command and paste it into chat.");
+    main.appendChild(intro);
+
+    const [commands, pages] = await Promise.all([_fetchCommands(), _fetchWikiPages()]);
+
+    // Mechanical section
+    const mechSection = el("section", { class: "wiki-cmd-section" });
+    mechSection.appendChild(el("h2", { class: "wiki-cmd-section-title" }, "Mechanical actions"));
+    const mechGrid = el("div", { class: "wiki-cmd-grid" });
+    commands
+      .filter((c) => c.id.startsWith("wiki-"))
+      .forEach((cmd) => {
+        const meta = _WIKI_COMMAND_META[cmd.id] || { icon: "•", desc: "", inputs: [] };
+        mechGrid.appendChild(_renderCommandCard(cmd, meta, pages));
+      });
+    mechSection.appendChild(mechGrid);
+    main.appendChild(mechSection);
+
+    // Chat-only section
+    const chatSection = el("section", { class: "wiki-cmd-section" });
+    chatSection.appendChild(el("h2", { class: "wiki-cmd-section-title" }, "Needs Claude in chat"));
+    const chatGrid = el("div", { class: "wiki-cmd-grid" });
+    _WIKI_CHAT_COMMANDS.forEach((spec) => chatGrid.appendChild(_renderChatFallbackCard(spec)));
+    chatSection.appendChild(chatGrid);
+    main.appendChild(chatSection);
+  }
 
   // ---------------------------------------------------------------------
   // Keyboard shortcuts

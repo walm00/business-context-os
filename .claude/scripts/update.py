@@ -378,6 +378,90 @@ def merge_settings_json(upstream_path: str, local_path: str) -> int:
     return added
 
 
+def merge_schedule_config(template_path: str, live_path: str, *,
+                          interactive: bool = True) -> int:
+    """Merge template-only jobs into the live schedule-config.json.
+
+    The framework ships new jobs (lifecycle-sweep, wiki-canonical-drift, etc.)
+    in schedule-config.template.json. update.py overwrites the template on
+    every sync, but the LIVE config (schedule-config.json) carries user
+    customizations and is never touched. Without this helper, new template
+    jobs silently never propagate to existing installs.
+
+    Strategy (Option A — manual prompt):
+      1. Find jobs in template that don't exist in live config.
+      2. List them with their default cadence + _about description.
+      3. Prompt user (Y/n) — default Yes.
+      4. If yes, copy template entries verbatim into live config. User
+         customizations on EXISTING jobs are preserved (we never touch
+         shared keys).
+
+    Non-interactive mode (--yes) auto-adds without prompting.
+
+    Returns the number of jobs added.
+    """
+    import json as _json
+
+    if not (os.path.exists(template_path) and os.path.exists(live_path)):
+        return 0
+
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            template = _json.load(f)
+        with open(live_path, "r", encoding="utf-8") as f:
+            live = _json.load(f)
+    except (_json.JSONDecodeError, OSError) as exc:
+        print(f"  schedule-config.json: skipped (parse error: {exc})")
+        return 0
+
+    template_jobs = template.get("jobs") or {}
+    live_jobs = live.get("jobs") or {}
+    if not isinstance(template_jobs, dict) or not isinstance(live_jobs, dict):
+        return 0
+
+    new_job_ids = [jid for jid in template_jobs if jid not in live_jobs]
+    if not new_job_ids:
+        return 0
+
+    print(f"  schedule-config.json: {len(new_job_ids)} new job(s) available in template:")
+    for jid in new_job_ids:
+        spec = template_jobs[jid] or {}
+        about = (spec.get("_about") or "").strip()
+        sched = spec.get("schedule", "?")
+        print(f"    + {jid:26}  (default cadence: {sched})")
+        if about:
+            short = about[:96] + ("…" if len(about) > 96 else "")
+            print(f"      {short}")
+
+    if interactive:
+        resp = input(f"  Add these {len(new_job_ids)} job(s) to your live schedule? [Y/n] ").strip().lower()
+        if resp in ("n", "no"):
+            print(f"  schedule-config.json: skipped — run /schedule-tune later to add new jobs.")
+            return 0
+    else:
+        print(f"  schedule-config.json: --yes mode, auto-adding…")
+
+    for jid in new_job_ids:
+        live_jobs[jid] = template_jobs[jid]
+    live["jobs"] = live_jobs
+
+    # Also merge any new auto_fix.whitelist entries that ship in the template
+    # but aren't on the live config — same additive principle.
+    template_whitelist = ((template.get("auto_fix") or {}).get("whitelist") or [])
+    live_whitelist = ((live.get("auto_fix") or {}).get("whitelist") or [])
+    if template_whitelist and live_whitelist is not None:
+        new_fixes = [w for w in template_whitelist if w not in live_whitelist]
+        if new_fixes:
+            print(f"  schedule-config.json: also adding {len(new_fixes)} new auto-fix ID(s) to whitelist: {', '.join(new_fixes)}")
+            live.setdefault("auto_fix", {}).setdefault("whitelist", []).extend(new_fixes)
+
+    with open(live_path, "w", encoding="utf-8") as f:
+        _json.dump(live, f, indent=2)
+        f.write("\n")
+
+    return len(new_job_ids)
+
+
 def ensure_convention_infrastructure(project_root: str, upstream_root: str) -> list:
     """Create convention directories and files that hooks/scripts depend on.
     Returns list of what was created."""
@@ -637,6 +721,22 @@ def main():
                 print(f"  settings.json: merged {entries_added} new entries (hooks + permissions) from upstream.")
             else:
                 print(f"  settings.json: all upstream entries already registered.")
+
+        # ----------------------------------- merge schedule-config.json
+        # The template just got updated above (it's in FRAMEWORK_FILES). Now
+        # surface any template-only jobs to the user's live config so the
+        # dispatcher actually picks them up. User customizations on existing
+        # jobs are preserved — we only append new entries.
+        upstream_template = os.path.join(
+            upstream_root, ".claude", "quality", "schedule-config.template.json"
+        )
+        local_schedule = str(local_root / ".claude" / "quality" / "schedule-config.json")
+        if os.path.exists(upstream_template) and os.path.exists(local_schedule):
+            jobs_added = merge_schedule_config(
+                upstream_template, local_schedule, interactive=not args.yes,
+            )
+            if jobs_added:
+                print(f"  schedule-config.json: added {jobs_added} new job(s) from template.")
 
         # ------------------------------------------------ refresh ecosystem state.json
         # state.json is a derived artifact — regenerated from disk every update.

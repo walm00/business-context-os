@@ -548,9 +548,88 @@ def _migrate_source_summary_strip_http_signals(page_path: Path, page_text: str) 
     return f"---\n{new_body}\n---\n{rest}"
 
 
+def _derive_authority_default(page_path: Path, meta: dict) -> str:
+    """Mechanical default for `authority:` per schema 1.2 mapping table.
+
+    Inputs are the page's path (folder = `pages` or `source-summary`) and its
+    parsed frontmatter. Never returns `external-evidence` — that value is
+    explicit-only.
+
+    See docs/_bcos-framework/architecture/wiki-zone.md "Authority semantics".
+    """
+    folder = page_path.parent.name
+    page_type = (meta.get("page-type") or "").strip()
+    provenance = meta.get("provenance") or {}
+    kind = provenance.get("kind") if isinstance(provenance, dict) else None  # noqa: F841 — reserved for future signals
+
+    if folder == "source-summary":
+        return "external-reference"
+    if folder == "pages":
+        if page_type in {"how-to", "runbook", "decision-log", "post-mortem"}:
+            return "canonical-process"
+        if page_type in {"glossary", "faq"}:
+            return "internal-reference"
+    return "internal-reference" if folder == "pages" else "external-reference"
+
+
+def _append_migration_log(root: Path, entries: list[dict]) -> None:
+    """Append-only audit trail of derivation decisions for the 1.1 -> 1.2 migration."""
+    if not entries:
+        return
+    log_path = root / ".claude" / "quality" / "migration-log.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    import json
+    with log_path.open("a", encoding="utf-8") as fh:
+        for entry in entries:
+            fh.write(json.dumps(entry, sort_keys=True) + "\n")
+
+
+def _migrate_add_authority_default(page_path: Path, page_text: str) -> str | None:
+    """1.1 -> 1.2: add `authority:` to every wiki page (mechanical default).
+
+    Non-clobbering: if the page already declares `authority:` (any value), the
+    page is returned unchanged. Idempotent — second pass adds nothing.
+    """
+    sys.path.insert(0, str(ROOT / ".claude" / "scripts"))
+    from _wiki_yaml import apply_frontmatter, parse_frontmatter
+
+    meta = parse_frontmatter(page_text) or {}
+    if "authority" in meta and (meta.get("authority") or "").strip():
+        return None
+    derived = _derive_authority_default(page_path, meta)
+    return apply_frontmatter(page_text, {"authority": derived}, add_only=True)
+
+
+def _migrate_strip_authority(page_path: Path, page_text: str) -> str | None:
+    """1.2 -> 1.1: remove `authority:` from every wiki page.
+
+    Reversal is data-preserving for users who relied on mechanical defaults;
+    explicit overrides are lost (logged in migration-log.jsonl).
+    """
+    sys.path.insert(0, str(ROOT / ".claude" / "scripts"))
+    from _wiki_yaml import _split_frontmatter, _split_into_blocks  # type: ignore[attr-defined]
+
+    body, rest = _split_frontmatter(page_text)
+    if body is None:
+        return None
+    new_blocks = []
+    changed = False
+    for key, raw in _split_into_blocks(body):
+        if key == "authority":
+            changed = True
+            continue
+        new_blocks.append(raw)
+    if not changed:
+        return None
+    new_body = "\n".join(new_blocks)
+    return f"---\n{new_body}\n---\n{rest}"
+
+
 _MIGRATION_RECIPES: dict[tuple[str, str], list[callable]] = {
     ("1.0", "1.1"): [_migrate_source_summary_add_http_signals],
     ("1.1", "1.0"): [_migrate_source_summary_strip_http_signals],
+    ("1.1", "1.2"): [_migrate_add_authority_default],
+    ("1.2", "1.1"): [_migrate_strip_authority],
 }
 
 
@@ -588,8 +667,40 @@ def _run_migration_recipe(args: argparse.Namespace, recipes: list) -> int:
             print(f"  - {path.relative_to(args.root)}")
         return 0
 
-    for path, _, new_text in changes:
+    sys.path.insert(0, str(ROOT / ".claude" / "scripts"))
+    from _wiki_yaml import parse_frontmatter
+
+    # Bump the schema file's `schema-version:` line so `validate` reports the new state.
+    sch = schema_path(args.root)
+    if sch.is_file():
+        sch_text = read_text(sch)
+        bumped = re.sub(
+            r"^schema-version:\s*\S+",
+            f"schema-version: {args.to_version}",
+            sch_text,
+            count=1,
+            flags=re.MULTILINE,
+        )
+        if bumped != sch_text:
+            write_text(sch, bumped)
+
+    log_entries: list[dict] = []
+    for path, old_text, new_text in changes:
         path.write_text(new_text, encoding="utf-8")
+        old_meta = parse_frontmatter(old_text) or {}
+        new_meta = parse_frontmatter(new_text) or {}
+        for key in ("authority", "etag", "last-modified", "content-hash"):
+            if old_meta.get(key) != new_meta.get(key):
+                log_entries.append({
+                    "timestamp": args.today,
+                    "page": str(path.relative_to(args.root)),
+                    "from_version": args.from_version,
+                    "to_version": args.to_version,
+                    "field": key,
+                    "old_value": old_meta.get(key),
+                    "new_value": new_meta.get(key),
+                })
+    _append_migration_log(args.root, log_entries)
     print(
         f"Schema {args.from_version} -> {args.to_version}: migrated "
         f"{len(changes)} page(s)."

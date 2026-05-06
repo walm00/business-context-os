@@ -201,4 +201,175 @@ __all__ = [
     "detect_duplication",
     "lint_page",
     "DEFAULT_THRESHOLD",
+    "scan_supersession",
+    "scan_authority",
+    "main",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Schema 1.2 lint checks
+# ---------------------------------------------------------------------------
+
+import sys as _sys
+from pathlib import Path as _Path
+
+_AUTHORITY_CANONICAL_PROCESS_TYPES = {"how-to", "runbook", "decision-log", "post-mortem"}
+_AUTHORITY_INTERNAL_REFERENCE_TYPES = {"glossary", "faq"}
+
+
+def _wiki_pages_under(root: _Path) -> list[_Path]:
+    base = root / "docs" / "_wiki"
+    out: list[_Path] = []
+    for sub in ("pages", "source-summary"):
+        d = base / sub
+        if d.is_dir():
+            out.extend(sorted(d.glob("*.md")))
+    return out
+
+
+def _slug(p: _Path) -> str:
+    return p.stem
+
+
+def _derive_authority(p: _Path, meta: dict) -> str | None:
+    folder = p.parent.name
+    page_type = (meta.get("page-type") or "").strip()
+    if folder == "source-summary":
+        return "external-reference"
+    if folder == "pages":
+        if page_type in _AUTHORITY_CANONICAL_PROCESS_TYPES:
+            return "canonical-process"
+        if page_type in _AUTHORITY_INTERNAL_REFERENCE_TYPES:
+            return "internal-reference"
+        return "internal-reference"
+    return None
+
+
+def scan_supersession(root: _Path) -> list[str]:
+    """Emit findings for orphan-supersession, supersession-cycle, and
+    both-supersedes-and-superseded-by across the entire wiki zone."""
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+    from _wiki_yaml import parse_frontmatter  # type: ignore[import-not-found]
+
+    pages = _wiki_pages_under(root)
+    slugs = {_slug(p) for p in pages}
+    metas: dict[str, tuple[_Path, dict]] = {_slug(p): (p, parse_frontmatter(p) or {}) for p in pages}
+
+    findings: list[str] = []
+
+    for slug, (path, meta) in metas.items():
+        rel = path.relative_to(root) if path.is_relative_to(root) else path
+        sup = meta.get("supersedes") or []
+        if not isinstance(sup, list):
+            sup = [sup] if sup else []
+        sup_by = (meta.get("superseded-by") or "").strip() if isinstance(meta.get("superseded-by"), str) else (meta.get("superseded-by") or "")
+
+        if sup and sup_by:
+            findings.append(
+                f"ERROR: both-supersedes-and-superseded-by: {rel}: page declares both "
+                f"supersedes and superseded-by — must be chain head or chain tail, not both"
+            )
+
+        for target in sup:
+            t = str(target).strip()
+            if not t:
+                continue
+            if t.endswith(".md"):
+                t = t[:-3]
+            if t not in slugs:
+                findings.append(
+                    f"WARN: orphan-supersession: {rel}: supersedes target '{t}' does not exist in wiki"
+                )
+
+        if isinstance(sup_by, str) and sup_by:
+            t = sup_by[:-3] if sup_by.endswith(".md") else sup_by
+            if t not in slugs:
+                findings.append(
+                    f"WARN: orphan-supersession: {rel}: superseded-by target '{t}' does not exist in wiki"
+                )
+
+    graph: dict[str, list[str]] = {}
+    for slug, (_p, meta) in metas.items():
+        sup = meta.get("supersedes") or []
+        if not isinstance(sup, list):
+            sup = [sup] if sup else []
+        graph[slug] = [str(s).strip()[:-3] if str(s).strip().endswith(".md") else str(s).strip() for s in sup if str(s).strip()]
+
+    def _has_cycle(start: str) -> list[str] | None:
+        stack = [(start, [start])]
+        seen_paths: set[tuple[str, ...]] = set()
+        while stack:
+            node, path = stack.pop()
+            for neighbor in graph.get(node, []):
+                if neighbor == start:
+                    return path + [neighbor]
+                if neighbor not in path:
+                    new_path = path + [neighbor]
+                    if tuple(new_path) not in seen_paths:
+                        seen_paths.add(tuple(new_path))
+                        stack.append((neighbor, new_path))
+        return None
+
+    cycles_seen: set[frozenset[str]] = set()
+    for slug in graph:
+        cycle = _has_cycle(slug)
+        if cycle:
+            sig = frozenset(cycle)
+            if sig in cycles_seen:
+                continue
+            cycles_seen.add(sig)
+            chain = " -> ".join(cycle)
+            findings.append(f"ERROR: supersession-cycle: cycle detected: {chain}")
+
+    return findings
+
+
+def scan_authority(root: _Path) -> list[str]:
+    """Emit authority-default-questionable INFO findings when declared
+    `authority` disagrees with the mechanical default derived from path + page-type."""
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+    from _wiki_yaml import parse_frontmatter  # type: ignore[import-not-found]
+
+    findings: list[str] = []
+    for path in _wiki_pages_under(root):
+        meta = parse_frontmatter(path) or {}
+        declared = (meta.get("authority") or "").strip() or None
+        if declared is None:
+            continue
+        expected = _derive_authority(path, meta)
+        if expected and declared != expected and declared != "external-evidence":
+            rel = path.relative_to(root) if path.is_relative_to(root) else path
+            findings.append(
+                f"INFO: authority-default-questionable: {rel}: declared 'authority: {declared}' "
+                f"disagrees with mechanical default '{expected}'"
+            )
+    return findings
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run all wiki lint checks under --root and print findings, one per line.
+
+    Findings already carry their severity prefix (ERROR/WARN/INFO). Exit code:
+      0 — no findings or only INFO
+      1 — one or more WARN/ERROR
+    """
+    import argparse
+    parser = argparse.ArgumentParser(description="Run wiki lint checks (schema 1.2)")
+    parser.add_argument("--root", type=_Path, required=True)
+    args = parser.parse_args(argv)
+
+    findings: list[str] = []
+    findings.extend(scan_supersession(args.root))
+    findings.extend(scan_authority(args.root))
+
+    for line in findings:
+        print(line)
+
+    if any(f.startswith("ERROR:") or f.startswith("WARN:") for f in findings):
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

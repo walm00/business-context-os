@@ -3083,3 +3083,157 @@ html[data-theme="dark"] .atlas-domain {
   margin: 0.25rem 0 0.4rem;
   font-style: italic;
 }
+
+/* --------------------------------------------------------------------- */
+/* Wiki tab — user-action command cards.                                  */
+/* Two sections: Mechanical (real form + button) and Needs-Claude (chat   */
+/* command copy affordance). Mirrors the input + button card pattern from */
+/* the autonomy-ux self-learning panel but specialized for wiki commands. */
+/* --------------------------------------------------------------------- */
+.wiki-cmd-section {
+  margin: 1.25rem 0 1.5rem;
+}
+.wiki-cmd-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin: 0 0 0.6rem;
+}
+.wiki-cmd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.85rem;
+}
+.wiki-cmd-card {
+  border: 1px solid var(--color-border, #2c3140);
+  border-radius: 6px;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--color-card-bg, rgba(255, 255, 255, 0.02));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.wiki-cmd-card--chat {
+  border-style: dashed;
+  opacity: 0.92;
+}
+.wiki-cmd-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+.wiki-cmd-icon { font-size: 1.05rem; line-height: 1; }
+.wiki-cmd-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1 1 auto;
+}
+.wiki-cmd-badge {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.wiki-cmd-badge--destructive {
+  background: rgba(220, 80, 60, 0.18);
+  color: #f3a294;
+  border: 1px solid rgba(220, 80, 60, 0.4);
+}
+.wiki-cmd-badge--chat {
+  background: rgba(120, 130, 200, 0.15);
+  color: #b3bdf0;
+  border: 1px solid rgba(120, 130, 200, 0.35);
+}
+.wiki-cmd-desc {
+  font-size: 0.82rem;
+  opacity: 0.8;
+  margin: 0;
+  line-height: 1.4;
+}
+.wiki-cmd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.wiki-cmd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.wiki-cmd-field-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.wiki-cmd-input {
+  background: var(--color-input-bg, rgba(255, 255, 255, 0.03));
+  color: inherit;
+  border: 1px solid var(--color-border, #2c3140);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.wiki-cmd-input:focus {
+  outline: none;
+  border-color: var(--color-accent, #6d8aff);
+}
+.wiki-cmd-btn {
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border, #2c3140);
+  background: var(--color-button-bg, rgba(255, 255, 255, 0.05));
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wiki-cmd-btn:hover:not(:disabled) {
+  background: var(--color-button-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--color-accent, #6d8aff);
+}
+.wiki-cmd-btn:disabled { opacity: 0.5; cursor: progress; }
+.wiki-cmd-btn--destructive {
+  border-color: rgba(220, 80, 60, 0.5);
+  color: #f3a294;
+}
+.wiki-cmd-btn--destructive:hover:not(:disabled) {
+  background: rgba(220, 80, 60, 0.15);
+  border-color: rgba(220, 80, 60, 0.7);
+}
+.wiki-cmd-btn--ghost {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+}
+.wiki-cmd-status {
+  font-size: 0.82rem;
+  margin-top: 0.1rem;
+  min-height: 1.2em;
+}
+.wiki-cmd-status--green   { color: var(--color-severity-ok,   #6cd47a); }
+.wiki-cmd-status--amber   { color: var(--color-severity-warn, #d4a050); }
+.wiki-cmd-status--red     { color: var(--color-severity-crit, #e07555); }
+.wiki-cmd-status--pending { opacity: 0.75; font-style: italic; }
+.wiki-cmd-chathint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+.wiki-cmd-chatcmd {
+  flex: 1 1 auto;
+  font-size: 0.78rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border, #2c3140);
+  font-family: var(--mono-stack, ui-monospace, SFMono-Regular, Menlo, monospace);
+  word-break: break-all;
+}
