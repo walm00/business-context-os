@@ -85,11 +85,16 @@ _KNOWN_JOBS = [
     "daydream-lessons",
     "daydream-deep",
     "architecture-review",
+    # Self-learning safety brake (Friday)
+    "auto-fix-audit",
+    # Lifecycle classifier (Friday)
+    "lifecycle-sweep",
     # Wiki zone maintenance
     "wiki-stale-propagation",
     "wiki-source-refresh",
     "wiki-graveyard",
     "wiki-coverage-audit",
+    "wiki-canonical-drift",
 ]
 
 

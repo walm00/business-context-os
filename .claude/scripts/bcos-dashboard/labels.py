@@ -280,6 +280,11 @@ FINDING_TYPE_LABELS: dict[str, str] = {
     "lifecycle-body-marker-confirmed":   "Body marker confirms lifecycle route",
     "lifecycle-route-ambiguous":         "Lifecycle routing needs your call",
     "lifecycle-orphan-active":           "Active doc with no lifecycle field",
+    # wiki-canonical-drift (4 — schema 1.2 Class D)
+    "wiki-canonical-drift-suggestion":         "Wiki diverges from canonical source",
+    "wiki-true-contradiction":                 "Wiki contradicts canonical source",
+    "wiki-authority-asymmetry":                "Wiki claims authority over canonical",
+    "wiki-temporal-supersession-candidate":    "Wiki page supersedes canonical version",
 }
 
 

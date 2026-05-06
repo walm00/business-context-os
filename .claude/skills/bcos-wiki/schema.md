@@ -100,6 +100,18 @@ Read `references/migration-helpers.md`, run the matching migration recipe, and r
 
 ```text
 python .claude/scripts/wiki_schema.py migrate <from> <to>
+python .claude/scripts/wiki_schema.py migrate <from> <to> --apply
 ```
+
+### Registered recipes
+
+| From | To | What it does | Reversible |
+|---|---|---|---|
+| `1.0` | `1.1` | Add optional `etag` / `last-modified` / `content-hash` to source-summary pages (HTTP refresh signals) | yes (`1.1 -> 1.0`) |
+| `1.1` | `1.2` | Add `authority:` to every wiki page using the mechanical default (path + page-type + provenance.kind). Non-clobbering — explicit values declared by the user are preserved. Audit trail appended to `.claude/quality/migration-log.jsonl`. | yes (`1.2 -> 1.1`) — strips `authority:` from every page (explicit overrides are recorded in the migration log so they can be restored manually if needed) |
+
+Schema 1.2 also introduces `source-published`, `supersedes`, `superseded-by` as **optional** fields on `source-summary` pages. The migration does NOT auto-write these — they are added per-page by ingest-time triage (`Step 7.5` in `ingest.md`) when a Class B temporal-supersession candidate is detected.
+
+After running `migrate 1.1 1.2 --apply`, run `validate` to confirm the schema-version bump is recorded and `lint` to surface any `authority-default-questionable` INFO findings.
 
 No agent commits. See `SKILL.md`.

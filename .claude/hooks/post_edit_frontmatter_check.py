@@ -511,8 +511,9 @@ def validate_lifecycle(file_path: str, meta: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 
 # Intra-zone fields: bare slugs, no `.md`
-INTRA_ZONE_LIST_FIELDS = {"references", "subpages"}
-INTRA_ZONE_SCALAR_FIELDS = {"parent-slug"}
+# `supersedes` (list) and `superseded-by` (scalar) added in schema 1.2 — wiki-zone.md "Temporal semantics".
+INTRA_ZONE_LIST_FIELDS = {"references", "subpages", "supersedes"}
+INTRA_ZONE_SCALAR_FIELDS = {"parent-slug", "superseded-by"}
 
 # Cross-zone fields: relative paths, MUST include `.md`
 CROSS_ZONE_LIST_FIELDS = {"builds-on", "raw-files", "provides", "companion-urls"}
@@ -571,6 +572,83 @@ def _is_wiki_path(path: str) -> bool:
 def _is_source_summary_path(path: str) -> bool:
     p = normalize(path)
     return "/docs/_wiki/source-summary/" in p or p.startswith("docs/_wiki/source-summary/")
+
+
+# ---------------------------------------------------------------------------
+# Authority + temporal field validation (schema 1.2 — see wiki-zone.md)
+# ---------------------------------------------------------------------------
+
+# Mechanical default mapping — must stay in lockstep with
+# .claude/scripts/wiki_schema.py::_derive_authority_default
+_AUTHORITY_CANONICAL_PROCESS_TYPES = {"how-to", "runbook", "decision-log", "post-mortem"}
+_AUTHORITY_INTERNAL_REFERENCE_TYPES = {"glossary", "faq"}
+_DEFAULT_AUTHORITY_VALUES = {"canonical-process", "internal-reference", "external-reference", "external-evidence"}
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _derive_authority_for_check(file_path: str, meta: dict) -> str | None:
+    """Mirror of wiki_schema.py::_derive_authority_default (kept inline so the hook
+    has zero import dependency on the script). Returns None for paths the hook
+    cannot classify (e.g., outside _wiki/pages|source-summary)."""
+    p = normalize(file_path)
+    if "/docs/_wiki/source-summary/" in p or p.startswith("docs/_wiki/source-summary/"):
+        return "external-reference"
+    if "/docs/_wiki/pages/" in p or p.startswith("docs/_wiki/pages/"):
+        page_type = (meta.get("page-type") or "").strip()
+        if page_type in _AUTHORITY_CANONICAL_PROCESS_TYPES:
+            return "canonical-process"
+        if page_type in _AUTHORITY_INTERNAL_REFERENCE_TYPES:
+            return "internal-reference"
+        return "internal-reference"
+    return None
+
+
+def validate_authority(file_path: str, meta: dict, schema: dict) -> list[str]:
+    """Validate `authority:` value (schema 1.2)."""
+    issues: list[str] = []
+    declared = (meta.get("authority") or "").strip() or None
+    if declared is None:
+        return issues
+
+    allowed = set(schema.get("authority-values") or _DEFAULT_AUTHORITY_VALUES)
+    if declared not in allowed:
+        issues.append(
+            f"SCHEMA-VIOLATION in {file_path}: 'authority' value '{declared}' is invalid. "
+            f"Must be one of: {', '.join(sorted(allowed))}."
+        )
+        return issues
+
+    expected = _derive_authority_for_check(file_path, meta)
+    if expected and declared != expected and declared != "external-evidence":
+        issues.append(
+            f"AUTHORITY-DEFAULT-QUESTIONABLE in {file_path}: declared 'authority: {declared}' "
+            f"disagrees with the mechanical default ('{expected}') derived from path + page-type. "
+            f"If the override is intentional, leave it; otherwise reconsider. INFO only — non-blocking."
+        )
+    return issues
+
+
+def validate_temporal(file_path: str, meta: dict) -> list[str]:
+    """Validate `source-published`, `supersedes`, `superseded-by` (schema 1.2)."""
+    issues: list[str] = []
+
+    sp = meta.get("source-published")
+    if sp not in (None, "", []):
+        if not isinstance(sp, str) or not _DATE_RE.match(sp.strip()):
+            issues.append(
+                f"SCHEMA-VIOLATION in {file_path}: 'source-published' must be YYYY-MM-DD; got '{sp}'."
+            )
+
+    has_supersedes = bool(meta.get("supersedes"))
+    has_superseded_by = bool(meta.get("superseded-by"))
+    if has_supersedes and has_superseded_by:
+        issues.append(
+            f"BOTH-SUPERSEDES-AND-SUPERSEDED-BY in {file_path}: a page can be a chain head "
+            f"(supersedes:) OR a chain tail (superseded-by:), not both. ERROR."
+        )
+
+    return issues
 
 
 def validate_wiki(file_path: str, meta: dict, schema: dict, schema_source: str) -> list[str]:
@@ -671,6 +749,10 @@ def validate_wiki(file_path: str, meta: dict, schema: dict, schema_source: str) 
             f"{project_schema_version} but the framework expects {FRAMEWORK_EXPECTED_SCHEMA_VERSION}. "
             f"Run /wiki schema migrate {project_schema_version} {FRAMEWORK_EXPECTED_SCHEMA_VERSION}."
         )
+
+    # Authority + temporal field validation (schema 1.2)
+    issues.extend(validate_authority(file_path, meta, schema))
+    issues.extend(validate_temporal(file_path, meta))
 
     return issues
 

@@ -161,6 +161,22 @@ Harvested from the 9 `job-*.md` reference docs in `.claude/skills/schedule-dispa
 |---|---|
 | `stale-propagation` | Wiki page's `builds-on` source updated after wiki page `last-reviewed`. |
 
+### wiki-canonical-drift (1)
+
+| `finding_type` | One-line meaning |
+|---|---|
+| `wiki-canonical-drift-suggestion` | External-reference wiki page contains a fact diverging from a canonical doc whose `last-updated` is older than `STALE_CANONICAL_DAYS` (≈ 6 months). Suggests review of the canonical, never auto-edits it. |
+
+### wiki-ingest-triage (3)
+
+Emitted by ingest-time triage (`_wiki_triage.classify()` called from `bcos-wiki/ingest.md` Step 7.5). Class D from the same triage emits `wiki-canonical-drift-suggestion` (above) — shared with the daily dispatcher job.
+
+| `finding_type` | One-line meaning |
+|---|---|
+| `wiki-authority-asymmetry` | New wiki page (non-canonical-process) declares a fact diverging from its `builds-on:` canonical target. Ingest auto-annotates the wiki page when `confidence ≥ 0.85`. |
+| `wiki-temporal-supersession-candidate` | Same `source-url` + same cluster + different temporal signal — ingest auto-writes `supersedes:` / `superseded-by:` link bidirectionally when `confidence ≥ 0.85`. |
+| `wiki-true-contradiction` | Two `authority: canonical-process` pages, same cluster, both within review-cadence, with diverging numeric facts. Ingest **always** interrupts the user via `AskUserQuestion`; never auto-applies. |
+
 ### lifecycle-sweep (4)
 
 | `finding_type` | One-line meaning |
@@ -231,6 +247,10 @@ Every `Finding` carries a typed `finding_attrs` object. Shapes below are the con
 | `source-summary-upstream-changed` | `{wiki_file: str, source_url: str, check_date: str}` |
 | `refresh-due` | `{wiki_file: str, last_fetched_date: str, age_days: int}` |
 | `stale-propagation` | `{wiki_file: str, source_file: str, source_updated_date: str, last_reviewed_date: str}` |
+| `wiki-authority-asymmetry` | `{wiki_file: str, canonical_file: str, claim_key: str, wiki_value: str[], canonical_value: str[], content_overlap: float, confidence: float, auto_action: str \| null}` |
+| `wiki-temporal-supersession-candidate` | `{successor: str, predecessor: str, source_url: str, successor_published: str, predecessor_published: str, confidence: float, auto_action: str \| null}` |
+| `wiki-true-contradiction` | `{wiki_file_a: str, wiki_file_b: str, cluster: str, claim_key: str, value_a: str[], value_b: str[], content_overlap: float, confidence: float}` |
+| `wiki-canonical-drift-suggestion` | `{canonical_file: str, supporting_wiki_files: str[], canonical_last_updated: str, age_days: int, claim_keys: str[], wiki_values: str[], canonical_values: str[], content_overlap: float, confidence: float}` |
 | `lifecycle-trigger-fired` | `{file: str, rule_id: str, destination_zone: str, destination_bucket: str \| null, confidence: float, trigger_kind: str}` |
 | `lifecycle-body-marker-confirmed` | `{file: str, rule_id: str, destination_zone: str, destination_bucket: str \| null, marker: str, confidence: float}` |
 | `lifecycle-route-ambiguous` | `{file: str, rule_id: str \| null, conflict_reason: str, confidence: float}` |

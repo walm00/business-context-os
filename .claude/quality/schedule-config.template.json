@@ -60,6 +60,11 @@
       "enabled": true,
       "schedule": "fri",
       "_about": "Friday weekly classifier of active-zone docs against lifecycle-routing.yml. Surface-only for the first 2 weeks (default); flip lifecycle-routing.yml > global.surface_only=false after 0 false-positives confirmed to enable auto-routing."
+    },
+    "wiki-canonical-drift": {
+      "enabled": true,
+      "schedule": "daily",
+      "_about": "Daily mechanical scan: wiki captures whose numeric facts diverge from canonical docs whose last-updated is > 180 days. Emits wiki-canonical-drift-suggestion findings; never edits canonical docs. Schema 1.2 Class D — see job-wiki-canonical-drift.md."
     }
   },
   "auto_fix": {

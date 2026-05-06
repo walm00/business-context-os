@@ -37,10 +37,14 @@ Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/documen
 | `docs/_planned/` | **Read only** | Polished ideas — not yet real |
 | `docs/_archive/` | **Historical** | Superseded — do not treat as current |
 | `docs/_collections/` | **Evidence — verbatim** | Artifacts as received: invoices, brand kits, signed agreements, call transcripts, exports. The file IS the truth — never paraphrase or edit. Each subdirectory has a required `_manifest.md` linking artifacts to data points |
-| `docs/_wiki/` | **Mixed — pages/source-summary are High; raw/queue are Mechanical** | Wiki pages and source summaries explain canonical data points via `builds-on:`. Raw captures, queue, index, and log are managed by `bcos-wiki`; see `wiki-zone.md` |
+| `docs/_wiki/pages/` | **High** | User-authored explainers and SOPs (how-to / runbook / decision-log / post-mortem → `authority: canonical-process`; glossary / faq → `internal-reference`). Build on canonical data points via `builds-on:` |
+| `docs/_wiki/source-summary/` | **Reference** | External captures (`authority: external-reference`). Informational — if a claim conflicts with canonical `docs/*.md`, canonical wins by default. Schema 1.2 also tracks `source-published` + `supersedes` / `superseded-by` for timeline awareness. |
+| `docs/_wiki/{raw,queue,index,log,overview}` | **Mechanical** | Managed by `bcos-wiki`; do not hand-edit. See `wiki-zone.md` |
 | `docs/_<custom>/` | **Opted-out** | Any user-created `_`-prefixed folder. Skipped by all maintenance. Use for drafts, experiments, vendor notes |
 
 **The folder IS the signal.** `_planned/` = idea. `_archive/` = history. `_<anything>/` = framework-ignored. Don't confuse them with reality.
+
+**Authority hierarchy (when claims conflict):** `docs/*.md` (canonical) > `_wiki/pages/` `canonical-process` > `_wiki/pages/` `internal-reference` > `_wiki/source-summary/` `external-reference`. The full mapping table and the lint that catches questionable overrides live in `docs/_bcos-framework/architecture/wiki-zone.md` "Authority Semantics".
 
 For the full convention (when to use `_<custom>/` vs `.private/`, what scanners scan, examples), see `docs/_bcos-framework/guides/folder-conventions.md`.
 

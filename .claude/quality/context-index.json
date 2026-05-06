@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-05T23:28:08.420451Z",
+  "generated_at": "2026-05-06T11:11:43.251324Z",
   "repo_root": ".",
   "repo_name": "",
   "counts": {
-    "total": 60,
-    "with_frontmatter": 12,
+    "total": 63,
+    "with_frontmatter": 14,
     "missing_required": 0,
     "warnings": 0
   },
@@ -14,29 +14,29 @@
       "framework": 48,
       "generated": 2,
       "inbox": 1,
-      "planned": 9
+      "planned": 12
     },
     "buckets": {
       "_bcos-framework": 48,
       "_inbox": 1,
-      "_planned": 9,
+      "_planned": 12,
       "active": 2
     },
     "clusters": {
-      "Framework Evolution": 8,
+      "Framework Evolution": 10,
       "Framework Operations": 1,
       "bcos-framework": 1,
-      "unspecified": 50
+      "unspecified": 51
     },
     "types": {
       "architecture": 1,
       "context": 1,
       "decision-log": 1,
-      "orientation": 1,
+      "orientation": 3,
       "playbook": 3,
       "reference": 3,
       "review": 1,
-      "unspecified": 49
+      "unspecified": 50
     },
     "statuses": {
       "active": 2,
@@ -44,14 +44,14 @@
       "awaiting_approval": 2,
       "completed": 2,
       "defaulted": 2,
-      "planned": 1,
-      "unspecified": 49
+      "planned": 3,
+      "unspecified": 50
     },
     "page_types": {
-      "unspecified": 60
+      "unspecified": 63
     },
     "manifest_schemas": {
-      "unspecified": 60
+      "unspecified": 63
     },
     "tags": {
       "bcos": 1,
@@ -61,9 +61,9 @@
     "path_tags": {
       "_bcos-framework": 48,
       "_inbox": 1,
-      "_planned": 9,
+      "_planned": 12,
       "architecture": 12,
-      "autonomy-ux-self-learning": 4,
+      "autonomy-ux-self-learning": 5,
       "guides": 10,
       "lifecycle-sweep": 1,
       "methodology": 5,
@@ -71,7 +71,9 @@
       "private-starter": 2,
       "templates": 13,
       "wiki-headless-scripts": 1,
-      "wiki-missing-layers": 3
+      "wiki-missing-layers": 3,
+      "wiki-synthesis-pages": 1,
+      "wiki-user-action-scripts": 1
     },
     "warnings": {}
   },
@@ -442,7 +444,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -699,7 +701,7 @@
       ],
       "trust_level": "system",
       "is_canonical": false,
-      "size_bytes": 18601,
+      "size_bytes": 20683,
       "modified": "2026-05-06",
       "has_frontmatter": false,
       "missing_required": [],
@@ -741,6 +743,8 @@
         "wiki-graveyard (3)",
         "wiki-source-refresh (2)",
         "wiki-stale-propagation (1)",
+        "wiki-canonical-drift (1)",
+        "wiki-ingest-triage (3)",
         "lifecycle-sweep (4)",
         "Dispatcher meta (1)",
         "auto-fix-audit (2)",
@@ -790,7 +794,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": -1,
+      "age_days": 0,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -826,8 +830,8 @@
       ],
       "trust_level": "system",
       "is_canonical": false,
-      "size_bytes": 51981,
-      "modified": "2026-05-05",
+      "size_bytes": 57323,
+      "modified": "2026-05-06",
       "has_frontmatter": false,
       "missing_required": [],
       "warnings": [],
@@ -859,6 +863,15 @@
         "Where Wiki Sits Among the Zones",
         "Folder Layout",
         "Frontmatter Schema",
+        "Authority Semantics (schema 1.2)",
+        "Mechanical default mapping",
+        "Override rule",
+        "Anti-patterns",
+        "Temporal Semantics (schema 1.2)",
+        "Bidirectional rule",
+        "Cycle detection",
+        "Class B triage uses these fields",
+        "Class D (\"stale-canonical\") complements this",
         "Citation Rules",
         "Three Structural Shapes (source-summary only)",
         "Two Ingest Paths",
@@ -1718,7 +1731,7 @@
       ],
       "trust_level": "system",
       "is_canonical": false,
-      "size_bytes": 25557,
+      "size_bytes": 26842,
       "modified": "2026-05-06",
       "has_frontmatter": false,
       "missing_required": [],
@@ -3026,6 +3039,57 @@
       "first_paragraph": "**Overall:** 🟡 amber — 5 jobs ran, 2 auto-fixes, 3 action items."
     },
     {
+      "path": "docs/_planned/autonomy-ux-self-learning/cross-plan-lifecycle-sweep-additions.md",
+      "name": "cross-plan-lifecycle-sweep-additions",
+      "filename": "cross-plan-lifecycle-sweep-additions.md",
+      "zone": "planned",
+      "bucket": "_planned",
+      "folder": "docs/_planned/autonomy-ux-self-learning",
+      "path_tags": [
+        "_planned",
+        "autonomy-ux-self-learning"
+      ],
+      "trust_level": "future",
+      "is_canonical": false,
+      "size_bytes": 4136,
+      "modified": "2026-05-06",
+      "has_frontmatter": false,
+      "missing_required": [],
+      "warnings": [],
+      "meta": {},
+      "type": null,
+      "cluster": null,
+      "status": null,
+      "version": null,
+      "created": null,
+      "last_updated": null,
+      "last_reviewed": null,
+      "last_fetched": null,
+      "review_cycle": null,
+      "next_review": null,
+      "age_days": null,
+      "reviewed_age_days": null,
+      "tags": [],
+      "depends_on": [],
+      "consumed_by": [],
+      "page_type": null,
+      "manifest_schema": null,
+      "collection": null,
+      "domain_statement": null,
+      "exclusively_owns": [],
+      "strictly_avoids": [],
+      "headings": [
+        "Cross-plan note — lifecycle-sweep additions (2026-05-06)",
+        "What lifecycle-sweep added",
+        "4 new finding_types",
+        "4 new headless-actions",
+        "Burn-in protocol",
+        "What this means for autonomy-ux next steps",
+        "What the 4 reserved IDs are"
+      ],
+      "first_paragraph": "This note records the strictly-additive changes the lifecycle-sweep plan made to the autonomy-ux-self-learning registries. Schema-version stayed at 1.0.0 — no breaking changes — but the typed-event enum and headless-action registry both grew. Future autonomy-ux work needs to know about these additions to avoid namespace collisions."
+    },
+    {
       "path": "docs/_planned/autonomy-ux-self-learning/implementation-plan.md",
       "name": "Autonomy + UX + Self-Learning — Implementation Plan & PRD",
       "filename": "implementation-plan.md",
@@ -3073,7 +3137,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3157,7 +3221,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 1,
+      "age_days": 2,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3215,7 +3279,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 1,
+      "age_days": 2,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3273,7 +3337,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3340,7 +3404,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3427,7 +3491,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3502,7 +3566,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 1,
+      "age_days": 2,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3574,7 +3638,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 1,
+      "age_days": 2,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3638,7 +3702,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 1,
+      "age_days": 2,
       "reviewed_age_days": null,
       "tags": [],
       "depends_on": [],
@@ -3663,6 +3727,135 @@
       "first_paragraph": "Polished proposal for the next layers of BCOS's context base: a cross-zone retrieval surface, sub-agent isolation for big-body work, wiki-zone stub repair, and (architecturally most important) task-driven cross-zone routing. Wiki is one zone among several — this plan operates on the whole context surface, not just _wiki/."
     },
     {
+      "path": "docs/_planned/wiki-synthesis-pages/README.md",
+      "name": "Wiki Synthesis Pages — Deferral Decision",
+      "filename": "README.md",
+      "zone": "planned",
+      "bucket": "_planned",
+      "folder": "docs/_planned/wiki-synthesis-pages",
+      "path_tags": [
+        "_planned",
+        "wiki-synthesis-pages"
+      ],
+      "trust_level": "future",
+      "is_canonical": false,
+      "size_bytes": 4653,
+      "modified": "2026-05-06",
+      "has_frontmatter": true,
+      "missing_required": [],
+      "warnings": [],
+      "meta": {
+        "name": "Wiki Synthesis Pages — Deferral Decision",
+        "type": "orientation",
+        "cluster": "Framework Evolution",
+        "version": "0.1.0",
+        "status": "planned",
+        "created": "2026-05-06",
+        "last-updated": "2026-05-06",
+        "authority-docs": [
+          ".claude/quality/sessions/20260506_100433_wiki-authority-temporal/plan-manifest.json",
+          "docs/_bcos-framework/architecture/wiki-zone.md"
+        ],
+        "follows-up-on": "docs/_planned/wiki-authority-temporal/"
+      },
+      "type": "orientation",
+      "cluster": "Framework Evolution",
+      "status": "planned",
+      "version": "0.1.0",
+      "created": "2026-05-06",
+      "last_updated": "2026-05-06",
+      "last_reviewed": null,
+      "last_fetched": null,
+      "review_cycle": null,
+      "next_review": null,
+      "age_days": 0,
+      "reviewed_age_days": null,
+      "tags": [],
+      "depends_on": [],
+      "consumed_by": [],
+      "page_type": null,
+      "manifest_schema": null,
+      "collection": null,
+      "domain_statement": null,
+      "exclusively_owns": [],
+      "strictly_avoids": [],
+      "headings": [
+        "Wiki Synthesis Pages — Deferral Decision",
+        "What this would be",
+        "Why this is deferred (D-07 from wiki-authority-temporal)",
+        "Why I'm not building it now",
+        "What this folder will contain when activated",
+        "Related decisions",
+        "Status"
+      ],
+      "first_paragraph": "A new wiki page-type — synthesis — for persisting Q&A answers as permanent, citable wiki pages with explicit provenance."
+    },
+    {
+      "path": "docs/_planned/wiki-user-action-scripts/README.md",
+      "name": "Wiki User-Action Scripts (follow-up to wiki-authority-temporal P5)",
+      "filename": "README.md",
+      "zone": "planned",
+      "bucket": "_planned",
+      "folder": "docs/_planned/wiki-user-action-scripts",
+      "path_tags": [
+        "_planned",
+        "wiki-user-action-scripts"
+      ],
+      "trust_level": "future",
+      "is_canonical": false,
+      "size_bytes": 3439,
+      "modified": "2026-05-06",
+      "has_frontmatter": true,
+      "missing_required": [],
+      "warnings": [],
+      "meta": {
+        "name": "Wiki User-Action Scripts (follow-up to wiki-authority-temporal P5)",
+        "type": "orientation",
+        "cluster": "Framework Evolution",
+        "version": "0.1.0",
+        "status": "planned",
+        "created": "2026-05-06",
+        "last-updated": "2026-05-06",
+        "authority-docs": [
+          ".claude/quality/sessions/20260506_100433_wiki-authority-temporal/plan-manifest.json",
+          "docs/_planned/autonomy-ux-self-learning/implementation-plan.md",
+          "docs/_planned/wiki-headless-scripts/implementation-plan.md"
+        ],
+        "follows-up-on": "docs/_planned/autonomy-ux-self-learning/"
+      },
+      "type": "orientation",
+      "cluster": "Framework Evolution",
+      "status": "planned",
+      "version": "0.1.0",
+      "created": "2026-05-06",
+      "last_updated": "2026-05-06",
+      "last_reviewed": null,
+      "last_fetched": null,
+      "review_cycle": null,
+      "next_review": null,
+      "age_days": 0,
+      "reviewed_age_days": null,
+      "tags": [],
+      "depends_on": [],
+      "consumed_by": [],
+      "page_type": null,
+      "manifest_schema": null,
+      "collection": null,
+      "domain_statement": null,
+      "exclusively_owns": [],
+      "strictly_avoids": [],
+      "headings": [
+        "Wiki User-Action Scripts — Plan README",
+        "Why this exists",
+        "When to start this plan",
+        "Scope summary",
+        "Why I'm not building it now",
+        "Files in this folder (current)",
+        "Status"
+      ],
+      "first_paragraph": "This plan was split out from wiki-authority-temporal (P5) per D-08 in that plan's manifest. P5 of wiki-authority-temporal aimed to add three dashboard forms — [Add URL to wiki], [Promote inbox], [Refresh page] — that trigger headless Python scripts mirroring the user actions today's /wiki run, /wiki promote, and /wiki refresh perform inside Claude chat."
+    },
+    {
       "path": "docs/bcos-control-map.md",
       "name": "BCOS Control Map",
       "filename": "bcos-control-map.md",
@@ -3672,7 +3865,7 @@
       "path_tags": [],
       "trust_level": "system",
       "is_canonical": false,
-      "size_bytes": 14475,
+      "size_bytes": 14605,
       "modified": "2026-05-06",
       "has_frontmatter": true,
       "missing_required": [],
@@ -3701,7 +3894,7 @@
       "last_fetched": null,
       "review_cycle": null,
       "next_review": null,
-      "age_days": 0,
+      "age_days": 1,
       "reviewed_age_days": null,
       "tags": [
         "bcos",
@@ -3747,7 +3940,7 @@
       "path_tags": [],
       "trust_level": "system",
       "is_canonical": false,
-      "size_bytes": 4987,
+      "size_bytes": 5453,
       "modified": "2026-05-06",
       "has_frontmatter": false,
       "missing_required": [],
@@ -3807,6 +4000,7 @@
       "docs/_inbox/daily-digest.md"
     ],
     "_planned": [
+      "docs/_planned/autonomy-ux-self-learning/cross-plan-lifecycle-sweep-additions.md",
       "docs/_planned/autonomy-ux-self-learning/implementation-plan.md",
       "docs/_planned/autonomy-ux-self-learning/pre-flight-decisions.md",
       "docs/_planned/autonomy-ux-self-learning/README.md",
@@ -3815,7 +4009,9 @@
       "docs/_planned/wiki-headless-scripts/implementation-plan.md",
       "docs/_planned/wiki-missing-layers/implementation-plan.md",
       "docs/_planned/wiki-missing-layers/pre-flight-decisions.md",
-      "docs/_planned/wiki-missing-layers/README.md"
+      "docs/_planned/wiki-missing-layers/README.md",
+      "docs/_planned/wiki-synthesis-pages/README.md",
+      "docs/_planned/wiki-user-action-scripts/README.md"
     ],
     "active": [
       "docs/bcos-control-map.md",
@@ -3877,7 +4073,7 @@
   "domains": {
     "(_bcos-framework)": {
       "doc_count": 47,
-      "total_bytes": 471547,
+      "total_bytes": 480256,
       "doc_paths": [
         "docs/_bcos-framework/architecture/collections-zone.md",
         "docs/_bcos-framework/architecture/component-standards.md",
@@ -3927,7 +4123,7 @@
         "docs/_bcos-framework/templates/table-of-context.internal-tool.md",
         "docs/_bcos-framework/templates/table-of-context.md"
       ],
-      "avg_age_days": -1.0
+      "avg_age_days": 0.0
     },
     "(_inbox)": {
       "doc_count": 1,
@@ -3938,24 +4134,25 @@
       "avg_age_days": null
     },
     "(_planned)": {
-      "doc_count": 1,
-      "total_bytes": 15931,
+      "doc_count": 2,
+      "total_bytes": 20067,
       "doc_paths": [
+        "docs/_planned/autonomy-ux-self-learning/cross-plan-lifecycle-sweep-additions.md",
         "docs/_planned/lifecycle-sweep/implementation-plan.md"
       ],
-      "avg_age_days": 0.0
+      "avg_age_days": 1.0
     },
     "(unclassified)": {
       "doc_count": 1,
-      "total_bytes": 4987,
+      "total_bytes": 5453,
       "doc_paths": [
         "docs/document-index.md"
       ],
       "avg_age_days": null
     },
     "Framework Evolution": {
-      "doc_count": 8,
-      "total_bytes": 122361,
+      "doc_count": 10,
+      "total_bytes": 130453,
       "doc_paths": [
         "docs/_planned/autonomy-ux-self-learning/implementation-plan.md",
         "docs/_planned/autonomy-ux-self-learning/pre-flight-decisions.md",
@@ -3964,17 +4161,19 @@
         "docs/_planned/wiki-headless-scripts/implementation-plan.md",
         "docs/_planned/wiki-missing-layers/implementation-plan.md",
         "docs/_planned/wiki-missing-layers/pre-flight-decisions.md",
-        "docs/_planned/wiki-missing-layers/README.md"
+        "docs/_planned/wiki-missing-layers/README.md",
+        "docs/_planned/wiki-synthesis-pages/README.md",
+        "docs/_planned/wiki-user-action-scripts/README.md"
       ],
-      "avg_age_days": 0.625
+      "avg_age_days": 1.3
     },
     "Framework Operations": {
       "doc_count": 1,
-      "total_bytes": 14475,
+      "total_bytes": 14605,
       "doc_paths": [
         "docs/bcos-control-map.md"
       ],
-      "avg_age_days": 0.0
+      "avg_age_days": 1.0
     },
     "bcos-framework": {
       "doc_count": 1,
@@ -3982,7 +4181,7 @@
       "doc_paths": [
         "docs/_bcos-framework/architecture/lifecycle-routing.md"
       ],
-      "avg_age_days": 0.0
+      "avg_age_days": 1.0
     }
   },
   "orphans": [

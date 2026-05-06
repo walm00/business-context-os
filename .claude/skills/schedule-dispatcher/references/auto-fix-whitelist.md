@@ -170,6 +170,39 @@ This file is the source of truth. The actual enforcement list lives in `schedule
 
 ---
 
+### `wiki-supersession-link-add`
+
+**Detects:** Schema 1.2 Class B finding emitted by ingest-time triage (`_wiki_triage.classify`) — two pages share the same `source-url` and same `cluster:` but have different temporal signals (`source-published`, falling back to `last-fetched`). Confidence ≥ 0.85 (always for Class B).
+
+**Fix:** Call `_wiki_triage.write_supersedes_link(successor=..., predecessor_slug=..., root=...)`. The helper:
+1. Refuses cycles (`A -> supersedes -> B -> supersedes -> A`) with `ValueError`.
+2. Adds `predecessor_slug` to the successor's `supersedes:` list.
+3. Writes `superseded-by: <successor_slug>` on the predecessor (bidirectional, mirrors the existing `references:` rule in `bcos-wiki/ingest.md`).
+
+**Why it's safe:** Same-URL + same-cluster + different-date is an unambiguous signal of supersession. The fix only writes intra-zone slug references (no `.md` paths, no cross-zone changes), is idempotent after the first write, and is fully reversible by deleting the two fields.
+
+**Reversibility:** Delete `supersedes:` from the successor and `superseded-by:` from the predecessor. The migration log captures the original frontmatter for audit.
+
+---
+
+### `wiki-authority-annotation-add`
+
+**Detects:** Schema 1.2 Class A finding emitted by ingest-time triage. A non-canonical-process wiki page (typically `external-reference` or `internal-reference`) declares a numeric fact that diverges from a numeric fact on its `builds-on:` canonical target. Confidence ≥ 0.85.
+
+**Fix:** Append a single one-line annotation to the wiki page body of the form:
+
+```markdown
+> Note: <canonical-doc-name> states differently — see [<canonical-doc-name>](<relative-path>).
+```
+
+The annotation appears under the section that contained the diverging fact (or at end-of-body if no clear section match). It does NOT alter the canonical doc.
+
+**Why it's safe:** Wiki-side only — never touches `docs/*.md`. The annotation is human-readable and explicit; if the user disagrees, they remove the line. Idempotent on a per-page basis (a second run detects the existing annotation and skips).
+
+**Reversibility:** Delete the annotation line from the wiki page.
+
+---
+
 ## Lifecycle-sweep auto-routes (gated behind 2-week burn-in)
 
 The four `lifecycle-route-*` / `lifecycle-fold-into` actions ship as headless-action handlers but are **NOT yet on the dispatcher's silent auto-fix tier**. They need three independent gates to fire:

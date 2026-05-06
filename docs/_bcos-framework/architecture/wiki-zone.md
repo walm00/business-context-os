@@ -156,6 +156,77 @@ last-fetched: 2026-04-30
 
 ---
 
+## Authority Semantics (schema 1.2)
+
+Every wiki page declares an `authority:` value (or has one mechanically derived by the `1.1 -> 1.2` migration). Authority answers exactly one question:
+
+> *How much trust does this page deserve when its claims conflict with canonical `docs/*.md` or with another wiki page?*
+
+Four values, ordered by trust-tier:
+
+| Value | What it is | Example | Triage behavior on conflict |
+|---|---|---|---|
+| `canonical-process` | Internal SOP / runbook / decision-log we live by | `pages/deploy-runbook.md` (`page-type: how-to`) | Other-page conflict: **Class C** (true contradiction) — interrupt user. External-page conflict: external loses by default. |
+| `internal-reference` | User-curated derivative; high trust but not the truth itself | `pages/data-point-glossary.md` (`page-type: glossary`) | If overlaps with canonical, prefer canonical; surface as INFO. |
+| `external-reference` | Captured external source — informational, not authoritative | `source-summary/openai-rate-limits.md` | Conflict with canonical: **Class A** (authority asymmetry) — auto-annotate the wiki page; suggest canonical-side review via morning digest. |
+| `external-evidence` | Verbatim immutable extract; rare; explicit-only | A regulatory-filing extract preserved as-is | Treat as factual artifact; conflicts surface as INFO; never auto-edit. |
+
+### Mechanical default mapping
+
+The `1.1 -> 1.2` migration writes `authority` for every existing page using path + page-type + provenance.kind:
+
+| Path | Page-type | Default authority |
+|---|---|---|
+| `_wiki/source-summary/` | (any) | `external-reference` |
+| `_wiki/pages/` | `how-to`, `runbook`, `decision-log`, `post-mortem` | `canonical-process` |
+| `_wiki/pages/` | `glossary`, `faq` | `internal-reference` |
+| `_wiki/pages/` | (other / unknown) | `internal-reference` (cautious fallback) |
+
+**`external-evidence` is never assigned mechanically.** It must be declared explicitly. Most evidence belongs in `_collections/`, not `_wiki/` — this value exists for the rare case where a wiki page IS the evidence (e.g., regulatory filings where paraphrasing risks compliance).
+
+### Override rule
+
+The migration is non-clobbering: if a page already declares `authority:`, the migration leaves it alone. When a user-declared value disagrees with the mechanical default — for example, a `source-summary/` page tagged `authority: canonical-process` — `/wiki lint` emits `authority-default-questionable` (INFO). The lint asks "is this intentional?" but doesn't block.
+
+The full audit trail (every per-page derivation) is appended to `.claude/quality/migration-log.jsonl`, so reverse migration can reconstruct original frontmatter.
+
+### Anti-patterns
+
+- **Do not add a universal "always check the wiki first" rule.** The wiki is layered; `_wiki/source-summary/` is reference, not source-of-truth. The wake-up-context surfaces the authority hierarchy explicitly so consumers (LLM agents, builders, lint passes) read context with the right priority.
+- **Do not treat `external-evidence` as a synonym for "I'm pasting verbatim text."** Most paste-verbatim content is `external-reference`. Evidence implies legal/regulatory weight where the file IS the artifact.
+
+---
+
+## Temporal Semantics (schema 1.2)
+
+Most apparent contradictions between sources are not contradictions — they are **temporal supersession**. 2024 OpenAI pricing vs 2025 vs 2026 are each correct *as of their time*. Schema 1.2 introduces three optional fields on `source-summary` to encode this:
+
+| Field | Shape | What it means |
+|---|---|---|
+| `source-published` | `YYYY-MM-DD` | When the source itself was published (distinct from `last-fetched` — when we grabbed it) |
+| `supersedes` | list of bare slugs (intra-zone, D-04) | Pages this one replaces — newer in time |
+| `superseded-by` | single bare slug | The page that replaces this one — used by chain-tail pages to point forward |
+
+A page can be a chain **head** (declares `supersedes:`) OR a chain **tail** (declares `superseded-by:`), not both. Lint enforces this via `both-supersedes-and-superseded-by` (ERROR).
+
+### Bidirectional rule
+
+When ingest writes `supersedes: [<predecessor-slug>]` on page Y, it must also write `superseded-by: <Y-slug>` on the predecessor page. This mirrors the existing `references:` bidirectional rule in `ingest.md` Step 2a — a one-way link is a smell.
+
+### Cycle detection
+
+`A -> supersedes B -> supersedes A` is rejected as `supersession-cycle` (ERROR). Cycles can only form via concurrent ingest of two pages that each claim the other as predecessor.
+
+### Class B triage uses these fields
+
+When a new ingest enters a cluster where another `source-summary` already covers the same `source-url` with a different `source-published`, the triage detector classifies as **Class B** (temporal supersession candidate) and auto-writes the supersedes link with `confidence >= 0.85`. No callout, no interrupt — the wiki encodes the timeline cleanly.
+
+### Class D ("stale-canonical") complements this
+
+When a newly ingested external source contains a fact that diverges from a canonical doc whose `last-updated` is older than the threshold, the daily `wiki-canonical-drift` job emits a `wiki-canonical-drift-suggestion` finding into the morning digest. The job NEVER edits canonical docs — it only suggests review.
+
+---
+
 ## Citation Rules
 
 Adopt pin-llm-wiki's banner; combine with BCOS's link-don't-duplicate discipline.

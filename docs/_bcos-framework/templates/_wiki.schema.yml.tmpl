@@ -20,13 +20,18 @@
 # See: docs/_bcos-framework/architecture/wiki-zone.md (Schema and Governance)
 # =============================================================================
 
-schema-version: 1.1
+schema-version: 1.2
 last-updated: TODAY                # set by `/wiki schema validate` and migrations
 
 # Migration history (informational; the executable recipes live in wiki_schema.py):
 #   1.0 -> 1.1: source-summary gains optional `etag`, `last-modified`, `content-hash`
 #               fields used by the wiki-source-refresh quick-check tier
 #               (see _wiki_http.py + .claude/scripts/wiki_schema.py).
+#   1.1 -> 1.2: every page gains `authority` (mechanically defaulted from path +
+#               page-type + provenance.kind); source-summary gains optional
+#               `source-published`, `supersedes`, `superseded-by` for temporal
+#               awareness and the 4-class ingest triage. Migration is
+#               non-clobbering — explicit values declared by the user are preserved.
 
 # -----------------------------------------------------------------------------
 # Page types
@@ -65,7 +70,9 @@ page-types:
   source-summary:
     description: "External capture — pin-llm-wiki-style website / GitHub / YouTube ingest"
     required-fields: [source-url, last-fetched, detail-level, provenance]
-    optional-fields: [etag, last-modified, content-hash]   # added in schema 1.1
+    optional-fields: [etag, last-modified, content-hash, source-published, supersedes, superseded-by]
+    # `etag`, `last-modified`, `content-hash`         — added in 1.1 (HTTP signals)
+    # `source-published`, `supersedes`, `superseded-by` — added in 1.2 (temporal awareness)
     folder: source-summary               # docs/_wiki/source-summary/
     review-cadence-days: 90
     auto-archive-after-days: null
@@ -160,6 +167,28 @@ provenance-kinds:
   - url-fetch                            # Path A — the wiki page was created from a URL via queue.md
   - inbox-promotion                      # Path B — promoted from docs/_inbox/
   - local-document                       # Path B — created from a user-provided local file or paste
+
+# -----------------------------------------------------------------------------
+# Authority values (schema 1.2 — see wiki-zone.md "Authority semantics")
+# -----------------------------------------------------------------------------
+# Every wiki page declares an `authority:` value (or has one mechanically
+# derived by the 1.1 -> 1.2 migration). Authority answers ONE question:
+# *how much trust does this page deserve when its claims conflict with
+# canonical `docs/*.md` or with another wiki page?*
+#
+# Mechanical default mapping (see wiki_schema.py::_derive_authority_default):
+#   pages/  + how-to | runbook | decision-log | post-mortem  -> canonical-process
+#   pages/  + glossary | faq                                  -> internal-reference
+#   source-summary/  any provenance.kind                       -> external-reference
+#   external-evidence is NEVER auto-assigned — must be declared explicitly
+#   (rare: regulatory filings, signed contracts treated verbatim).
+# -----------------------------------------------------------------------------
+
+authority-values:
+  - canonical-process                    # internal SOP/runbook/decision we live by; high trust
+  - internal-reference                   # user-curated glossary/synthesis; high trust but derivative
+  - external-reference                   # captured external source; informational, not authoritative
+  - external-evidence                    # verbatim immutable extract; rare; explicit-only
 
 # -----------------------------------------------------------------------------
 # Cluster vocabulary
@@ -283,6 +312,27 @@ lint-checks:
     scope: all-pages
     description: "page-type is unregistered, or a page-type-specific required field is missing"
 
+  # --- Authority + temporal (schema 1.2) ---
+  authority-default-questionable:
+    severity: INFO
+    scope: all-pages
+    description: "Declared authority value disagrees with the path/page-type/provenance mechanical default; ask whether the override is intentional"
+
+  orphan-supersession:
+    severity: WARN
+    scope: all-pages
+    description: "supersedes: or superseded-by: target slug doesn't exist in the wiki"
+
+  supersession-cycle:
+    severity: ERROR
+    scope: all-pages
+    description: "supersedes / superseded-by chain forms a cycle (A -> B -> A)"
+
+  both-supersedes-and-superseded-by:
+    severity: ERROR
+    scope: all-pages
+    description: "A page declares BOTH supersedes and superseded-by — it can be a chain head or tail, not both"
+
 # -----------------------------------------------------------------------------
 # Auto-fixes
 # -----------------------------------------------------------------------------
@@ -305,6 +355,13 @@ auto-fixes:
 
   wiki-rewrite-citations-on-rename:
     description: "Rewrite citation paths when data points are renamed (when a redirect map is provided)"
+
+  # --- Schema 1.2 triage auto-fixes (Class A and Class B; see wiki-zone.md "Triage classes") ---
+  wiki-supersession-link-add:
+    description: "Class B: same-cluster pages share source-url with different source-published — auto-write supersedes/superseded-by link (bidirectional). Reversible by removing the two fields."
+
+  wiki-authority-annotation-add:
+    description: "Class A: external-reference page contains a fact contradicting its builds-on canonical target — auto-append a 'Note: our value differs' annotation pointing to the canonical doc. Wiki-side only; never edits canonical."
 
 # -----------------------------------------------------------------------------
 # Thresholds (runtime tunables)
