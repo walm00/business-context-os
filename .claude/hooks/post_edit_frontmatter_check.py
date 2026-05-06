@@ -140,6 +140,8 @@ YAML_BLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 # Allow empty value (e.g. "exclusively-owns:") — value may be "" indicating a multi-line list follows
 YAML_SCALAR_RE = re.compile(r'^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$')
 YAML_LIST_INLINE_RE = re.compile(r'^\[(.*)\]$')
+# Indented child of a nested map: `  key: value` or `  key:`
+YAML_NESTED_KEY_RE = re.compile(r'^(\s+)([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$')
 
 
 def _strip_quotes(s: str) -> str:
@@ -175,9 +177,27 @@ def extract_frontmatter(file_path: str) -> dict | None:
     yaml_block = match.group(1)
     data: dict = {}
 
-    # Track multi-line list state
+    # Track multi-line list / nested-map state.
+    # `pending_kind` is None | "list" | "map" — only one nested structure open at a time.
     pending_key: str | None = None
+    pending_kind: str | None = None
     pending_list: list[str] = []
+    pending_map: dict[str, str] = {}
+
+    def _flush_pending() -> None:
+        nonlocal pending_key, pending_kind, pending_list, pending_map
+        if pending_key is None:
+            return
+        if pending_kind == "list":
+            data[pending_key] = pending_list
+        elif pending_kind == "map":
+            data[pending_key] = pending_map
+        else:
+            data[pending_key] = []
+        pending_key = None
+        pending_kind = None
+        pending_list = []
+        pending_map = {}
 
     for raw_line in yaml_block.splitlines():
         line = raw_line.rstrip()
@@ -186,17 +206,32 @@ def extract_frontmatter(file_path: str) -> dict | None:
 
         # Multi-line list item: leading "  - value"
         if pending_key is not None and re.match(r'^\s+-\s+', line):
-            item = re.sub(r'^\s+-\s+', '', line).strip()
-            pending_list.append(_strip_quotes(item))
-            continue
+            if pending_kind in (None, "list"):
+                pending_kind = "list"
+                item = re.sub(r'^\s+-\s+', '', line).strip()
+                pending_list.append(_strip_quotes(item))
+                continue
 
-        # End of multi-line list — flush
+        # Nested-map child: `  key: value` (indented, scalar-shaped)
         if pending_key is not None:
-            data[pending_key] = pending_list
-            pending_key = None
-            pending_list = []
+            nm = YAML_NESTED_KEY_RE.match(line)
+            if nm and pending_kind in (None, "map"):
+                pending_kind = "map"
+                child_key = nm.group(2).strip()
+                child_value = nm.group(3).strip()
+                # Strip inline trailing comment
+                if "#" in child_value:
+                    child_value = child_value.split("#", 1)[0].strip()
+                pending_map[child_key] = _strip_quotes(child_value)
+                continue
 
-        # Top-level scalar/list
+        # End of pending structure — flush
+        if pending_key is not None:
+            _flush_pending()
+
+        # Top-level scalar/list/map opener (must start at column 0)
+        if line[:1] == " ":
+            continue
         m = YAML_SCALAR_RE.match(line)
         if not m:
             continue
@@ -209,18 +244,19 @@ def extract_frontmatter(file_path: str) -> dict | None:
             data[key] = inline
             continue
 
-        # Bare key with empty value → start of multi-line list (or nested map; we treat as list-or-empty)
+        # Bare key with empty value → opens a multi-line list OR nested map; resolved by next line
         if value == "" or value == "[]":
-            data[key] = []
             pending_key = key
+            pending_kind = None  # will be set to "list" or "map" on first child line
             pending_list = []
+            pending_map = {}
             continue
 
         data[key] = _strip_quotes(value)
 
-    # Flush trailing list
+    # Flush trailing
     if pending_key is not None:
-        data[pending_key] = pending_list
+        _flush_pending()
 
     return data if data else None
 
@@ -408,6 +444,67 @@ def load_wiki_schema(repo_root: str) -> tuple[dict, str]:
 # Framework's expected schema-version (bump in lockstep when the schema breaks).
 # The hook compares the project's schema-version against this and warns on drift.
 FRAMEWORK_EXPECTED_SCHEMA_VERSION = 1
+
+# ---------------------------------------------------------------------------
+# Lifecycle field validation (warn-only, optional field)
+# ---------------------------------------------------------------------------
+
+# See docs/_bcos-framework/methodology/document-standards.md §"Lifecycle Triggers"
+LIFECYCLE_VALID_TRIGGER_KEYS = {
+    "archive_when",
+    "fold_into",
+    "expires_after",
+    "route_to_wiki_after_days",
+    "route_to_collection",
+}
+
+# `Nd` / `Nw` / `Nm` (days / weeks / months)
+LIFECYCLE_DURATION_RE = re.compile(r"^\d+[dwm]$")
+
+
+def validate_lifecycle(file_path: str, meta: dict) -> list[str]:
+    """Validate optional lifecycle: nested map. Warn-only on malformed values."""
+    issues: list[str] = []
+    lifecycle = meta.get("lifecycle")
+    if lifecycle in (None, "", []):
+        return issues  # Field is optional and absent — nothing to check.
+
+    if not isinstance(lifecycle, dict):
+        issues.append(
+            f"WARNING: MALFORMED LIFECYCLE in {file_path}: 'lifecycle' must be a nested map "
+            f"(e.g. `lifecycle:\\n  archive_when: \"proposal-sent\"`), not a scalar or list."
+        )
+        return issues
+
+    for key, value in lifecycle.items():
+        if key not in LIFECYCLE_VALID_TRIGGER_KEYS:
+            issues.append(
+                f"WARNING: UNKNOWN LIFECYCLE TRIGGER in {file_path}: '{key}' is not a recognized "
+                f"trigger. Valid: {', '.join(sorted(LIFECYCLE_VALID_TRIGGER_KEYS))}."
+            )
+            continue
+
+        if key == "expires_after":
+            if not LIFECYCLE_DURATION_RE.match(str(value)):
+                issues.append(
+                    f"WARNING: MALFORMED LIFECYCLE.expires_after in {file_path}: '{value}' must "
+                    f"match `Nd` / `Nw` / `Nm` (e.g. '30d', '6w', '3m')."
+                )
+        elif key == "route_to_wiki_after_days":
+            if not str(value).isdigit():
+                issues.append(
+                    f"WARNING: MALFORMED LIFECYCLE.route_to_wiki_after_days in {file_path}: "
+                    f"'{value}' must be a positive integer."
+                )
+        elif key == "fold_into":
+            if not str(value).strip() or not str(value).endswith(".md"):
+                issues.append(
+                    f"WARNING: MALFORMED LIFECYCLE.fold_into in {file_path}: '{value}' must be a "
+                    f"relative path to an .md file."
+                )
+
+    return issues
+
 
 # ---------------------------------------------------------------------------
 # Reference-format rule (D-04)
@@ -624,6 +721,9 @@ def validate_frontmatter(file_path: str, repo_root: str) -> list[str]:
             issues.append(
                 f"INVALID STATUS in {file_path}: '{status}' — must be one of: {', '.join(sorted(VALID_STATUSES))}"
             )
+
+    # Optional lifecycle field — warn-only on malformed values
+    issues.extend(validate_lifecycle(file_path, meta))
 
     return issues
 

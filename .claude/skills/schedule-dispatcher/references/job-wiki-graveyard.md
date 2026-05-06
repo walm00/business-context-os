@@ -3,6 +3,14 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** monthly
 **Nature:** archive-candidate scan — mostly judgement, one narrow metadata auto-fix
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - graveyard-stale
+  - orphan-pages
+  - retired-page-type
+```
+
 
 ---
 

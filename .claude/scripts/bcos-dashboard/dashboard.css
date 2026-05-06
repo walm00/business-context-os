@@ -2903,3 +2903,183 @@ html[data-theme="dark"] .atlas-domain {
   .cockpit__atlas-hint { text-align: left; }
   .atlas-rel { grid-template-columns: 1fr; }
 }
+
+/* Per-job cards in the cockpit (replaces the old single-glyph dot strip).
+   Renders as a wrap-friendly grid so 9 jobs fit without horizontal scroll
+   on most viewports. Each card carries title + status + recent verdict
+   history + Run-now button. */
+.cockpit__job-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.job-card {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+.job-card:hover { background: rgba(0, 0, 0, 0.06); }
+.job-card--disabled { opacity: 0.7; }
+.job-card--error { border-color: rgba(220, 100, 100, 0.4); }
+.job-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.job-card__title {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+.job-card__title:hover { text-decoration: underline; }
+.job-card__verdict { font-size: 1.1rem; opacity: 0.85; }
+.job-card__status {
+  font-size: 0.78rem;
+  opacity: 0.75;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.job-card__sep { opacity: 0.4; padding: 0 0.15rem; }
+.job-card__findings { color: var(--accent-amber, #d4a050); font-weight: 500; }
+.job-card__history {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+.job-card__hist-dot {
+  font-size: 0.85rem;
+  width: 1rem;
+  text-align: center;
+  opacity: 0.85;
+}
+.job-card__hist-dot--empty { opacity: 0.25; }
+.job-card__hist-dot--green { color: #5cb85c; }
+.job-card__hist-dot--amber { color: #d4a050; }
+.job-card__hist-dot--red, .job-card__hist-dot--error { color: #e07070; }
+.job-card__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.job-card__toast {
+  font-size: 0.78rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.job-card__chat-cmd {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+}
+.job-card__copy {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+/* The title text MUST stay default-foreground regardless of severity —
+   the verdict bubble carries the colour signal. */
+.job-card__title { color: var(--color-text) !important; }
+.job-card__status, .job-card__history { color: var(--color-text); opacity: 0.78; }
+
+/* Remediation block — friendly copy + copyable command + next-step. */
+.job-card__remediation {
+  font-size: 0.78rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid var(--color-severity-warn, #d4a050);
+  border-radius: 0 4px 4px 0;
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.job-card__remediation-summary { font-weight: 500; }
+.job-card__remediation-cmd-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.job-card__remediation-then { opacity: 0.75; }
+
+/* Empty-state Schedule CTA — same pattern as the per-card button. */
+.settings-empty__result { margin-top: 0.6rem; }
+.settings-empty .card-action-btn--primary { margin-top: 0.5rem; }
+
+/* /settings/schedules — Repo profile section (shared | personal) */
+.settings-profile { margin-top: 2rem; }
+.settings-profile__status {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin-bottom: 0.5rem;
+}
+.settings-profile__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.profile-choice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border, rgba(0,0,0,0.15));
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(0,0,0,0.02);
+}
+.profile-choice:hover { background: rgba(0,0,0,0.05); }
+.profile-choice--active {
+  border-color: var(--color-accent, #4a8be8);
+  background: rgba(74, 139, 232, 0.06);
+}
+.profile-choice input { margin-top: 0.2rem; }
+.profile-choice__body { display: flex; flex-direction: column; gap: 0.2rem; }
+.profile-choice__name { font-weight: 600; }
+.profile-choice__desc { font-size: 0.78rem; opacity: 0.75; }
+.settings-profile__pending { font-size: 0.85rem; opacity: 0.7; margin-top: 0.5rem; }
+.settings-profile__ok {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--color-severity-ok, #5cb85c);
+  background: rgba(92, 184, 92, 0.08);
+  border-radius: 0 4px 4px 0;
+}
+.settings-profile__error {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--color-severity-warn, #d4a050);
+  background: rgba(212, 160, 80, 0.08);
+  border-radius: 0 4px 4px 0;
+}
+
+/* "Currently:" line in the schedule presets row when no preset matches.
+   Surfaces custom cron strings + non-mapped weekdays so the user always
+   knows what's set. */
+.schedule-presets__current {
+  font-size: 0.78rem;
+  opacity: 0.8;
+  margin: 0.25rem 0 0.4rem;
+  font-style: italic;
+}

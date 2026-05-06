@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "1.0.0",
+  "generated_at": "2026-05-05T14:50:10.693383Z",
+  "rule_count": 1,
+  "rules": [
+    {
+      "rule_id": "dismissed-untyped::dismiss",
+      "finding_type": "dismissed-untyped",
+      "action_taken": "dismiss",
+      "tier": "preselect",
+      "n": 3,
+      "consistency": 1.0,
+      "first_observed": "2026-05-05T14:48:51.877386Z",
+      "last_observed": "2026-05-05T14:50:10.693383Z",
+      "calendar_span_days": 0,
+      "trigger_breakdown": {
+        "dashboard-click": 3
+      }
+    }
+  ]
+}

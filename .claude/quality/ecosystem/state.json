@@ -1,10 +1,10 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-04",
-  "lastAudit": "2026-05-04",
+  "lastUpdated": "2026-05-06",
+  "lastAudit": "2026-05-06",
   "inventory": {
     "skills": {
-      "total": 15,
+      "total": 16,
       "list": [
         "bcos-wiki",
         "clear-planner",
@@ -17,6 +17,7 @@
         "daydream",
         "doc-lint",
         "ecosystem-manager",
+        "learning",
         "lessons-consolidate",
         "schedule-dispatcher",
         "schedule-tune",

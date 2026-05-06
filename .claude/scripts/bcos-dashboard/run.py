@@ -468,18 +468,185 @@ def _get_atlas(suffix: str, params: dict) -> dict:
     return {"ok": True, "atlas": atlas}
 
 
+def _get_profile(suffix: str, params: dict) -> dict:
+    """GET /api/profile — current repo profile + available options."""
+    from bcos_profile import collect_profile
+    return collect_profile()
+
+
+def _post_profile(body: dict, ctx: dict) -> dict:
+    """POST /api/profile — switch shared ↔ personal.
+
+    Body: {"profile": "shared" | "personal", "dry_run"?: bool}
+    Returns the structured result from bcos_profile.set_profile().
+    """
+    from bcos_profile import set_profile
+    target = (body or {}).get("profile")
+    if not isinstance(target, str):
+        return {"ok": False, "error": "profile required (shared|personal)"}
+    dry = bool((body or {}).get("dry_run", False))
+    result = set_profile(target, dry_run=dry)
+    if result.get("ok") and not dry:
+        # Profile change can affect what shows up in jobs/files panels
+        # (different files now tracked or ignored). Force a refresh.
+        ctx["invalidate_panel"]("cockpit")
+        ctx["invalidate_panel"]("jobs_panel")
+        ctx["invalidate_panel"]("file_health")
+    return result
+
+
 GET_ROUTES = {
     "/api/job/": _get_job_detail,
     "/api/schedule/config": _get_schedule_config,
     "/api/schedule/auto-commit": _get_auto_commit,
+    "/api/profile": _get_profile,
     "/api/bcos/run/": _get_bcos_run,
     "/api/atlas": _get_atlas,
 }
 
 
+def _post_onboard_schedule(body: dict, ctx: dict) -> dict:
+    """POST /api/onboard/schedule — one-click 'enable maintenance routine'.
+
+    Creates `schedule-config.json` from the framework template if it
+    doesn't already exist. After this, the dispatcher reads it daily
+    and the cockpit cards switch from "Schedule" → "Run now".
+
+    Two prerequisites can fail:
+    - The template doesn't exist (broken install — show copy-pasteable
+      `python .claude/scripts/update.py` remediation)
+    - schedule-config.json already exists (idempotent — return ok with
+      a "already scheduled" status)
+
+    Both failure modes return structured remediation the client can
+    render as guidance, not a generic error.
+    """
+    config_path = REPO_ROOT / ".claude" / "quality" / "schedule-config.json"
+    template_path = REPO_ROOT / ".claude" / "quality" / "schedule-config.template.json"
+
+    if config_path.is_file():
+        ctx["invalidate_panel"]("cockpit")
+        ctx["invalidate_panel"]("jobs_panel")
+        return {
+            "ok": True,
+            "status": "already_scheduled",
+            "message": "Maintenance routine is already scheduled.",
+            "config_path": str(config_path),
+        }
+
+    if not template_path.is_file():
+        return {
+            "ok": False,
+            "status": "missing_template",
+            "error": "schedule-config.template.json is missing — your BCOS install may be incomplete.",
+            "remediation": {
+                "summary": "Run the framework install/update to fetch the template:",
+                "command": "python .claude/scripts/update.py",
+                "then": "Reload this page and click Schedule again.",
+            },
+        }
+
+    try:
+        import shutil
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(template_path, config_path)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "status": "write_failed",
+            "error": f"Could not write {config_path.name}: {type(exc).__name__}: {exc}",
+            "remediation": {
+                "summary": "The dashboard couldn't write the config file. Copy it manually:",
+                "command": f"cp {template_path} {config_path}",
+                "then": "Reload this page.",
+            },
+        }
+
+    ctx["invalidate_panel"]("cockpit")
+    ctx["invalidate_panel"]("jobs_panel")
+    return {
+        "ok": True,
+        "status": "scheduled",
+        "message": "Maintenance routine scheduled. The dispatcher will run on its next daily trigger.",
+        "config_path": str(config_path),
+    }
+
+
+def _post_run_job_now(body: dict, ctx: dict) -> dict:
+    """POST /api/jobs/run-now — trigger a job from the dashboard.
+
+    Two paths:
+    - Scriptable jobs (index-health, auto-fix-audit) run their primary
+      mechanical entry-point via subprocess. Returns the script's last
+      output line so the user gets immediate feedback.
+    - Judgement jobs and not-yet-scriptable wiki jobs return a `chat_hint`
+      the client surfaces as a copyable command. The dashboard is honest
+      about what it can and cannot run without Claude.
+
+    The full dispatcher logic lives in Claude (per the SKILL.md references)
+    so this endpoint only kicks the mechanical sub-pieces. For a real
+    end-to-end run, the user types 'run the X job' in chat.
+    """
+    job_id = (body or {}).get("job")
+    if not isinstance(job_id, str) or not job_id.strip():
+        return {"ok": False, "error": "job required"}
+    job_id = job_id.strip()
+
+    # Map of scriptable jobs to their primary mechanical entry-points.
+    # None means "no standalone script yet — punts to chat".
+    SCRIPTABLE = {
+        "index-health":           ["python", ".claude/scripts/build_document_index.py"],
+        "auto-fix-audit":         ["python", ".claude/scripts/auto_fix_audit.py"],
+        "wiki-stale-propagation": ["python", ".claude/scripts/run_wiki_stale_propagation.py"],
+        "wiki-source-refresh":    ["python", ".claude/scripts/run_wiki_source_refresh.py"],
+        "wiki-graveyard":         ["python", ".claude/scripts/run_wiki_graveyard.py"],
+        "wiki-coverage-audit":    ["python", ".claude/scripts/run_wiki_coverage_audit.py"],
+    }
+
+    cmd = SCRIPTABLE.get(job_id)
+    if cmd is not None:
+        import subprocess
+        try:
+            proc = subprocess.run(
+                cmd, cwd=str(REPO_ROOT),
+                capture_output=True, text=True, timeout=60, check=False,
+            )
+            stdout = (proc.stdout or "").strip()
+            stderr = (proc.stderr or "").strip()
+            tail = (stdout or stderr).splitlines()[-1] if (stdout or stderr) else ""
+            ctx["invalidate_panel"]("cockpit")
+            ctx["invalidate_panel"]("jobs_panel")
+            return {
+                "ok": proc.returncode == 0,
+                "job": job_id,
+                "exit_code": proc.returncode,
+                "summary": tail or "(no output)",
+                "ran": "script",
+            }
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "job": job_id, "error": "script timed out (60s)"}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "job": job_id, "error": f"{type(exc).__name__}: {exc}"}
+
+    # Falls through for judgement jobs + scriptable-but-no-script-yet jobs.
+    return {
+        "ok": True,
+        "job": job_id,
+        "ran": "chat-hint",
+        "chat_hint": f"run the {job_id} job",
+        "message": (
+            f"This check needs Claude in the loop. Tell Claude: "
+            f"“run the {job_id} job”"
+        ),
+    }
+
+
 POST_ROUTES = {
     "/api/actions/resolve":   _post_mark_resolved,
     "/api/actions/unresolve": _post_unmark_resolved,
+    "/api/jobs/run-now":      _post_run_job_now,
+    "/api/onboard/schedule":  _post_onboard_schedule,
+    "/api/profile":           _post_profile,
     "/api/schedule/preset":    _post_schedule_preset,
     "/api/schedule/whitelist": _post_schedule_whitelist,
     "/api/schedule/auto-commit": _post_auto_commit,

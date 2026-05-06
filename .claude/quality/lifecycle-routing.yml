@@ -1,0 +1,436 @@
+# =============================================================================
+# Lifecycle Routing Config
+# =============================================================================
+# Consumed by: .claude/scripts/lifecycle_sweep.py
+# Schema doc:  docs/_bcos-framework/architecture/lifecycle-routing.md
+# Zones ref:   docs/_bcos-framework/templates/_context-zones.yml.tmpl
+#              (every destination.zone MUST be a valid zone id from that file)
+# Drift test:  .claude/scripts/test_lifecycle_routing.py  (written in P2_003)
+#
+# Rule evaluation order: rules are tested top-to-bottom per doc. First match
+# with a passing reality-check wins. Later rules provide fallback coverage.
+#
+# BURN-IN PROTOCOL
+#   surface_only: true  →  sweep classifies + surfaces findings; NEVER auto-moves files.
+#   Flip to false after 2 weeks of 0 false-positives confirmed via surface-only output.
+#   Also requires: auto-fix-whitelist.md entry for the relevant auto-fix-id.
+#
+# SCHEMA VERSION
+#   Stays "1.0.0" — strictly additive change to the autonomy-ux typed-events +
+#   headless-actions registries. Any breaking schema change bumps to "2.0.0".
+# =============================================================================
+
+schema-version: "1.0.0"
+last-updated: "2026-05-05"
+
+# ---------------------------------------------------------------------------
+# Global sweep settings
+# ---------------------------------------------------------------------------
+global:
+  surface_only: true        # BURN-IN: flip to false after 2-week clean run
+  burn_in_weeks: 2
+  scan_zones: [active, inbox, planned]   # zones lifecycle_sweep.py walks
+  min_age_days: 7           # docs younger than this are never routed
+  ambiguous_finding_type: lifecycle-route-ambiguous   # typed-event ID
+  orphan_finding_type:     lifecycle-orphan-active    # typed-event ID for undeclared + old
+
+# ---------------------------------------------------------------------------
+# RULE SCHEMA (per-rule field reference)
+# ---------------------------------------------------------------------------
+# id:          string  — unique kebab-case; also used as the log/digest key
+# description: string  — human-readable purpose
+# match:
+#   zones:              [zone-id, ...]    — zones sweep walks for this rule
+#   lifecycle-triggers: list of trigger-type matchers (see trigger types below)
+#   cluster-hints:      [string, ...]    — cluster values that raise confidence
+#   name-patterns:      [regex, ...]     — patterns against doc `name` field
+# destination:
+#   zone:   zone-id    — MUST match an id in _context-zones.yml.tmpl
+#   bucket: string     — sub-path appended to the zone's base path (optional)
+# body-markers:        — scanned in doc body to confirm or require the route
+#   - pattern:          regex (anchored to start of line, case-sensitive)
+#     role:             confirm | require | boost
+#     confidence-boost: float 0.0–1.0 (added to base confidence when matched)
+# reality-checks:      — cross-checks against world state before routing
+#   - id:          string  — unique within rule; referenced in findings
+#     type:        git-log-mention | sibling-version-exists | url-in-body |
+#                  target-file-exists | next-period-doc-exists |
+#                  manifest-row-exists | skill-registry-check
+#     description: string
+#     fail-action: ambiguous | warn | skip
+#                  ambiguous → emit lifecycle-route-ambiguous finding, no auto-route
+#                  warn      → log warning, proceed with route at lower confidence
+#                  skip      → skip this rule, try next
+# confidence-tier: 1 | 2 | 3
+#   1 = auto-route   (requires surface_only=false AND burn-in confirmed)
+#   2 = preselect    (dashboard shows pre-selected action; user accepts/rejects)
+#   3 = flag-only    (surface the finding; never auto-route even after burn-in)
+# auto-fix-id:     string  — headless action ID from headless-actions.md
+#
+# LIFECYCLE TRIGGER TYPES:
+#   archive_when:            lifecycle.archive_when field matches a given value list
+#   expires_after:           lifecycle.expires_after duration has elapsed
+#   route_to_wiki_after_days: lifecycle.route_to_wiki_after_days days have elapsed
+#   route_to_collection:     lifecycle.route_to_collection field is declared
+#   fold_into:               lifecycle.fold_into field is declared
+#   body-marker:             body contains a matching marker (no lifecycle field needed)
+#   age-threshold:           doc age (today - last-updated) exceeds given days
+# ---------------------------------------------------------------------------
+
+rules:
+
+  # -------------------------------------------------------------------------
+  # 1. OUTBOUND-SENT — proposal/quote confirmed sent
+  # -------------------------------------------------------------------------
+  - id: outbound-sent
+    description: >
+      Outbound proposals or quotes that have been sent. Triggered by an explicit
+      lifecycle.archive_when declaration OR by a SENT: body marker. Routes to
+      _archive/outbound/sent/ once reality cross-check confirms the send event.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - archive_when: [proposal-sent, outbound-sent]
+      cluster-hints: [outbound, proposals, quotes, sales]
+    destination:
+      zone: archive
+      bucket: outbound/sent
+    body-markers:
+      - pattern: "^SENT: "
+        role: confirm
+        confidence-boost: 0.4
+    reality-checks:
+      - id: sent-marker-present
+        type: git-log-mention
+        description: >
+          Confirm SENT: body marker exists and git log shows the document was
+          edited after the stated send date (or a sibling "as-sent" copy exists).
+        fail-action: ambiguous
+    confidence-tier: 2
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 2. OUTBOUND-ABANDONED — proposal/quote expired with no send
+  # -------------------------------------------------------------------------
+  - id: outbound-abandoned
+    description: >
+      Outbound docs where expires_after has elapsed and no SENT: marker is
+      present. The proposal was never sent — route to _archive/abandoned/.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - expires_after: any
+      cluster-hints: [outbound, proposals, quotes, sales]
+    destination:
+      zone: archive
+      bucket: abandoned
+    body-markers:
+      - pattern: "^SENT: "
+        role: require    # if SENT: IS present, this rule must NOT fire
+        confidence-boost: -1.0   # SENT: present → disqualify this rule
+      - pattern: "^ABANDONED: "
+        role: boost
+        confidence-boost: 0.3
+    reality-checks:
+      - id: no-sent-marker
+        type: git-log-mention
+        description: >
+          Confirm there is NO SENT: marker in body. If SENT: exists the
+          outbound-sent rule should have fired instead — flag as ambiguous.
+        fail-action: skip
+    confidence-tier: 2
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 3. DECISION — document that captured a decision or resolved question
+  # -------------------------------------------------------------------------
+  - id: decision
+    description: >
+      Analysis or meeting notes that reached a decision or resolution. Triggered
+      by lifecycle.archive_when: decision-made OR by DECISION:/RESOLVED: body
+      markers. Routes to _archive/decisions/.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - archive_when: [decision-made, outcome-known]
+      cluster-hints: [decisions, analysis, strategy, revenue, market-intelligence]
+    destination:
+      zone: archive
+      bucket: decisions
+    body-markers:
+      - pattern: "^DECISION: "
+        role: confirm
+        confidence-boost: 0.4
+      - pattern: "^RESOLVED: "
+        role: confirm
+        confidence-boost: 0.4
+      - pattern: "^OUTCOME: "
+        role: boost
+        confidence-boost: 0.2
+    reality-checks:
+      - id: decision-marker-present
+        type: git-log-mention
+        description: >
+          Confirm the DECISION: or RESOLVED: marker was not added speculatively —
+          git log should show it was added as a concluded edit, not in the same
+          commit as doc creation.
+        fail-action: warn
+    confidence-tier: 2
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 4. MEETING-NOTES — time-bounded notes that should fold into a target SOP
+  # -------------------------------------------------------------------------
+  - id: meeting-notes
+    description: >
+      Session or sync notes that declared a fold_into target. Sweep confirms the
+      target SOP exists and references the meeting date before folding. If no
+      fold_into is declared but the doc looks like meeting notes (name-pattern +
+      age), surfaces as ambiguous for user decision.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - fold_into: any
+        - expires_after: any
+      cluster-hints: [operations, process, meetings, syncs]
+      name-patterns:
+        - "(?i)\\bsync\\b"
+        - "(?i)\\bmeeting\\b"
+        - "(?i)\\bnotes\\b"
+        - "(?i)\\bstandup\\b"
+        - "\\d{4}-\\d{2}-\\d{2}"   # date in name is a meeting-notes signal
+    destination:
+      zone: archive
+      bucket: meetings
+    body-markers:
+      - pattern: "^DECISION: "
+        role: boost
+        confidence-boost: 0.2
+      - pattern: "^OUTCOME: "
+        role: boost
+        confidence-boost: 0.2
+    reality-checks:
+      - id: fold-target-exists
+        type: target-file-exists
+        description: >
+          If fold_into is declared, verify the target file exists at that path.
+          Missing target → ambiguous (can't fold into a non-existent SOP).
+        fail-action: ambiguous
+      - id: fold-target-references-date
+        type: git-log-mention
+        description: >
+          Verify the fold_into target was edited after the meeting date (or
+          references the meeting doc by name). If not, content may not yet
+          be absorbed.
+        fail-action: warn
+    confidence-tier: 2
+    auto-fix-id: lifecycle-fold-into
+
+  # -------------------------------------------------------------------------
+  # 5. RESEARCH-DUMP — research notes ready for wiki promotion
+  # -------------------------------------------------------------------------
+  - id: research-dump
+    description: >
+      Research documents with external URLs that have aged past the declared
+      route_to_wiki_after_days threshold. Sweep confirms an external URL exists
+      in the body (otherwise it's not source-summary material), then calls
+      /wiki promote to produce a source-summary page.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - route_to_wiki_after_days: any
+      cluster-hints: [market-intelligence, research, competitive, reference]
+    destination:
+      zone: wiki
+      bucket: source-summary
+    body-markers:
+      - pattern: "https?://"
+        role: require
+        confidence-boost: 0.3
+    reality-checks:
+      - id: url-in-body
+        type: url-in-body
+        description: >
+          Confirm at least one external URL is present in the body. A research
+          dump without a source URL is not source-summary material — flag as
+          ambiguous so the user can decide.
+        fail-action: ambiguous
+      - id: age-threshold-met
+        type: git-log-mention
+        description: >
+          Verify last-updated is at least route_to_wiki_after_days days ago.
+          (lifecycle_sweep.py also checks this via date arithmetic, but we
+          cross-check that the doc was not edited since the field was declared.)
+        fail-action: skip
+    confidence-tier: 2
+    auto-fix-id: lifecycle-route-wiki
+
+  # -------------------------------------------------------------------------
+  # 6. SNAPSHOT — point-in-time doc superseded by a newer period snapshot
+  # -------------------------------------------------------------------------
+  - id: snapshot
+    description: >
+      Point-in-time snapshots (quarterly/monthly/weekly analyses) where a
+      next-period version of the same doc series exists. Routes to
+      _archive/snapshots/. Relies on name-pattern detection + sibling existence
+      check rather than lifecycle field, because snapshots rarely declare one.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - archive_when: [snapshot-superseded]
+        - age-threshold: 90   # fallback: any snapshot-shaped doc older than 90d
+      cluster-hints: [revenue, market-intelligence, analysis, reporting]
+      name-patterns:
+        - "(?i)\\bq[1-4]\\s*\\d{4}\\b"        # Q1 2026
+        - "(?i)\\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\\s+\\d{4}\\b"
+        - "(?i)\\bweekly\\b"
+        - "(?i)\\bmonthly\\b"
+        - "(?i)\\bquarterly\\b"
+        - "(?i)\\bsnapshot\\b"
+        - "(?i)\\banalysis\\b.*\\d{4}"
+    destination:
+      zone: archive
+      bucket: snapshots
+    body-markers:
+      - pattern: "^PUBLISHED: "
+        role: boost
+        confidence-boost: 0.2
+    reality-checks:
+      - id: next-period-exists
+        type: next-period-doc-exists
+        description: >
+          Confirm a newer-period doc in the same series exists in active zone
+          (e.g., "Q2 2026 Pipeline Analysis" exists when routing "Q1 2026
+          Pipeline Analysis"). Without a successor, routing is ambiguous.
+        fail-action: ambiguous
+    confidence-tier: 2
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 7. PROCESS-EXPERIMENT — trial process doc that was adopted or rejected
+  # -------------------------------------------------------------------------
+  - id: process-experiment
+    description: >
+      Experimental process or SOP docs. Two outcomes: (a) adopted — fold into
+      the canonical SOP via lifecycle.fold_into; (b) rejected — body has
+      ABANDONED: marker or expires_after elapsed with no adoption evidence.
+      Ambiguous until one signal tips the scale.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - fold_into: any
+        - archive_when: [abandoned, process-rejected]
+        - expires_after: any
+      cluster-hints: [process, operations, experiments, trials]
+      name-patterns:
+        - "(?i)\\btrial\\b"
+        - "(?i)\\bexperiment\\b"
+        - "(?i)\\bdraft\\b.*sop"
+        - "(?i)sop.*\\bdraft\\b"
+        - "(?i)\\bv\\d+\\b"         # versioned draft SOPs
+    destination:
+      zone: archive
+      bucket: abandoned
+    body-markers:
+      - pattern: "^ABANDONED: "
+        role: confirm
+        confidence-boost: 0.5
+      - pattern: "^OUTCOME: "
+        role: boost
+        confidence-boost: 0.2
+    reality-checks:
+      - id: adopted-or-rejected
+        type: target-file-exists
+        description: >
+          If fold_into declared: check target SOP exists AND was edited after
+          this doc's created date (adoption evidence). If target not edited,
+          or no fold_into, check for ABANDONED: marker before routing.
+        fail-action: ambiguous
+    confidence-tier: 3   # flag-only — process changes need explicit human sign-off
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 8. IDEA-DEAD — planned doc with no edits beyond age threshold
+  # -------------------------------------------------------------------------
+  - id: idea-dead
+    description: >
+      Planned docs (docs/_planned/) that have not been edited in over 90 days
+      and show no lifecycle progression signals. Ideas that never started
+      execution. Routes to _archive/abandoned/. Always flag-only — never
+      auto-archive a planned doc without explicit user confirmation.
+    match:
+      zones: [planned]
+      lifecycle-triggers:
+        - age-threshold: 90
+      cluster-hints: []   # all clusters in _planned/ qualify
+      name-patterns: []   # all planned docs qualify — age is the signal
+    destination:
+      zone: archive
+      bucket: abandoned
+    body-markers:
+      - pattern: "^ABANDONED: "
+        role: boost
+        confidence-boost: 0.4
+      - pattern: "(?i)\\bin progress\\b"
+        role: boost
+        confidence-boost: -0.3   # "in progress" text reduces abandon confidence
+    reality-checks:
+      - id: no-recent-edit
+        type: git-log-mention
+        description: >
+          Confirm last git edit of this file is older than age-threshold days.
+          If the file was touched recently (even a minor edit), it is alive —
+          skip this rule.
+        fail-action: skip
+      - id: not-active-plan
+        type: git-log-mention
+        description: >
+          Confirm the plan does not appear in a recent session diary entry or
+          cross-plan reference — active plans surface in session context even
+          if the file is not edited daily.
+        fail-action: warn
+    confidence-tier: 3   # flag-only — planned docs need explicit user approval
+    auto-fix-id: lifecycle-route-archive
+
+  # -------------------------------------------------------------------------
+  # 9. AUDIT-OF-SHIPPED — audit/review doc whose audited artifact has shipped
+  # -------------------------------------------------------------------------
+  - id: audit-of-shipped
+    description: >
+      Audit, review, or analysis docs whose subject artifact has demonstrably
+      shipped (evidence in git log or skill registry). The audit is no longer
+      active once its subject is live. Routes to _archive/audits/.
+    match:
+      zones: [active]
+      lifecycle-triggers:
+        - archive_when: [audited-artifact-shipped, audit-complete]
+        - age-threshold: 60
+      cluster-hints: [audit, review, analysis, governance]
+      name-patterns:
+        - "(?i)\\baudit\\b"
+        - "(?i)\\breview\\b"
+        - "(?i)\\binspection\\b"
+        - "(?i)\\bpost.?mortem\\b"
+    destination:
+      zone: archive
+      bucket: audits
+    body-markers:
+      - pattern: "^PUBLISHED: "
+        role: confirm
+        confidence-boost: 0.3
+      - pattern: "^OUTCOME: "
+        role: boost
+        confidence-boost: 0.2
+      - pattern: "(?i)\\bshipped\\b"
+        role: boost
+        confidence-boost: 0.1
+    reality-checks:
+      - id: artifact-shipped
+        type: skill-registry-check
+        description: >
+          Check git log for a merge commit referencing the audited artifact,
+          or check the relevant skill/config file exists at its declared path.
+          If neither confirms shipping, surface as ambiguous.
+        fail-action: ambiguous
+    confidence-tier: 3   # flag-only — audit archival needs human review
+    auto-fix-id: lifecycle-route-archive

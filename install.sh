@@ -359,11 +359,6 @@ for f in "$SCRIPT_DIR"/docs/_bcos-framework/patterns/*.md; do
     copy_if_missing "$f" "docs/_bcos-framework/patterns/$(basename "$f")"
 done
 
-# Patterns (project-type Data Point Maps — client project, internal tool, GTM, etc.)
-for f in "$SCRIPT_DIR"/docs/_bcos-framework/patterns/*.md; do
-    copy_if_missing "$f" "docs/_bcos-framework/patterns/$(basename "$f")"
-done
-
 echo ""
 
 # ─── Install examples/ (optional) ───────────────────────────────────

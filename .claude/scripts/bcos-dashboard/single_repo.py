@@ -191,6 +191,21 @@ def collect_cockpit() -> dict:
     any_enabled = False
     earliest_next_run_iso: str | None = None
     earliest_next_run_display: str | None = None
+    # Jobs that ACTUALLY run end-to-end from the dashboard via a standalone
+    # Python script (subprocess). All others — judgement jobs (audit-inbox,
+    # daydream-*, architecture-review) and wiki jobs without scripts yet —
+    # fall through to a "Run via chat" hint. Honest UX: only call something
+    # Run-now if the click really does the thing.
+    #
+    # Headless wiki jobs ship per docs/_planned/wiki-headless-scripts/:
+    #   - wiki-stale-propagation: run_wiki_stale_propagation.py (shipped)
+    #   - wiki-graveyard, wiki-coverage-audit, wiki-source-refresh: TODO
+    _HEADLESS_RUNNABLE = {
+        "index-health",
+        "auto-fix-audit",
+        "wiki-stale-propagation",
+    }
+
     for j in jobs.get("jobs") or []:
         sev = _VERDICT_SEV.get(j.get("verdict") or "", "muted")
         is_enabled = bool(j.get("enabled"))
@@ -200,9 +215,25 @@ def collect_cockpit() -> dict:
             if nri and (earliest_next_run_iso is None or nri < earliest_next_run_iso):
                 earliest_next_run_iso = nri
                 earliest_next_run_display = j.get("display_next_run")
+
+        # Last 5 verdicts as compact dots (most-recent first → reverse for
+        # left-to-right reading). Diary entries are already newest-first.
+        history = (j.get("history") or [])[:5]
+        recent_verdicts = [
+            {"ts": h.get("ts"), "verdict": h.get("verdict"),
+             "findings_count": h.get("findings_count", 0)}
+            for h in reversed(history)
+        ]
+
+        # Last-run findings count (for the card status line).
+        last_findings = None
+        if history:
+            last_findings = (history[0] or {}).get("findings_count")
+
+        job_id = j.get("job") or ""
         dots.append({
-            "job": j.get("job"),
-            "label": j.get("display_name") or j.get("job"),
+            "job": job_id,
+            "label": j.get("display_name") or job_id,
             "dot": j.get("display_dot") or ("○" if not j.get("verdict") else "●"),
             "severity": sev,
             "verdict": j.get("verdict"),
@@ -219,6 +250,12 @@ def collect_cockpit() -> dict:
                 "Not configured" if not is_enabled
                 else ("Scheduled — not run yet" if not j.get("verdict") else "")
             ),
+            # New fields for the per-job card layout (replaces dot strip):
+            "recent_verdicts": recent_verdicts,           # last 5, oldest→newest
+            "last_findings_count": last_findings,         # int or None
+            "headless_runnable": job_id in _HEADLESS_RUNNABLE,
+            "hint": j.get("display_hint") or "",
+            "actions_needed_count": len(j.get("actions_needed") or []),
         })
         if _rank(sev) > _rank(worst_sev):
             worst_sev = sev

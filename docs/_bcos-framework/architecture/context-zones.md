@@ -64,6 +64,22 @@ The `wiki` zone uses this to encode the distinction the path classifier flattens
 
 This schema is the contract. Any consumer that reads the registry can rely on every entry having these fields populated.
 
+### Zone exit-triggers (active / inbox / planned only)
+
+The `active`, `inbox`, and `planned` zones accumulate over time without explicit exit signals. Three optional `lifecycle:` frontmatter fields declare when a doc is ready to leave its zone:
+
+| Field | Trigger semantics | Default route |
+|---|---|---|
+| `lifecycle.archive_when` | Body marker (e.g. `SENT:`, `DECISION:`) confirms the named lifecycle event has occurred | `_archive/{bucket}/` |
+| `lifecycle.fold_into` | Content should be merged into the named target SOP / canonical doc, then source archived | `_archive/folded/` |
+| `lifecycle.expires_after` | Date-based: `last-updated` plus the duration has elapsed (`30d`, `6w`, `90` = days) | `_archive/abandoned/` |
+| `lifecycle.route_to_wiki_after_days` | Date-based: research-style content ready for `/wiki promote` once the threshold passes | `_wiki/source-summary/` |
+| `lifecycle.route_to_collection` | Declares the doc belongs in `_collections/{type}/` once captured | `_collections/{type}/` |
+
+Triggers are evaluated weekly by the `lifecycle-sweep` job (Friday default). The sweep classifies each doc against `.claude/quality/lifecycle-routing.yml`, runs reality cross-checks (git log, sibling-version exists, target-file exists, url-in-body), and surfaces routing candidates as typed-event findings. After a 2-week surface-only burn-in confirmed clean, tier-1 rules can auto-route.
+
+Zones whose `freshness-model` is `none` (e.g. `framework`, `archive`) never carry lifecycle triggers — they're either timeless or already terminal. Spec: [`lifecycle-routing.md`](./lifecycle-routing.md).
+
 ---
 
 ## Trust Levels and Their Consequences
