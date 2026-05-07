@@ -54,9 +54,6 @@ __pycache__/
 # Local Claude Code settings (machine-specific paths)
 .claude/settings.local.json
 
-# Update script reference file (per-install, not shared)
-.claude/bcos-claude-reference.md
-
 # Hook state (session-specific, machine-local)
 .claude/hook_state/*
 !.claude/hook_state/.gitkeep
@@ -64,18 +61,15 @@ __pycache__/
 # Agent worktrees (per-session ephemeral copies; large, machine-local)
 .claude/worktrees/
 
-# Schedule dispatcher live config (per-machine cron times)
-# The template ships (schedule-config.template.json); the live config does not.
-.claude/quality/schedule-config.json
-
-# Private publish script (repo-specific config)
-.claude/scripts/publish.sh
-
-# Pre-commit hook (dev-only — end users have scheduled maintenance instead)
-.claude/hooks/pre_commit_validate.sh
-
-# Private strategy docs (not for public repo)
-.private/
+# Self-learning ladder event log + derived state (kept ignored even on
+# personal — append-only JSONL across multi-machine workflows produces
+# guaranteed merge conflicts; the auditor's reversal-rate thresholds depend
+# on a complete history that git checkout --theirs would silently truncate.
+# Sync via Syncthing if cross-machine continuity matters; never via git.)
+.claude/quality/ecosystem/resolutions.jsonl
+.claude/quality/ecosystem/learned-rules.json
+.claude/quality/ecosystem/learning-blocklist.json
+.claude/quality/ecosystem/state.json
 
 # Syncthing marker folder (per-machine sync setup, not repo content)
 .stfolder/
@@ -83,21 +77,15 @@ __pycache__/
 # Syncthing ignore config (per-machine, not repo content; reveals maintainer sync setup)
 .stignore
 
-# Galaxy (in-development, not for public release yet)
-.claude/scripts/bcos-galaxy/
-
-# Framework regression tests (dev-only — end users don't run these)
-.claude/scripts/test_*.py
-
-# Test fixtures (dev-only — used by the regression suite)
-.claude/scripts/fixtures/
-
 # Dashboard runtime state (per-machine; the code ships, the runtime doesn't)
 .claude/scripts/bcos-dashboard/__pycache__/
 
 # === SHARED ONLY ===
 # (BCOS dropped into a multi-tenant or team repo — keep host codebase clean
-# of runtime artifacts. These are per-user/per-machine and would be noise.)
+# of runtime artifacts AND maintainer-only files. On personal profile, the
+# items in this block become tracked so they sync across the maintainer's
+# workstations via the private repo. publish.sh's DEV_ONLY_PATHS strips
+# them at squash time when publishing to a downstream public repo.)
 
 # Quality session data (keep directory structure)
 .claude/quality/sessions/*
@@ -109,7 +97,8 @@ __pycache__/
 # Auto-generated wake-up context (regenerated per user)
 docs/.wake-up-context.md
 
-# Session diary (per-user accumulated session notes)
+# Session diary (per-user accumulated session notes — append-only;
+# multi-machine sync via Syncthing if needed, never via git)
 docs/.session-diary.md
 
 # Auto-generated document index (regenerated per user)
@@ -132,6 +121,32 @@ docs/_inbox/daily-digest.json
 # subfolders stay local until the plan is folded back into framework docs.
 docs/_planned/*/
 !docs/_planned/.gitkeep
+
+# Maintainer-private docs — strategy notes, client context, draft architecture.
+# Personal profile tracks them (sync across maintainer workstations); shared
+# profile ignores them (host repo doesn't see them). publish.sh strips on
+# any push to a public downstream.
+.private/
+
+# Repo-specific maintainer scripts and dev infrastructure — tracked on
+# personal so the maintainer's workstations stay in sync; ignored on shared.
+.claude/scripts/publish.sh
+.claude/scripts/bcos-galaxy/
+.claude/scripts/test_*.py
+.claude/scripts/fixtures/
+.claude/hooks/pre_commit_validate.sh
+
+# Schedule dispatcher live config — cadence is a project decision, so the
+# maintainer wants it consistent across their workstations. The template
+# always ships (schedule-config.template.json); this is the live derivative.
+# Per-machine cron times live on the OS-level scheduled task itself, not
+# here.
+.claude/quality/schedule-config.json
+
+# Update script reference file — snapshot of upstream framework state for
+# this install. On personal: the maintainer's snapshot, syncs with their
+# other workstations. On shared: per-install, intentionally not shared.
+.claude/bcos-claude-reference.md
 
 # Top-level tests/ — fixtures + integration helpers used by gitignored
 # .claude/scripts/test_*.py. Without the test scripts (which never ship),
