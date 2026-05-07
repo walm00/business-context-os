@@ -1,8 +1,8 @@
 <p align="center">
   <h1 align="center">CLEAR Context OS</h1>
   <p align="center">
-    <strong>Context engineering for Claude Code.</strong><br>
-    Drop in your knowledge. Claude organizes it, keeps it alive, and uses it.
+    <strong>Knowledge that maintains itself —</strong><br>
+    so your AI doesn't act on what was true last month.
   </p>
   <p align="center">
     <a href="#install">Install</a> &nbsp;·&nbsp;
@@ -23,7 +23,7 @@
 
 ---
 
-> Your AI had perfect context — two weeks ago. Then your strategy shifted, three meetings redefined priorities, and the docs you wrote on Monday are wrong by Friday. **CLEAR Context OS** turns your repo into a living knowledge base that Claude Code maintains alongside you. One source of truth per topic. Searchable. Task-aware. Never silently stale.
+> Your AI had perfect context — two weeks ago. Then your strategy shifted, three meetings redefined priorities, and the docs you wrote on Monday are wrong by Friday. **CLEAR Context OS** is the maintenance layer your second brain never had: ownership boundaries enforced mechanically, staleness surfaced on a schedule, drift propagated across linked docs, a dispatcher that learns from your clicks. One source of truth per topic. Searchable. Task-aware. Never silently stale.
 
 ---
 
@@ -35,23 +35,29 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/main/install.sh)
 ```
 
-Then open Claude Code in that repo and say:
+Drop anything you already have — SOPs, brand docs, meeting notes, exports — into `docs/_inbox/` (skip if you're starting fresh). Then open Claude Code in that repo and say:
 
-> *"I want to set up my business context. Here's my website: [url]"*
+> *"Launch BCOS onboarding."*
 
-Or drop everything you have — SOPs, brand docs, meeting notes, exports — into `docs/_inbox/` and ask:
+That's the only prompt you need. Onboarding inspects your inbox, scans the rest of the repo, asks one Q&A round, and proposes the architecture for review. Works the same whether the repo is fresh or already full of context.
 
-> *"Process my inbox. Figure out where each piece belongs."*
+---
 
-Onboarding asks one question (project type), reads your inbox, asks if you have other sources (Google Drive, Notion, Confluence — fetched via MCP), then drafts the architecture for your review. **Nothing gets deleted. Originals are preserved or archived, never silently overwritten.** ~30 minutes to a working context system.
+## From zero to running
 
-**Already installed? Update with:**
-
-```bash
-python .claude/scripts/update.py
+```text
+  INSTALL  →  DISCOVER  →  ALIGN  →  SCHEDULE  →  RUNNING
 ```
 
-Your `docs/` and `.private/` are never touched. Only the framework files (skills, hooks, scripts, templates) are refreshed.
+| # | Step | What happens |
+|---|---|---|
+| 1 | **Install** | One bash line drops the framework into any repo |
+| 2 | **Discover** | Claude scans your repo + **any MCP you've connected** (Drive, Notion, Slack, Gmail, your CRM — whatever's wired in) for existing context, plus anything you've dropped into `docs/_inbox/` |
+| 3 | **Align** | One Q&A round — project type, key sources, ownership boundaries. Architecture drafted for your review |
+| 4 | **Schedule** | Pick maintenance cadence in plain English: *"audit twice a week"*, *"dispatcher at 08:30"*, *"deep daydream off"* |
+| 5 | **Running** | Daily digest. Local dashboard. `/context bundle <task>` ready. Context compounds from here — the system maintains itself. |
+
+**Simple, guided, automatic.** Claude walks you through each step — you review, you decide. **Nothing deleted along the way** — originals preserved or archived, never silently overwritten.
 
 ---
 
@@ -59,13 +65,13 @@ Your `docs/` and `.private/` are never touched. Only the framework files (skills
 
 **Stops context rot in three ways:**
 
-| | What it does | Why it matters |
-|---|---|---|
-| **Organize** | Every doc declares what it owns. CLEAR boundaries prevent the same fact living in 5 places. | One source of truth per topic. No more "which version is current?" |
-| **Maintain** | Scheduled jobs check freshness, surface stale docs, propagate updates across linked content. | Context stays alive without you remembering to maintain it. |
-| **Use** | `/context search` and `/context bundle <task>` give Claude curated, freshness-aware, source-of-truth-ranked context for the job at hand. | Your AI works from real, current knowledge — not whatever it last saw. |
+| | What it does |
+|---|---|
+| **Organize** | Every doc declares what it owns. CLEAR boundaries prevent the same fact living in 5 places. |
+| **Maintain** | Scheduled jobs check freshness, surface stale docs, propagate updates across linked content. |
+| **Use** | `/context search` and `/context bundle <task>` give Claude curated, freshness-aware, source-of-truth-ranked context for the job at hand. |
 
-The folder IS the signal: `docs/*.md` is current truth, `_planned/` is intent-not-yet-real, `_archive/` is history, `_inbox/` is unprocessed, `_collections/` is verbatim evidence (invoices, contracts, transcripts), `_wiki/` is explanatory derivative knowledge.
+**The folder tells the LLM what to trust.** Claude reads the path before the content: `docs/*.md` = canonical, `_planned/` = not yet real, `_archive/` = history, `_inbox/` = unprocessed, `_collections/` = verbatim evidence, `_wiki/` = explanatory. The hierarchy is the trust signal — fewer tokens spent re-deciding, no chance of treating an archived draft as today's truth.
 
 ```text
 docs/
@@ -94,7 +100,7 @@ docs/
 
 ## The wiki zone
 
-Inspired by [Karpathy's LLM Wiki approach](https://x.com/karpathy/status/1827143768459030896) — give the LLM a wiki of *your* knowledge, the way you'd brief a smart new hire.
+Inspired by [Karpathy's LLM Wiki approach](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — give the LLM a wiki of *your* knowledge, the way you'd brief a smart new hire.
 
 Save anything to the wiki, from anywhere:
 
@@ -118,6 +124,8 @@ Wiki content is searchable alongside the rest of your context:
 ## The dashboard
 
 A local cockpit at <http://127.0.0.1:8091> that shows your system at a glance — no third-party services, no telemetry, no logins.
+
+![BCOS dashboard cockpit — knowledge system status, things waiting on you, maintenance routine](docs/_bcos-framework/templates/BCOS-Dashboard.png)
 
 ```bash
 python .claude/scripts/bcos-dashboard/run.py
@@ -143,41 +151,21 @@ The dashboard is read-mostly: data flows from the dispatcher's diary, the schedu
 
 ---
 
+## Updating
+
+```bash
+python .claude/scripts/update.py
+```
+
+Refreshes framework files only — skills, hooks, scripts, templates. Your `docs/` and `.private/` are never touched.
+
+---
+
 ## Maintenance
 
 One scheduled task per repo. The dispatcher reads `schedule-config.json`, runs the jobs due today, writes one consolidated digest at `docs/_inbox/daily-digest.md`, and surfaces findings as one-click cards in the dashboard.
 
-```text
-                       schedule-dispatcher (one cron, daily 09:00)
-                                        │
-        ┌───────────────┬───────────────┼───────────────┬─────────────┐
-        ▼               ▼               ▼               ▼             ▼
-       DAILY            MON             WED             FRI          1st of month
-        │               │               │               │             │
-   ┌────┴────┐    ┌─────┴─────┐    ┌────┴────┐   ┌──────┴──────┐  ┌───┴────┐
-   │ index-  │    │ daydream- │    │daydream-│   │ audit-inbox │  │ arch-  │
-   │ health  │    │ lessons   │    │  deep   │   │ auto-fix-   │  │ review │
-   │         │    │ wiki-     │    │         │   │   audit     │  │ wiki-  │
-   │ wiki-   │    │ source-   │    │         │   │ lifecycle-  │  │  grave-│
-   │ stale-  │    │ refresh   │    │         │   │   sweep     │  │  yard  │
-   │ propag. │    │           │    │         │   │             │  │        │
-   │         │    │           │    │         │   │             │  │ wiki-  │
-   │ wiki-   │    │           │    │         │   │             │  │ cover- │
-   │ canon.- │    │           │    │         │   │             │  │ age    │
-   │ drift   │    │           │    │         │   │             │  │ (qtrly)│
-   └─────────┘    └───────────┘    └─────────┘   └─────────────┘  └────────┘
-        │               │               │               │             │
-        └───────────────┴───────────────┴───────────────┴─────────────┘
-                                        │
-                                        ▼
-                        docs/_inbox/daily-digest.md   (prose)
-                       docs/_inbox/daily-digest.json  (typed events)
-                       .claude/hook_state/schedule-diary.jsonl  (history)
-                                        │
-                                        ▼
-                            local dashboard cards
-                       (mark-done · auto-fix · open-for-edit · archive)
-```
+![BCOS maintenance schedule dispatcher — daily, weekly, monthly jobs flowing into the daily digest and dashboard cards](docs/_bcos-framework/templates/BCOS-Maintenance-Schedule-Dispatcher.png)
 
 You can tune any of it in plain English:
 
