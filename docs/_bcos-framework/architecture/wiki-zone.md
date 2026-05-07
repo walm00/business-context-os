@@ -84,6 +84,35 @@ docs/_wiki/
     └── <archived-slug>.md
 ```
 
+### Schema fragments overlay (`.schema.d/`)
+
+The wiki schema is layered. `_wiki/.schema.yml` is the **base**, owned by BCOS and refreshable per install. BCOS-enabled plugins (initiatives-os, executions-os, future siblings) extend the vocabulary via **fragments** dropped at:
+
+```
+docs/_wiki/
+├── .schema.yml                       # base — user-owned, BCOS-template-seeded
+└── .schema.d/                        # overlay — plugin-owned
+    ├── initiatives-os.yml            # one file per plugin; shipped via plugin install_here.py
+    ├── executions-os.yml
+    └── <future-plugin>.yml
+```
+
+Wiki tooling (frontmatter validation hook, `/wiki schema list`, future lint passes) calls into [`.claude/scripts/_wiki_schema_merge.py`](../../../.claude/scripts/_wiki_schema_merge.py) which reads base + every `.schema.d/*.yml` and returns a merged registry. The base remains plugin-agnostic. `update.py` never touches `.schema.d/` — fragments survive every framework update.
+
+**What a fragment may declare.** Two extensible registries: `cross-references:` (plugin-defined frontmatter ref fields like `initiative-refs`, `task-refs`, `stakeholder-refs`) and `raw-source-types:` (plugin-defined raw subtypes like `meeting`, `whatsapp`, `email`). Fragment must also declare `plugin:` and `plugin-version:` for diagnostics.
+
+**What a fragment must NOT declare.** Anything base-owned: `page-types`, `statuses`, `detail-levels`, `authority-values`, `lint-checks`, `auto-fixes`, `clusters`, `thresholds`, `schema-version`, `migrations`. The merger emits a fragment error if a base-owned key appears.
+
+**Conflict resolution.** Two fragments declaring the same `cross-reference` field with **identical** attribute maps is a no-op (allowed — useful when plugins overlap on shared fields like `stakeholder-refs`). Two fragments declaring the same field with **differing** attributes is a hard merge error surfaced via `/wiki schema list` and the hook's `_fragment-errors` diagnostic.
+
+**Anti-patterns.**
+
+- *Plugin's `install_here.py` hand-edits `_wiki/.schema.yml` directly.* Causes plugin↔plugin collision (last-writer-wins on the shared file) and breaks clean uninstall. Use `.schema.d/<plugin>.yml` instead.
+- *Plugin-specific fields are added to upstream `_wiki.schema.yml.tmpl`.* Pollutes BCOS core with vocabulary that is dead weight in non-plugin repos. Stays in plugin's fragment file.
+- *Fragments stored in any folder other than `_wiki/.schema.d/`.* The merger only reads that one location; orphaned fragments elsewhere are invisible.
+
+An example fragment is shipped at [`../templates/_wiki.schema.d.example.yml.tmpl`](../templates/_wiki.schema.d.example.yml.tmpl).
+
 **Why no per-page-type sub-folders.** BCOS's standard is "flat in `docs/` root with `cluster:` frontmatter for grouping, not subdirectories." Per-page-type folders (`how-to/`, `runbook/`, etc.) would duplicate the `page-type:` discriminator and force **five places to touch** when adding a new page-type: (1) frontmatter enum, (2) folder, (3) lint rules, (4) schema docs, (5) README. Flat keeps `page-type:` as the single source of truth — adding a new page-type is one schema edit. Folder is convenience; frontmatter is authority.
 
 **Why `source-summary/` keeps its own folder.** Source-summary pages are the only ones that have umbrella/sub/unified topology, are produced by a different ingest path, follow a different review cadence, and aligns with pin-llm-wiki's upstream layout. Co-locating them with internal pages would hide that asymmetry.

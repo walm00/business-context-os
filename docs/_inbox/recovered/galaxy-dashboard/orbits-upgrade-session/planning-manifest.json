@@ -1,0 +1,19 @@
+{
+  "sessionId": "20260501_104136_galaxy-orbits-upgrade",
+  "createdAt": "2026-05-01T10:41:36Z",
+  "intent": "Plan galaxy visualization fixes (library brittleness, commit hygiene, static layout) and upgrades (starfield, real orbits, doc navigation, wiki/collections styling, polish) to reach interactive space/galaxy scene for navigating repo documents.",
+  "scope": ".claude/scripts/bcos-galaxy/ (gitignored from public release)",
+  "currentStep": 1,
+  "workflow": {
+    "steps": [
+      { "step": 1, "name": "Understand Intent", "status": "in_progress", "result": "Intent clear from user brief: 3 fixes + 5 upgrades, internal-only tool, library decision gates orbit work." },
+      { "step": 2, "name": "Run Discovery", "status": "pending" },
+      { "step": 3, "name": "Detect Scenario", "status": "pending" },
+      { "step": 4, "name": "Gather Context", "status": "pending" },
+      { "step": 5, "name": "Load Scenario Template", "status": "pending" },
+      { "step": 6, "name": "Present Approach", "status": "pending", "gate": { "name": "Gate 1: Approach Alignment" } },
+      { "step": 7, "name": "Create Session Artifacts", "status": "pending" },
+      { "step": 8, "name": "Present Full Plan", "status": "pending", "gate": { "name": "Gate 2: Plan Approval" } }
+    ]
+  }
+}

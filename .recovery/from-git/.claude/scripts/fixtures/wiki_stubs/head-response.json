@@ -1,0 +1,17 @@
+{
+  "_comment": "Mock HEAD response headers used by test_wiki_stubs.py. Exercises ETag (weak + strong), Last-Modified RFC1123 format, Content-Length, and Content-Type.",
+  "headers": {
+    "ETag": "\"abc123-def456\"",
+    "Last-Modified": "Mon, 04 May 2026 10:00:00 GMT",
+    "Content-Length": "12345",
+    "Content-Type": "text/html; charset=utf-8"
+  },
+  "weak_etag_variant": {
+    "ETag": "W/\"abc123-def456\"",
+    "Last-Modified": "Mon, 04 May 2026 10:00:00 GMT",
+    "Content-Length": "12345"
+  },
+  "missing_headers_variant": {
+    "Content-Type": "text/html"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "_comment": "Inputs for the cumulative budget guard. Each case: (n_invocations, projected_tokens_per_result, max_main_context_tokens, expected_decision). Decisions: 'parallel' (cumulative <= 80% of max), 'serial' (cumulative > 80%).",
+  "cases": [
+    {
+      "name": "small batch within budget",
+      "n": 3,
+      "projected_tokens_per_result": 4000,
+      "max_main_context": 200000,
+      "expected_decision": "parallel",
+      "expected_cumulative": 12000
+    },
+    {
+      "name": "large batch within budget",
+      "n": 10,
+      "projected_tokens_per_result": 4000,
+      "max_main_context": 200000,
+      "expected_decision": "parallel",
+      "expected_cumulative": 40000
+    },
+    {
+      "name": "batch that would exceed 80% threshold",
+      "n": 10,
+      "projected_tokens_per_result": 20000,
+      "max_main_context": 200000,
+      "expected_decision": "serial",
+      "expected_cumulative": 200000
+    },
+    {
+      "name": "single invocation always parallel",
+      "n": 1,
+      "projected_tokens_per_result": 4000,
+      "max_main_context": 200000,
+      "expected_decision": "parallel",
+      "expected_cumulative": 4000
+    },
+    {
+      "name": "edge case: cumulative exactly at threshold",
+      "n": 4,
+      "projected_tokens_per_result": 40000,
+      "max_main_context": 200000,
+      "expected_decision": "serial",
+      "expected_cumulative": 160000
+    }
+  ]
+}

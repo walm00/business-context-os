@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "1.0",
+  "lastUpdated": "2026-05-04",
+  "totalLessons": 16,
+  "lessonsLearned": [
+    {
+      "id": "L-INIT-20260404-001",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "principle",
+      "tags": ["#context", "#ownership", "#architecture"],
+      "lesson": "Every piece of context must have exactly one owner. When ownership is ambiguous, context drifts silently.",
+      "applicability": "Apply when creating or reviewing any context data point"
+    },
+    {
+      "id": "L-INIT-20260404-002",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "principle",
+      "tags": ["#maintenance", "#drift"],
+      "lesson": "Context rot is the natural state. Without active maintenance, all business context degrades over time.",
+      "applicability": "Use this as motivation for regular maintenance cycles"
+    },
+    {
+      "id": "L-INIT-20260404-003",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "practice",
+      "tags": ["#boundaries", "#elimination"],
+      "lesson": "The fastest way to detect context rot is to find the same information in two places and check if they still agree.",
+      "applicability": "Use during audits and reviews"
+    },
+    {
+      "id": "L-INIT-20260404-004",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "practice",
+      "tags": ["#progressive", "#adoption"],
+      "lesson": "Start with 3-5 data points. Add more only after the first set is actively maintained and useful.",
+      "applicability": "Guide new users through adoption"
+    },
+    {
+      "id": "L-INIT-20260404-005",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "practice",
+      "tags": ["#infrastructure", "#workflow"],
+      "lesson": "Infrastructure must be wired into workflow steps to be useful. A maintenance checklist that nobody follows is worse than no checklist.",
+      "applicability": "When designing or reviewing maintenance processes"
+    },
+    {
+      "id": "L-INIT-20260404-006",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "principle",
+      "tags": ["#alignment", "#consistency"],
+      "lesson": "When the same concept has different names in different data points, comparison and analysis become unreliable.",
+      "applicability": "During context reviews and cross-data-point audits"
+    },
+    {
+      "id": "L-INIT-20260404-007",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "practice",
+      "tags": ["#refinement", "#simplicity"],
+      "lesson": "Consolidate AFTER pattern is proven stable. Premature abstraction creates complexity without value.",
+      "applicability": "When deciding whether to merge or restructure data points"
+    },
+    {
+      "id": "L-INIT-20260404-008",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "principle",
+      "tags": ["#linking", "#boundaries"],
+      "lesson": "Reference the source, don't copy it. When you need information from another data point, link to it instead of duplicating the content.",
+      "applicability": "When writing data point content that touches another data point's domain"
+    },
+    {
+      "id": "L-INIT-20260404-009",
+      "date": "2026-04-04",
+      "source": "CLEAR methodology",
+      "type": "practice",
+      "tags": ["#ecosystem", "#maintenance"],
+      "lesson": "Discovery scripts are the source of truth for what exists. State files record what discovery found, not the definition itself.",
+      "applicability": "When checking ecosystem inventory or resolving discrepancies"
+    },
+    {
+      "id": "L-DASHBOARD-20260425-010",
+      "date": "2026-04-25",
+      "source": "BCOS Dashboard cockpit rebuild",
+      "type": "practice",
+      "tags": ["#ux", "#i18n", "#refactor"],
+      "lesson": "A single translation map (technical-id -> human-label) lets the entire dashboard switch audience tier in one commit. Collectors keep emitting raw IDs; renderers prefer the display_* twin and fall back to raw. The biggest UX wins came from this one file (labels.py), not from rewriting individual panels.",
+      "applicability": "When a UI surfaces internal identifiers (job IDs, enums, codes) to a non-developer audience, route every label through a single SoT module before per-component polish"
+    },
+    {
+      "id": "L-DASHBOARD-20260425-011",
+      "date": "2026-04-25",
+      "source": "BCOS Dashboard cockpit rebuild",
+      "type": "practice",
+      "tags": ["#planning", "#resumption", "#multi-session"],
+      "lesson": "A clear-planner manifest (plan-manifest.json + implementation-plan.md with explicit task IDs P1_001, P2_007, ...) makes a 38-task UX rebuild fully resumable in a fresh session with zero conversation context. The single resumption prompt 'Read plan-manifest at <path>, start at P1_001' was sufficient to ship Steps 4-7 across multiple sessions.",
+      "applicability": "For any multi-step refactor expected to span sessions or get interrupted, write the plan as a manifest with task-IDs and a self-contained resumption guide"
+    },
+    {
+      "id": "L-DASHBOARD-20260425-012",
+      "date": "2026-04-25",
+      "source": "BCOS Dashboard cockpit rebuild",
+      "type": "gotcha",
+      "tags": ["#cache", "#composition", "#optimistic-ui"],
+      "lesson": "When one panel composes others (e.g. cockpit composes jobs_panel + actions_inbox), every mutation handler must invalidate BOTH the directly-touched panel AND every panel that composes it. Otherwise the periodic /api/data refresh re-renders the composing panel from a stale cache and overwrites optimistic UI changes.",
+      "applicability": "Whenever a dashboard collector reads from another collector's cached output. Audit POST handlers for every panel ID in the read chain, not just the one whose data the user mutated."
+    },
+    {
+      "id": "L-ECOSYSTEM-20260501-013",
+      "date": "2026-05-01",
+      "source": "Cross-repo ecosystem state.json drift fix",
+      "type": "principle",
+      "tags": ["#ecosystem", "#state", "#derived-artifacts", "#drift"],
+      "lesson": "A state file that exists to mirror disk should be regenerated from disk on a regular cadence, not authored by hand or merged additively. When treated as authored truth, it drifts the moment someone adds a directory and forgets to update the JSON — and the gap compounds invisibly until an audit catches it weeks later. The fix is to make the file a derived artifact: refreshed at install (update.py), daily (index-health), and as a whitelisted auto-fix (architecture-review). This concretizes lesson L-INIT-20260404-009 ('Discovery scripts are the source of truth') into ecosystem state.json specifically. Counter-example: lessons.json IS authored truth, so it stays excluded from auto-refresh.",
+      "applicability": "When designing any registry, cache, or inventory file that mirrors a queryable source (filesystem, database, API). Default to regenerate-from-source unless the file is genuinely authored. If derived, ship a deterministic regenerator script and wire it into the install path AND a periodic refresh."
+    },
+    {
+      "id": "L-ECOSYSTEM-20260504-014",
+      "date": "2026-05-04",
+      "source": "Wiki capability P3-P5 regression buildout",
+      "type": "practice",
+      "tags": ["#ecosystem", "#maintenance", "#workflow", "#drift"],
+      "lesson": "For multi-phase capability work, make the plan manifest itself part of the regression suite. A test that expects completed task IDs to be marked completed catches status drift immediately after implementation instead of letting the durable plan become fiction.",
+      "applicability": "Use when executing approved plan manifests across multiple sessions or phases, especially when the user asks for TDD and self-verification."
+    },
+    {
+      "id": "L-ECOSYSTEM-20260504-015",
+      "date": "2026-05-04",
+      "source": "Wiki scheduled maintenance P5",
+      "type": "pattern",
+      "tags": ["#ecosystem", "#maintenance", "#infrastructure", "#workflow"],
+      "lesson": "Scheduled jobs are easiest to evolve when the dispatcher only routes and each job reference is self-contained. Add executable wiring tests that assert config entries, reference files, dispatcher mentions, and whitelist semantics together so a new job cannot be half-registered.",
+      "applicability": "Apply when adding maintenance jobs, auto-fixes, or dispatcher-managed workflows to the agent ecosystem."
+    },
+    {
+      "id": "L-ECOSYSTEM-20260504-016",
+      "date": "2026-05-04",
+      "source": "Wiki framework documentation P8/P9",
+      "type": "practice",
+      "tags": ["#ecosystem", "#documentation", "#testing", "#drift"],
+      "lesson": "Framework documentation that defines routing, trust levels, and zone boundaries should have executable wiring tests, not only human review. A regression test that checks the bootstrap, folder conventions, content-routing, system-design, and document-standards docs together catches partial documentation updates before a capability ships.",
+      "applicability": "Use when a new capability changes multiple framework docs or cross-skill operating rules. Treat doc wiring as behavior and test for the critical phrases/contracts."
+    }
+  ]
+}

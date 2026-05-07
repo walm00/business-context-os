@@ -155,6 +155,11 @@ def command_list(args: argparse.Namespace) -> int:
     path, text = load_schema_text(args.root, args.today)
     hook = load_hook()
     parsed = hook.parse_wiki_schema(text)
+    # Attach merged fragments (cross-references, raw-source-types) so
+    # `/wiki schema list` surfaces plugin contributions alongside the base.
+    merger = hook._load_schema_merger()
+    hook._attach_fragments(parsed, str(args.root), merger)
+
     print(f"schema: {path}")
     print(f"schema-version: {parsed.get('schema-version') or 'unknown'}")
     print("")
@@ -178,6 +183,36 @@ def command_list(args: argparse.Namespace) -> int:
     print("auto-fixes:")
     for item in sorted(map_keys_in_section(text, "auto-fixes")):
         print(f"  - {item}")
+
+    # Plugin schema fragments — overlay from docs/_wiki/.schema.d/*.yml.
+    fragments = parsed.get("_fragments") or []
+    fragment_errors = parsed.get("_fragment-errors") or []
+    cross_refs = parsed.get("cross-references") or {}
+    raw_types = parsed.get("raw-source-types") or []
+    if fragments or cross_refs or raw_types or fragment_errors:
+        print("")
+        print("schema-fragments (docs/_wiki/.schema.d/):")
+        if not fragments:
+            print("  (none)")
+        for frag in fragments:
+            plugin = frag.get("plugin") or "<unnamed>"
+            version = frag.get("plugin-version") or "?"
+            print(f"  - {plugin} v{version}  ({frag.get('path')})")
+        if cross_refs:
+            print("")
+            print("cross-references (merged):")
+            for name in sorted(cross_refs.keys()):
+                print(f"  - {name}")
+        if raw_types:
+            print("")
+            print("raw-source-types (merged):")
+            for name in raw_types:
+                print(f"  - {name}")
+        if fragment_errors:
+            print("")
+            print("schema-fragment errors:")
+            for err in fragment_errors:
+                print(f"  ! {err}")
     return 0
 
 

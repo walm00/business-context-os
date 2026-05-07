@@ -1,0 +1,66 @@
+{
+  "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
+  "schema_version": "1.0.0",
+  "date": "2026-05-05",
+  "overall_verdict": "amber",
+  "run_at": "2026-05-05T07:00:00Z",
+  "findings": [
+    {
+      "number": 1,
+      "finding_type": "inbox-aged",
+      "verdict": "amber",
+      "emitted_by": "audit-inbox",
+      "finding_attrs": {
+        "file": "docs/_inbox/Q1-notes.md",
+        "age_days": 14,
+        "size_kb": 6,
+        "first_heading": "Q1 customer interview notes"
+      },
+      "suggested_actions": ["triage", "archive"]
+    },
+    {
+      "number": 2,
+      "finding_type": "refresh-due",
+      "verdict": "amber",
+      "emitted_by": "wiki-source-refresh",
+      "finding_attrs": {
+        "file": "docs/_wiki/source-summary/competitor-x.md",
+        "last_refreshed": "2026-04-22",
+        "days_overdue": 13,
+        "last_status_code": 200
+      },
+      "suggested_actions": ["refresh-now", "snooze-7d"]
+    },
+    {
+      "number": 3,
+      "finding_type": "stale-propagation",
+      "verdict": "amber",
+      "emitted_by": "wiki-stale-propagation",
+      "finding_attrs": {
+        "file": "docs/_wiki/pages/pricing-strategy.md",
+        "stale_builds_on_count": 3,
+        "max_lag_days": 11
+      },
+      "suggested_actions": ["mark-reviewed", "open-for-edit"]
+    }
+  ],
+  "auto_fixed": [
+    {
+      "fix_id": "frontmatter-missing-version",
+      "target": "docs/customer-research/persona-builder.md",
+      "detail": "added version: 1.0.0"
+    },
+    {
+      "fix_id": "xref-trailing-slash",
+      "target": "docs/_bcos-framework/guides/folder-conventions.md",
+      "detail": "normalized 2 links"
+    }
+  ],
+  "jobs": [
+    { "job": "audit-inbox", "verdict": "amber", "finding_count": 1 },
+    { "job": "index-health", "verdict": "green", "finding_count": 0 },
+    { "job": "wiki-stale-propagation", "verdict": "amber", "finding_count": 1 },
+    { "job": "wiki-source-refresh", "verdict": "amber", "finding_count": 1 },
+    { "job": "wiki-graveyard", "verdict": "green", "finding_count": 0 }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "_comment": "Canonical wiki-fetch sub-agent return shape. The validator in _wiki_fetch_contract.py asserts every field is present with the right type and the result fits within the 4000-token cap.",
+  "valid_canonical": {
+    "title": "Stripe API Reference",
+    "h2-outline": [
+      "Authentication",
+      "Errors",
+      "Pagination",
+      "Webhooks"
+    ],
+    "key-sentences": [
+      "Stripe uses API keys to authenticate requests.",
+      "Errors return JSON with a type and code.",
+      "List endpoints support cursor-based pagination via starting_after."
+    ],
+    "suggested-page-type": "source-summary",
+    "suggested-cluster": "Revenue",
+    "raw-file-pointer": "_wiki/raw/web/stripe-api-reference.md",
+    "citation-banner-fields": {
+      "source-url": "https://stripe.com/docs/api",
+      "last-fetched": "2026-05-04",
+      "detail-level": "deep",
+      "provenance": {
+        "kind": "web-fetch",
+        "fetched-at": "2026-05-04T12:00:00Z"
+      }
+    }
+  },
+  "valid_with_error": {
+    "title": "",
+    "h2-outline": [],
+    "key-sentences": [],
+    "suggested-page-type": null,
+    "suggested-cluster": null,
+    "raw-file-pointer": null,
+    "citation-banner-fields": {},
+    "error": {
+      "kind": "fetch-timeout",
+      "message": "HEAD request exceeded 10s timeout",
+      "url": "https://example.com/slow-doc"
+    }
+  },
+  "invalid_missing_required_field": {
+    "_comment": "missing 'h2-outline' — should be rejected by the validator",
+    "title": "Some Title",
+    "key-sentences": ["a", "b"],
+    "suggested-page-type": "explainer"
+  },
+  "invalid_oversized": {
+    "_comment": "Result whose key-sentences obviously blows the 4000-token cap should be rejected",
+    "title": "Bloated",
+    "h2-outline": [],
+    "key-sentences": [],
+    "suggested-page-type": null,
+    "suggested-cluster": null,
+    "raw-file-pointer": null,
+    "citation-banner-fields": {},
+    "_oversized_marker": "this entry is replaced at test time with a 5000-token string to force the size check"
+  }
+}

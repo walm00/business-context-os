@@ -1,0 +1,100 @@
+{
+  "sessionId": "20260424_203941_bcos-dashboard-steps-4-7",
+  "triggeredBy": "clear-planner",
+  "scenarioType": "agenting",
+  "taskDescription": "BCOS Dashboard cockpit-and-drawer rebuild, Steps 4-7. Move the four standalone panels still on the main page into either a click-driven side drawer (jobs panel) or a /settings route (run history, file health, snapshot canary). Then polish empty/loading/error states and accessibility/responsive/dark-mode. Each step ships independently as its own commit.",
+  "createdAt": "2026-04-24T20:39:41Z",
+  "planStatus": "approved",
+  "userApproval": { "response": "Approve", "respondedAt": "2026-04-25T00:05:00Z", "gate": "plan_approval", "handoff": "deferred-to-fresh-session-per-resumption-guide" },
+  "workingRepo": "C:/Users/Mr Coders/Documents/GitHub/business-context-os-dev",
+  "workingPath": ".claude/scripts/bcos-dashboard/",
+  "previousCommits": [
+    { "sha": "374cc82", "title": "Initial standalone port (theo-free, repo-agnostic)" },
+    { "sha": "ae94825", "title": "Phase 3: jobs / actions / history renderers" },
+    { "sha": "026a833", "title": "Phase 4: filter chips for run history" },
+    { "sha": "313be1d", "title": "Phase 5: actions mark-done persistence" },
+    { "sha": "bc559ea", "title": "Phase 7: schedule controls (preset buttons)" },
+    { "sha": "f0db610", "title": "Phase 8: readability polish pass 1" },
+    { "sha": "0d6ef7b", "title": "File health section + one-click fixes" },
+    { "sha": "ce0b0f4", "title": "Step 1: translation map (labels.py)" },
+    { "sha": "fe3f808", "title": "Step 2: cockpit shell (headline + maintenance strip)" },
+    { "sha": "0739a7d", "title": "Step 3: attention inbox promoted into the cockpit" }
+  ],
+  "discoveryResults": {
+    "agentsFound": [],
+    "skillsFound": ["schedule-dispatcher", "schedule-tune", "schedule-migrate", "daydream", "ecosystem-manager"],
+    "skillsRelationToPlan": "The dashboard READS from artifacts these skills produce (digest, diary, schedule-config) but does not modify any skill in this plan. schedule-tune NL skill remains the canonical free-form path; the dashboard's preset buttons (already shipped) are the deterministic complement.",
+    "relevantLessons": []
+  },
+  "plan": {
+    "totalPhases": 5,
+    "phases": [
+      "Phase 1: Drawer pattern (Step 4) — slide-in side drawer for per-job detail; remove standalone jobs_panel from main page",
+      "Phase 2: /settings route (Step 5) — real URL with back navigation; move run history, file health, snapshot canary off main page",
+      "Phase 3: States (Step 6) — empty / first-run / loading / error / partial / stale-snapshot",
+      "Phase 4: A11y + responsive + dark mode (Step 7) — color contrast, screen-reader labels, keyboard nav, mobile layout, prefers-color-scheme dark",
+      "Phase 5 (FIXED END): Integration audit + ecosystem state + learnings capture"
+    ]
+  },
+  "tasks": [
+    { "id": "P1_001", "phase": 1, "content": "Add drawer primitives to dashboard.html shell (overlay + aside elements already present from local-dashboard-builder template — verify they exist or add)", "activeForm": "Adding drawer primitives to HTML shell", "status": "pending" },
+    { "id": "P1_002", "phase": 1, "content": "Create new collector collect_job_detail(job_id) in single_repo.py — returns rich per-job payload (description, today's digest body, recent runs, schedule presets, technical-details footer)", "activeForm": "Creating per-job detail collector", "status": "pending" },
+    { "id": "P1_003", "phase": 1, "content": "Add GET /api/job/<id> endpoint in server.py that calls collect_job_detail with the path parameter", "activeForm": "Wiring per-job API endpoint", "status": "pending" },
+    { "id": "P1_004", "phase": 1, "content": "Implement window.JOB_DRAWER controller in dashboard.js: open(job_id), close(), keyboard Esc binding, single-instance guard, focus trap inside drawer when open", "activeForm": "Building drawer controller", "status": "pending" },
+    { "id": "P1_005", "phase": 1, "content": "Wire cockpit dot click → JOB_DRAWER.open(job_id). Replace the current scroll-to-card flash with a real drawer open. Same for cockpit attention items where source_job is known: clicking opens the originating job's drawer", "activeForm": "Wiring dot-click to drawer", "status": "pending" },
+    { "id": "P1_006", "phase": 1, "content": "Drawer body markup: header (name + verdict badge + close button), schedule line, last/next run line, WHAT IT DOES paragraph, TODAY'S RESULT body from digest, RECENT RUNS list (5 verdict dots + label), CHANGE FREQUENCY preset buttons (reuse _renderSchedulePresets), collapsed Technical details footer (raw IDs, ISO timestamps, schedule-config path, fingerprint)", "activeForm": "Building drawer body markup", "status": "pending" },
+    { "id": "P1_007", "phase": 1, "content": "Drawer CSS: 480px wide on desktop, slide-in from right with 250ms ease, overlay at rgba(0,0,0,0.32), border-radius left side, body lock-scroll while open. Respect prefers-reduced-motion (no slide, just appear)", "activeForm": "Styling drawer", "status": "pending" },
+    { "id": "P1_008", "phase": 1, "content": "Remove the standalone jobs_panel Panel from run.py panels(). The /api/panel/jobs_panel endpoint stays (the drawer composes its data from /api/job/<id> directly, but jobs_panel cache remains the primary data source for the cockpit dots)", "activeForm": "Removing standalone jobs panel", "status": "pending" },
+    { "id": "P1_009", "phase": 1, "content": "Browser-verify via preview_eval: click each dot opens correct drawer, Esc closes, two clicks on different dots crossfade, click outside closes, mark-done a finding inside drawer triggers cockpit refresh", "activeForm": "Verifying drawer in browser", "status": "pending" },
+    { "id": "P1_010", "phase": 1, "content": "Commit: feat(dashboard): Step 4 — per-job drawer", "activeForm": "Committing Step 4", "status": "pending" },
+
+    { "id": "P2_001", "phase": 2, "content": "Add window.history.pushState routing in dashboard.js: /, /settings, /settings/runs, /settings/files, /settings/schedules, /settings/technical. popstate listener navigates between them. Back button works.", "activeForm": "Adding client-side routing", "status": "pending" },
+    { "id": "P2_002", "phase": 2, "content": "Add a render mode switch in app init: if pathname starts with /settings, render the settings layout instead of the cockpit. Server.py serves the same HTML for any unknown path; routing happens client-side.", "activeForm": "Adding render mode switch", "status": "pending" },
+    { "id": "P2_003", "phase": 2, "content": "Update server.py do_GET so paths under /settings/ all return the same dashboard.html (SPA fallback). Don't 404 unknown paths that aren't /api/* or /static/*.", "activeForm": "Adding SPA fallback in server", "status": "pending" },
+    { "id": "P2_004", "phase": 2, "content": "Build settings shell in dashboard.js: top bar with [← Back] button + repo name, side nav with 4 sections (Run history / File health / Schedules / Technical), main content area swaps based on subpath", "activeForm": "Building settings shell", "status": "pending" },
+    { "id": "P2_005", "phase": 2, "content": "Settings: Run history page — wraps existing renderRunHistory output. Filter chips work as today.", "activeForm": "Wiring run-history settings page", "status": "pending" },
+    { "id": "P2_006", "phase": 2, "content": "Settings: File health page — wraps existing renderFileHealth output. One-click fixes still POST to existing endpoints.", "activeForm": "Wiring file-health settings page", "status": "pending" },
+    { "id": "P2_007", "phase": 2, "content": "Settings: Schedules page — bulk view of all jobs with their preset buttons in one table. Auto-fix whitelist toggles (additions/removals POST to /api/schedule/whitelist — new endpoint wired to set_auto_fix_whitelist).", "activeForm": "Building schedules settings page", "status": "pending" },
+    { "id": "P2_008", "phase": 2, "content": "Settings: Technical page — snapshot freshness canary (verbose form), MCP refresh hint with copy-to-clipboard, raw schedule-config.json viewer, env-var dump, debug info (BCOS_REPO_ROOT, BCOS_TASK_ID, dashboard version)", "activeForm": "Building technical settings page", "status": "pending" },
+    { "id": "P2_009", "phase": 2, "content": "Add ⚙ Settings link in cockpit header (top-right). Clicking pushes /settings; pressing Back returns to /. Both directions update the URL.", "activeForm": "Adding settings link in cockpit", "status": "pending" },
+    { "id": "P2_010", "phase": 2, "content": "Remove standalone snapshot_freshness, run_history, file_health Panels from run.py panels(). Their collectors still feed /api/panel/<id> endpoints (used by settings sub-pages) and remain on the cockpit's payload (freshness still surfaces in headline when stale).", "activeForm": "Removing standalone settings panels", "status": "pending" },
+    { "id": "P2_011", "phase": 2, "content": "Browser-verify: navigate to /settings/runs, /settings/files, /settings/schedules, /settings/technical via clicks; back button returns to cockpit; URL updates; refresh on /settings/foo loads the right sub-page.", "activeForm": "Verifying settings routing", "status": "pending" },
+    { "id": "P2_012", "phase": 2, "content": "Commit: feat(dashboard): Step 5 — /settings route + remove standalone detail panels from main page", "activeForm": "Committing Step 5", "status": "pending" },
+
+    { "id": "P3_001", "phase": 3, "content": "Empty state: when action_count=0 AND all dots green AND no stale snapshot — collapse the cockpit to a tight one-line confirmation: 'Your knowledge system is healthy. Nothing needs your attention.' Maintenance strip stays as a quiet 5 ● dots row.", "activeForm": "Designing empty state", "status": "pending" },
+    { "id": "P3_002", "phase": 3, "content": "First-run state: detected when diary file is empty/missing AND no schedule-config exists. Cockpit shows onboarding copy: 'Welcome to BCOS. Your first maintenance check runs tomorrow at 9 AM. Come back to see what it finds.' with a link to docs/_bcos-framework/ for setup.", "activeForm": "Designing first-run state", "status": "pending" },
+    { "id": "P3_003", "phase": 3, "content": "Loading state: replace 'Loading panels…' fallback with skeleton blocks matching the cockpit shape (eyebrow strip + headline placeholder + 3-row attention placeholder + 5-dot placeholder). Skeletons fade out as data arrives.", "activeForm": "Building loading skeletons", "status": "pending" },
+    { "id": "P3_004", "phase": 3, "content": "API error per-section: when a collector returns {error: ...}, render a small error band ('We couldn't load this section. [Retry]') instead of the raw trace. Tiny 'details' disclosure shows trace for power users. Other sections keep working.", "activeForm": "Building per-section error fallback", "status": "pending" },
+    { "id": "P3_005", "phase": 3, "content": "Stale snapshot in cockpit: verify the headline-level warning ('Heads up — background data is X old. Refresh when you can.') reads naturally and the cockpit border-tone is appropriate (warn, not critical for >24h; critical for missing).", "activeForm": "Verifying stale-snapshot path", "status": "pending" },
+    { "id": "P3_006", "phase": 3, "content": "Partial errors: if 1 of 5 jobs errored in collect_jobs_panel, the cockpit still renders the other 4 dots normally and shows the 5th as a small ⚠ glyph with hover='collect failed: <reason>'. The whole cockpit doesn't go critical for one job's collect error.", "activeForm": "Handling partial errors", "status": "pending" },
+    { "id": "P3_007", "phase": 3, "content": "Browser-verify each state by mocking conditions (empty actions-resolved, missing diary, slow collector, broken collector). Take screenshots / preview_snapshots for each.", "activeForm": "Verifying all states", "status": "pending" },
+    { "id": "P3_008", "phase": 3, "content": "Commit: feat(dashboard): Step 6 — empty / first-run / loading / error / partial states", "activeForm": "Committing Step 6", "status": "pending" },
+
+    { "id": "P4_001", "phase": 4, "content": "Color contrast audit: check every text/background combo against WCAG AA (4.5:1 for body, 3:1 for large). Run a pass with axe-core or manual eye + browser inspector. Fix offenders by darkening text or lightening background.", "activeForm": "Auditing color contrast", "status": "pending" },
+    { "id": "P4_002", "phase": 4, "content": "Screen-reader labels: every interactive element gets aria-label. Job cards: aria-label='Documentation check, healthy, last run earlier this morning'. Dots: aria-label='Documentation check, healthy'. Mark-done buttons: aria-label='Mark <title> done'. Replace icon-only buttons with aria-labels.", "activeForm": "Adding screen-reader labels", "status": "pending" },
+    { "id": "P4_003", "phase": 4, "content": "Keyboard navigation: explicit tabindex order: skip-to-content link → headline → attention items (each row tabbable + buttons inside) → dots (left/right arrow nav within strip) → settings link. Test with keyboard only.", "activeForm": "Auditing keyboard navigation", "status": "pending" },
+    { "id": "P4_004", "phase": 4, "content": "Focus indicators: 2px outline in severity color (or info blue for neutral elements). Verify visible on all interactive elements. Test with browser :focus-visible behavior.", "activeForm": "Adding focus indicators", "status": "pending" },
+    { "id": "P4_005", "phase": 4, "content": "Reduced motion: audit all animations. The drawer slide, the mark-done fade, the highlight flash, the cockpit count badge update, the schedule preset save toast — all wrapped in @media (prefers-reduced-motion: reduce) overrides that swap to instant transitions.", "activeForm": "Honoring reduced motion", "status": "pending" },
+    { "id": "P4_006", "phase": 4, "content": "Mobile breakpoint <768px: drawer becomes full-screen bottom sheet (slides up not from right). Cockpit dots become horizontal scroll strip. Attention items collapse to single line + tap to expand. Hit targets ≥44×44px (current preset chips at 22px need uppsizing on mobile).", "activeForm": "Building mobile responsive layout", "status": "pending" },
+    { "id": "P4_007", "phase": 4, "content": "Dark mode: add @media (prefers-color-scheme: dark) overrides. Use dark-grey base (not pure black). Re-derive --color-severity-*-bg variants for dark mode (lower alpha works against dark surface). Headline serif italic gets a slight color lift against dark base.", "activeForm": "Building dark mode", "status": "pending" },
+    { "id": "P4_008", "phase": 4, "content": "Manual screen-reader test: NVDA or Narrator. Verify: cockpit reads as a coherent paragraph. Job cards read with verdict + last-run inline. Mark-done buttons announce action + target. Dots are reachable.", "activeForm": "Manual screen-reader test", "status": "pending" },
+    { "id": "P4_009", "phase": 4, "content": "Commit: feat(dashboard): Step 7 — accessibility, responsive, dark mode", "activeForm": "Committing Step 7", "status": "pending" },
+
+    { "id": "P5_001", "phase": 5, "content": "Run python .claude/scripts/analyze_integration.py --staged from business-context-os-dev to catch any stale cross-references in skill docs that might mention removed panels (jobs_panel, run_history, file_health, snapshot_freshness as standalone)", "activeForm": "Running integration audit", "status": "pending" },
+    { "id": "P5_002", "phase": 5, "content": "Update docs/_bcos-framework references to mention the new IA: cockpit + drawer + /settings route. Specifically check docs that might reference 'jobs panel' or panel section numbers (§01 etc) — those are gone.", "activeForm": "Updating framework docs", "status": "pending" },
+    { "id": "P5_003", "phase": 5, "content": "Update bcos-dashboard/README.md to reflect the cockpit-first IA. New screenshots / mockup references. Note that /settings is the home for power-user views.", "activeForm": "Updating dashboard README", "status": "pending" },
+    { "id": "P5_004", "phase": 5, "content": "Capture learnings via ecosystem-manager skill: what worked (translation map → dramatic UX win in one commit; clear-planner manifest enabling fresh-session resumption), surprises (preview_screenshot timeouts; cache-invalidation across composed panels), guidance for future framework UX work.", "activeForm": "Capturing learnings", "status": "pending" },
+    { "id": "P5_005", "phase": 5, "content": "Final commit: docs(dashboard): update README + framework references for cockpit IA + capture learnings", "activeForm": "Final commit", "status": "pending" }
+  ],
+  "openQuestions": [
+    "Drawer for attention items: should clicking an attention item with known source_job open that job's drawer (current proposal in P1_005) or open a separate 'finding detail' drawer? Recommendation: source-job drawer — keeps drawer count low, jobs ARE the natural unit.",
+    "Settings sub-pages: tabbed (single URL with state) or each its own route? Plan currently goes route-per-page — better browser back behavior, but more routing code. Tab-style is simpler; URL would be /settings#runs etc. Open for adjustment.",
+    "First-run detection: currently proposes 'no diary AND no schedule-config'. But a brand-new BCOS install will have schedule-config (it ships with the framework via update.py). Better detector: 'diary has zero entries'. Adjust accordingly.",
+    "Mobile bottom-sheet drawer height: 80vh? Full screen with close handle at top? Recommendation: 90vh with handle, allows peek at the cockpit behind."
+  ],
+  "followUps": [
+    "Step 8 (post-Step-7): introduce the /settings/maintenance-history page that aggregates last N=90 days of diary into a small heatmap calendar — currently data is there but no calendar view exists",
+    "Step 9: drawer for FILE-level inspection — clicking a file in the file-health list opens a drawer showing its full frontmatter, stale-detection rationale, and one-click 'open in editor' (only useful in dev installs)",
+    "Independent: add a /settings/about page with version, link to BCOS framework docs, license — basic chrome that ships with any standalone tool"
+  ]
+}

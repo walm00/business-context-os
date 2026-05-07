@@ -1,0 +1,21 @@
+{
+  "currentStep": 6,
+  "workflow": {
+    "steps": [
+      { "step": 1, "name": "Understand Intent", "status": "completed", "result": "Upgrade context-onboarding to classify content into all 5 doc types, remove limits, add type-specific guidance" },
+      { "step": 2, "name": "Run Discovery", "status": "completed", "result": "11 skills, 1 agent, 0 lessons. Key related: context-ingest (has routing logic), document-standards.md (has type definitions)" },
+      { "step": 3, "name": "Detect Scenario", "status": "completed", "result": "AGENTING — modifying skill in .claude/skills/" },
+      { "step": 4, "name": "Gather Context", "status": "completed", "result": "document-standards.md defines 5 types with examples. context-ingest handles post-onboarding routing. Template already supports all types. Onboarding skill hardcodes type:context and limits clusters to 2-4." },
+      { "step": 5, "name": "Load Scenario Template", "status": "completed", "result": "AGENTING scenario loaded" },
+      { "step": 6, "name": "Present Approach", "status": "in_progress", "result": null },
+      { "step": 7, "name": "Create Session Artifacts", "status": "pending", "result": null },
+      { "step": 8, "name": "Present Full Plan", "status": "pending", "result": null }
+    ]
+  },
+  "intent": {
+    "description": "Upgrade context-onboarding skill to classify content into all 5 document types during onboarding",
+    "primaryFile": ".claude/skills/context-onboarding/SKILL.md",
+    "affectedSystems": [".claude/skills/context-onboarding/"],
+    "scenario": "AGENTING"
+  }
+}
