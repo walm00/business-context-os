@@ -211,6 +211,26 @@ The merge is **additive** — your existing user-level rules are never removed, 
 
 **To revoke later**: open `~/.claude/settings.json` and remove the rules you no longer want. The script never deletes anything from user-level settings.
 
+### Cross-workstation portability
+
+The mirror script handles cross-repo coverage on **one** machine. Three things still don't travel between workstations on their own:
+
+| File / location | What it carries | Portability options |
+|---|---|---|
+| `~/.claude/settings.json` | Cross-repo permissions written by `install_global_permissions.py` | (a) Sync `~/.claude/` via Syncthing, OR (b) re-run the installer on each workstation |
+| `~/.claude/scheduled-tasks/<task>.json` | Your actual cron/Task-Scheduler entries | (a) Sync `~/.claude/` via Syncthing, OR (b) re-run onboarding Step 6 per machine |
+| `~/.claude/projects/<project>/sessions/` | Conversation history | Stays per-machine — large, machine-specific, not useful to sync |
+
+**Recommended setup for a multi-workstation maintainer:**
+
+1. Sync `~/.claude/` via Syncthing across your workstations (excluding `~/.claude/projects/*/sessions/` if you want to keep history machine-local).
+2. Run `install_global_permissions.py` once on your primary machine — Syncthing carries the user-level rules to the others.
+3. Run onboarding Step 6 per repo on the primary machine — Syncthing carries the scheduled-task entries.
+
+**For a single-workstation user:** ignore the above; the mirror script is sufficient.
+
+The same Syncthing pattern is what handles BCOS event-log files (`.claude/quality/ecosystem/resolutions.jsonl` etc.) which are deliberately gitignored on every profile — append-only logs across multi-machine workflows produce git merge conflicts that silently truncate the auditor's history. Syncthing them works; git tracking them does not.
+
 ---
 
 ## How to extend
