@@ -331,14 +331,41 @@ Your context architecture should grow organically. Here is how to know when to a
 
 ### The growth pattern
 
+The right *number* of data points scales with the complexity of the business — a solo consultancy might need 4, a multi-product company with several markets might need 25. What matters is that **every main domain is covered from day one**. Don't artificially cap the count to feel "minimal" — gaps in coverage hurt more than extra data points do.
+
+What grows over time isn't usually the count — it's the depth and the relationship graph:
+
 ```
-Month 1-2:  3-5 core data points, basic ownership
-Month 3-4:  Add 2-3 more as gaps become apparent, add boundaries
-Month 5-6:  Define relationships between data points
-Month 7+:   Add specialized data points as needed, refine continuously
+Phase 1 (initial):       Cover every main domain. Basic ownership on each.
+                         Count = however many domains the business actually has.
+Phase 2 (refinement):    Sharpen boundaries (EXCLUSIVELY_OWNS, STRICTLY_AVOIDS).
+                         Split data points that turned out to be two topics.
+Phase 3 (relationships): Define BUILDS_ON / REFERENCES / PROVIDES between data points.
+Phase 4 (specialization): Add specialized data points as new initiatives create
+                          genuinely new categories of knowledge.
 ```
 
-**Do not rush this.** A small, well-maintained context architecture beats a large, neglected one every time.
+**Do not rush refinement.** A complete-but-rough architecture beats a polished-but-partial one — you can sharpen boundaries on existing data points later, but missing domains stay invisible until something breaks.
+
+---
+
+### What goes IN a data point vs. stays in the source
+
+A data point is the **canonical, durable** statement of a topic. Not every fact about that topic belongs inside it.
+
+**Extract into the data point:**
+- Stable concepts: mission, positioning, target audience definition, brand values, pricing *model*, decision frameworks, methodology, glossary terms
+- Historical facts that won't change: founding date, original thesis, past pivots, signed agreements, key people decisions
+- Critical rules and constraints: brand guidelines, policies, escalation rules
+- Relationships: who owns what, which data point feeds which
+
+**Leave in the source file (and reference it):**
+- Volatile numbers that change often: current MRR, headcount, current campaign spend, this quarter's KPIs
+- Time-series data: monthly metrics, transaction logs, invoice ledgers, performance reports
+- Operational state that has its own system of record: CRM pipeline, accounting books, ticket queues
+- Bulk verbatim artifacts: contracts as signed, call transcripts, exports — these go in `_collections/` with a manifest, not into a data point
+
+**Rule of thumb:** if a fact will be wrong within 90 days, don't bake it into a data point — point at the source. If a fact reflects a decision or definition, extract it. The data point should still be true a year from now even if every number in the business has moved.
 
 ---
 

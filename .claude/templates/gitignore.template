@@ -83,9 +83,6 @@ __pycache__/
 # Syncthing ignore config (per-machine, not repo content; reveals maintainer sync setup)
 .stignore
 
-# Umbrella node registration (per-installation; references local sibling repos)
-.bcos-umbrella.json
-
 # Galaxy (in-development, not for public release yet)
 .claude/scripts/bcos-galaxy/
 
@@ -121,6 +118,13 @@ docs/document-index.md
 # Daily digest (runtime output, overwritten each morning)
 docs/_inbox/daily-digest.md
 docs/_inbox/daily-digest.json
+
+# Umbrella node registration — per-install file pointing at the umbrella host.
+# In SHARED profile (public / multi-tenant repos) this leaks the umbrella id
+# and local sibling layout, so we gitignore. In PERSONAL profile this is
+# treated as portable per-portfolio config and committed (so siblings re-cloned
+# on a new workstation come with the umbrella binding already attached).
+.bcos-umbrella.json
 
 # Active plan workspaces — implementation plans, manifests, pre-flight notes,
 # and review captures live here while a feature is being built. The folder
