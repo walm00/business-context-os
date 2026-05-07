@@ -29,11 +29,19 @@
 
 ## Install
 
-**One command. Drops into any repo.**
+**Easiest — let Claude do it.** Open Claude Code in any directory and paste:
+
+> *"Install BCOS from https://github.com/walm00/business-context-os and walk me through onboarding."*
+
+Claude clones the repo, picks the right install path for your platform (Windows/macOS/Linux), runs setup, and steps straight into onboarding. No prereq checks to debug — if something's missing, Claude resolves it interactively.
+
+**Or manually, one command:**
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/walm00/business-context-os/main/install.sh)
 ```
+
+(Requires `bash`, `curl`, and `tar` on PATH — fine on macOS/Linux and on Windows under WSL or Git Bash.)
 
 Drop anything you already have — SOPs, brand docs, meeting notes, exports — into `docs/_inbox/` (skip if you're starting fresh). Then open Claude Code in that repo and say:
 

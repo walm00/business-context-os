@@ -200,7 +200,7 @@ Structure (abbreviated):
     "whitelist": ["missing-last-updated", "..."]
   },
   "digest": { "write_file": true, "path": "docs/_inbox/daily-digest.md" },
-  "tuning": { "suggest_reduce_after_green_runs": 3 }
+  "tuning": { "suggest_reduce_after_green_runs": 5 }
 }
 ```
 

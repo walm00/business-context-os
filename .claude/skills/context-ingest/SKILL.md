@@ -48,6 +48,23 @@ description: |
 
 ---
 
+## Front-door dispatch (use first)
+
+`context-ingest` is the **single public entry point** for new material. Detect the input shape *before* asking the user, and dispatch to the specialist skill when one fits — don't make the user know which slash command to type.
+
+| Input shape | Dispatch to | Why |
+|-------------|-------------|-----|
+| HTTP/HTTPS URL (article, GitHub, YouTube) | `/wiki run <url>` (the `bcos-wiki` skill, Path A) | Wiki owns external-source ingest, banner citations, schema validation, refresh tier |
+| Path inside `docs/_inbox/` and user says "make this a wiki page" | `/wiki promote <path>` (Path B) | Wiki owns the `_inbox/` → `_wiki/pages/` promotion |
+| Slack export, meeting transcript, chat log, call recording transcript | `context-mine` first → its output lands in `_inbox/` → resume `context-ingest` triage on the result | Mine is the extraction preprocessor; ingest is the classifier/router |
+| Loose notes, pasted text, brain dump, "save this for later" | Stay in `context-ingest` (use AskUserQuestion below) | This skill owns inbox/planned/active classification |
+
+If the dispatch is unambiguous (a URL is a URL), invoke the specialist directly and tell the user one sentence about what you did. If the input is mixed (e.g. Slack export *and* a URL), do mine first, then handle the URL via `/wiki run` separately, then return to ingest for whatever's left.
+
+`context-routing` (`/context`) is **retrieval, not ingest** — never dispatch there from here.
+
+---
+
 ## The Ingest Process
 
 ### Step 1: Receive and Triage

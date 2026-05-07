@@ -9,62 +9,67 @@
     "index-health": {
       "enabled": true,
       "schedule": "daily",
-      "_about": "Rebuild document index + scan for frontmatter, metadata, and cross-reference issues. Cheap — always run daily."
+      "_about": "Run cadence: starts daily, tune down once stable. Rebuild document index + scan for frontmatter, metadata, and cross-reference issues. Cheap — fine to leave daily long-term."
     },
     "daydream-lessons": {
       "enabled": true,
-      "schedule": "mon",
-      "_about": "Strategic reflection + lessons capture. Once a week is usually enough."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'mon') — strategic reflection + lessons capture rarely needs more than that once context settles."
     },
     "daydream-deep": {
       "enabled": true,
-      "schedule": "wed",
-      "_about": "Deeper mid-week daydream — gaps, structural change. Skip in new projects where context is still forming."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly mid-week (e.g. 'wed') — gaps and structural change. In mature projects, biweekly is also reasonable."
     },
     "audit-inbox": {
       "enabled": true,
-      "schedule": "fri",
-      "_about": "Deep CLEAR audit + inbox processing. Weekly by default; bump to twice-weekly if the inbox grows faster than you can triage."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'fri') — deep CLEAR audit + inbox processing. Bump back up to twice-weekly if the inbox grows faster than you can triage."
     },
     "architecture-review": {
       "enabled": true,
-      "schedule": "1st",
-      "_about": "Monthly full architecture + ecosystem pass. Quarterly is fine once context is mature — just change 'schedule' to a cron like '0 0 1 */3 *' or ask Claude to do it."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state monthly (e.g. '1st') or quarterly ('0 0 1 */3 *') once context is mature — full architecture + ecosystem pass."
     },
     "wiki-stale-propagation": {
       "enabled": true,
       "schedule": "daily",
-      "_about": "Scan wiki pages whose builds-on sources changed after last-reviewed. Cheap metadata-only check; emits action items for human review."
+      "_about": "Run cadence: starts daily, tune down once stable. Cheap metadata-only check — fine to leave daily long-term. Scans wiki pages whose builds-on sources changed after last-reviewed and emits action items."
     },
     "wiki-source-refresh": {
       "enabled": true,
-      "schedule": "mon",
-      "_about": "Two-tier source-summary refresh: HEAD-only quick checks at stale_threshold_days/4, full refresh-must-rediscover at stale_threshold_days."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'mon') — two-tier source-summary refresh: HEAD-only quick checks at stale_threshold_days/4, full refresh-must-rediscover at stale_threshold_days."
     },
     "wiki-graveyard": {
       "enabled": true,
-      "schedule": "1st",
-      "_about": "Monthly archive-candidate scan for stale/orphaned/expired wiki pages. Suggests archive actions; only whitelisted post-mortem expiry is auto-fixable."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state monthly (e.g. '1st') — archive-candidate scan for stale/orphaned/expired wiki pages. Only whitelisted post-mortem expiry is auto-fixable."
     },
     "wiki-coverage-audit": {
       "enabled": true,
-      "schedule": "0 0 1 */3 *",
-      "_about": "Quarterly cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters not present in document-index as INFO."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state quarterly ('0 0 1 */3 *') — cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters missing from document-index as INFO."
     },
     "auto-fix-audit": {
       "enabled": true,
-      "schedule": "fri",
-      "_about": "Friday weekly safety brake on the self-learning ladder. Surfaces amber cards when a learned rule reversal rate crosses 5% in 7 days. Recommend-only at v0.1."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'fri') — safety brake on the self-learning ladder. Surfaces amber cards when a learned rule reversal rate crosses 5% in 7 days. Recommend-only at v0.1."
     },
     "lifecycle-sweep": {
       "enabled": true,
-      "schedule": "fri",
-      "_about": "Friday weekly classifier of active-zone docs against lifecycle-routing.yml. Surface-only for the first 2 weeks (default); flip lifecycle-routing.yml > global.surface_only=false after 0 false-positives confirmed to enable auto-routing."
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'fri') — classifier of active-zone docs against lifecycle-routing.yml. Surface-only for the first 2 weeks (default); flip lifecycle-routing.yml > global.surface_only=false after 0 false-positives confirmed to enable auto-routing."
     },
     "wiki-canonical-drift": {
       "enabled": true,
       "schedule": "daily",
-      "_about": "Daily mechanical scan: wiki captures whose numeric facts diverge from canonical docs whose last-updated is > 180 days. Emits wiki-canonical-drift-suggestion findings; never edits canonical docs. Schema 1.2 Class D — see job-wiki-canonical-drift.md."
+      "_about": "Run cadence: starts daily, tune down once stable. Mechanical scan — fine to leave daily long-term. Wiki captures whose numeric facts diverge from canonical docs whose last-updated is > 180 days. Emits wiki-canonical-drift-suggestion findings; never edits canonical docs. Schema 1.2 Class D — see job-wiki-canonical-drift.md."
+    },
+    "wiki-failed-ingest": {
+      "enabled": true,
+      "schedule": "daily",
+      "_about": "Run cadence: starts daily, tune down once stable. Cheap dead-letter scan — fine to leave daily long-term. Surfaces stuck queue.md URLs (default >14 days), source-summary files missing provenance.source, and wiki drafts with malformed/missing YAML frontmatter. Mechanical-only; never auto-fixes. See job-wiki-failed-ingest.md."
     }
   },
   "auto_fix": {
@@ -89,12 +94,14 @@
     "write_file": true,
     "path": "docs/_inbox/daily-digest.md",
     "auto_commit": false,
-    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl. Set auto_commit: true to commit generated artifacts (digest, index, diary, wake-up context) at the end of each run — but ONLY if the working tree has no other changes. Never pushes, never branches. Safe default is false; flip to true once you trust a week of clean runs.",
+    "_about": "Overwrites each run. Full history lives in .claude/hook_state/schedule-diary.jsonl. Set auto_commit: true to commit generated artifacts (digest, index, diary, wake-up context) at the end of each run — but ONLY if the working tree has no other changes AND the current branch is in auto_commit_branches. Never pushes, never branches. Safe default is false; flip to true once you trust a week of clean runs.",
     "auto_commit_block_on_red": true,
-    "_about_block_on_red": "When true (default), auto_commit is skipped on red verdict runs even if the tree is otherwise clean. Surfaces an Auto-commit paused chip in the cockpit. Set to false to opt back into committing on red days."
+    "_about_block_on_red": "When true (default), auto_commit is skipped on red verdict runs even if the tree is otherwise clean. Surfaces an Auto-commit paused chip in the cockpit. Set to false to opt back into committing on red days.",
+    "auto_commit_branches": ["main", "master", "dev", "develop"],
+    "_about_branches": "Allowlist of long-lived branches where auto-commit may land. On any other branch (short-lived feature branches like 'feat/foo'), the dispatcher writes the digest locally but skips the commit so unrelated daily-maintenance commits don't pollute feature PRs. Add 'trunk', 'production', 'staging', or your team's gitflow names if needed."
   },
   "tuning": {
-    "suggest_reduce_after_green_runs": 3,
+    "suggest_reduce_after_green_runs": 5,
     "suggest_increase_if_findings_trending_up": true,
     "_about": "Adaptive tuning is suggestion-only. The dispatcher never changes this config on its own."
   }

@@ -229,10 +229,33 @@ done
 
 # Quality infrastructure
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/config.json" ".claude/quality/ecosystem/config.json"
-copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/state.json" ".claude/quality/ecosystem/state.json"
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-starter.json" ".claude/quality/ecosystem/lessons.json"
 copy_if_missing "$SCRIPT_DIR/.claude/quality/ecosystem/lessons-schema.md" ".claude/quality/ecosystem/lessons-schema.md"
 mkdir -p .claude/quality/sessions
+
+# Self-learning event log + derived state. These files are gitignored
+# (event logs, conflict-prone) and seeded inline as empty defaults on
+# first install. The dispatcher / record_resolution.py / promote_resolutions.py
+# populate them at runtime.
+seed_if_missing() {
+    local dest="$1"
+    local content="$2"
+    local dir
+    dir=$(dirname "$dest")
+    [ -d "$dir" ] || { mkdir -p "$dir"; CREATED_DIRS=$((CREATED_DIRS + 1)); }
+    if [ -f "$dest" ]; then
+        echo -e "  ${YELLOW}SKIP${NC}  $dest (already exists)"
+        SKIPPED=$((SKIPPED + 1))
+    else
+        printf '%s' "$content" > "$dest"
+        echo -e "  ${GREEN}SEED${NC}  $dest"
+        COPIED=$((COPIED + 1))
+    fi
+}
+seed_if_missing ".claude/quality/ecosystem/resolutions.jsonl" ""
+seed_if_missing ".claude/quality/ecosystem/learned-rules.json" '{"$schema":"https://json-schema.org/draft/2020-12/schema","schema_version":"1.0.0","rule_count":0,"rules":[]}'
+seed_if_missing ".claude/quality/ecosystem/learning-blocklist.json" '{"$schema":"https://json-schema.org/draft/2020-12/schema","schema_version":"1.0.0","blocked":[]}'
+seed_if_missing ".claude/quality/ecosystem/state.json" '{"version":"1.0","lastUpdated":"","lastAudit":"","inventory":{}}'
 
 # Schedule dispatcher template — onboarding uses this as the source for the live
 # schedule-config.json. update.py keeps this template in sync across releases.

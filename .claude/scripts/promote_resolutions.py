@@ -89,20 +89,33 @@ def _load_blocklist(path: Path | None) -> set[str]:
 
 
 def _load_rows(path: Path | None) -> list[dict[str, Any]]:
+    """Load resolutions.jsonl. Drops are surfaced via _LAST_LOAD_REPORT
+    so the dispatcher can emit a `data-corruption-detected` finding.
+    """
     p = path or DEFAULT_RESOLUTIONS
-    if not p.is_file():
-        return []
-    out: list[dict[str, Any]] = []
-    with p.open(encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                out.append(json.loads(line))
-            except Exception:
-                continue
-    return out
+    try:
+        from _jsonl_safe import safe_load_jsonl  # type: ignore
+    except ImportError:
+        if not p.is_file():
+            return []
+        out: list[dict[str, Any]] = []
+        with p.open(encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    out.append(json.loads(line))
+                except Exception:
+                    continue
+        return out
+    rows, report = safe_load_jsonl(p)
+    global _LAST_LOAD_REPORT
+    _LAST_LOAD_REPORT = report
+    return rows
+
+
+_LAST_LOAD_REPORT = None  # type: ignore[assignment]
 
 
 def _calendar_span_days(timestamps: list[str]) -> int:

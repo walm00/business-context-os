@@ -77,6 +77,20 @@ Build an ordered list of jobs to run. Order: `index-health` first (always, if en
 
 ---
 
+## Step 2.5: Refresh the Context Index (once per run)
+
+Before running any job, regenerate `.claude/quality/context-index.json` exactly **once**:
+
+```
+python .claude/scripts/context_index.py --write
+```
+
+Every job downstream that needs frontmatter / zone / cluster facets must call `load_context_index_cached()` from `context_index.py` rather than re-walking `docs/`. The cache TTL is 10 min (longer than a full dispatcher cycle), so all jobs in this run hit the same in-memory snapshot. This turns N full-tree walks per dispatcher tick into one — the difference matters for repos with hundreds of docs.
+
+If a job has its own private parser for legacy reasons, that's fine — but new jobs and edits to existing jobs should prefer the cached helper.
+
+---
+
 ## Step 3: Read Recent Diary
 
 Read up to the last 30 entries from `.claude/hook_state/schedule-diary.jsonl`.
@@ -112,6 +126,8 @@ python .claude/scripts/append_diary.py '{"ts":"2026-04-15T09:04:12","job":"index
 Do NOT use `echo ... >> .claude/hook_state/schedule-diary.jsonl` — raw redirects into `.claude/` trigger the sensitive-file approval prompt on every append.
 
 If a job errors, catch the error, log `"verdict":"error"` with `"notes":"{short error message}"`, and continue to the next job. Do not stop the dispatcher on one job's failure.
+
+**Data-corruption surfacing.** JSONL loaders (`auto_fix_audit._load_rows`, `promote_resolutions._load_rows`, `_load_diary`, etc.) use `_jsonl_safe.safe_load_jsonl()` which records dropped (malformed) lines in a `_LAST_LOAD_REPORT` module-global. When a job that uses these loaders completes with `_LAST_LOAD_REPORT.dropped > 0`, surface the report as a `data-corruption-detected` action item in the digest — the auditor's denominator silently shrinks otherwise. New loaders SHOULD use `safe_load_jsonl` rather than the legacy `try/except: continue` pattern; the helper signature returns `(rows, report)` so callers can include the finding without changing call-site shape.
 
 Wiki jobs are first-class job references and use the same dispatcher contract:
 
@@ -209,6 +225,13 @@ Also echo a compressed version of this report to the chat output so the user see
 ## Step 7b: Auto-Commit Generated Artifacts (optional, clean-tree only)
 
 If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), commit the generated artifacts so the next session starts from a clean tree and the diary/index are versioned.
+
+**Branch allowlist (skip commit on short-lived feature branches):**
+
+1. Read `digest.auto_commit_branches` from `schedule-config.json`. Default: `["main", "master", "dev", "develop"]`.
+2. Run `git rev-parse --abbrev-ref HEAD` to get the current branch.
+3. If the current branch is **not** in the allowlist → **skip** the commit entirely. Still write the digest file to disk (so it's available locally), but record `auto_commit: skipped (branch {name} not in allowlist)` in the digest. The user's feature-branch PR diff stays clean of unrelated digest commits; the next session on a long-lived branch picks up the digest naturally.
+4. If the current branch IS in the allowlist → proceed to the clean-tree rule below.
 
 **Clean-tree rule (borrowed from the command-center update flow):**
 

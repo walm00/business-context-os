@@ -733,6 +733,36 @@ def write_context_index(root: Path | None = None, output: Path | None = None) ->
     return index
 
 
+def load_context_index_cached(
+    root: Path | None = None,
+    max_age_seconds: int = 600,
+    output: Path | None = None,
+) -> dict[str, Any]:
+    """Return the persisted index if fresh, else rebuild and persist.
+
+    Use this from scheduled jobs and dispatcher children — it amortises a
+    single tree walk across every consumer in the same run instead of each
+    job re-walking docs/. The dispatcher should still call
+    `write_context_index()` once at the start of a run so the timestamp
+    is anchored to the run's start; downstream jobs then hit the cache.
+
+    `max_age_seconds` defaults to 10 minutes — long enough to cover a
+    full dispatcher cycle, short enough that an interactive caller after
+    edits doesn't read a stale index.
+    """
+    root = (root or REPO_ROOT).resolve()
+    output = (output or (root / ".claude" / "quality" / "context-index.json")).resolve()
+    if output.exists():
+        try:
+            age = _dt.datetime.now().timestamp() - output.stat().st_mtime
+            if age <= max_age_seconds:
+                with output.open("r", encoding="utf-8") as fh:
+                    return json.load(fh)
+        except Exception:
+            pass
+    return write_context_index(root=root, output=output)
+
+
 def _sanitize_for_persist(index: dict[str, Any]) -> dict[str, Any]:
     """Strip absolute paths and the local repo name from the persisted artifact.
 

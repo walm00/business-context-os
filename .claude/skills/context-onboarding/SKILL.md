@@ -595,11 +595,28 @@ Run the schedule-dispatcher skill to execute today's scheduled CLEAR maintenance
 Keep output focused. If everything is green with no action items, say so in one line.
 ```
 
-### 6e. Confirm and close out
+### 6e. Verify the task actually exists
+
+Before declaring success, confirm the OS-level task was created. Use `mcp__scheduled-tasks__list_scheduled_tasks` and check that `bcos-{project}` appears with the correct cron expression. If it's missing, surface the error and stop — don't claim success on a half-failed setup.
+
+### 6f. Offer cadence tuning (optional)
+
+The template ships with every job set to `daily`. That's intentional — fresh setups should over-monitor for the first 1-2 weeks until the auto-tuner suggests reductions after green-run streaks. But power users sometimes want to tune up front.
+
+Use `AskUserQuestion`:
+
+- Question: "Default is daily for everything (recommended). Want to adjust any cadences now?"
+- Options:
+  - **Keep defaults** — runs daily for now; auto-tuner will suggest reductions after ~5 green runs
+  - **Adjust now** — invoke the `schedule-tune` skill so the user can describe changes in plain English
+
+If user picks "Adjust now", invoke `schedule-tune`. If "Keep defaults", continue.
+
+### 6g. Confirm and close out
 
 Check off "Dispatcher task created" in the onboarding checklist. Tell the user:
 
-> Maintenance is live. One task, `bcos-{project}`, runs every morning at {time}. It produces `docs/_inbox/daily-digest.md` and a one-line summary. You can change frequencies anytime by telling me things like "run audit twice a week" or "turn off deep daydream" — I'll handle the config edit.
+> Maintenance is live. One task, `bcos-{project}`, runs every morning at {time}. It produces `docs/_inbox/daily-digest.md` and a one-line summary. You can change frequencies anytime by telling me things like "run audit twice a week" or "turn off deep daydream" — I'll handle the config edit via the `schedule-tune` skill.
 >
 > Want to test it now with "run today's maintenance now"?
 

@@ -12,6 +12,8 @@ authority-docs:
 
 # /wiki
 
+> **See also:** `context-ingest` is the single public entry point for new material. If the user dropped raw content of unknown shape ("here's a doc", "save this"), prefer `context-ingest` — it dispatches here automatically when the input is a URL or an `_inbox/` capture. Use `/wiki` directly only when the user explicitly names the wiki (`/wiki run`, "promote to wiki", "add to the wiki").
+
 Wiki-zone manager for BCOS. Routes URL ingests, local-document promotions, and inbox captures into `docs/_wiki/` as first-class managed documents (schema-validated frontmatter, derived `index.md`, BCOS-compatible CLEAR ownership).
 
 ## Trigger phrases
