@@ -1,0 +1,76 @@
+# =============================================================================
+# Wiki Schema Fragment — EXAMPLE
+# =============================================================================
+# Live location: docs/_wiki/.schema.d/<plugin-name>.yml
+#
+# This is a TEMPLATE / REFERENCE — it is NOT installed into your live
+# `.schema.d/` directory. Each BCOS-enabled plugin (initiatives-os,
+# executions-os, etc.) ships its own fragment via that plugin's install_here.py.
+#
+# Fragments extend the base wiki vocabulary at `docs/_wiki/.schema.yml`
+# without ever editing it. The merger at
+# `.claude/scripts/_wiki_schema_merge.py` reads base + every fragment in
+# `.schema.d/*.yml` and presents a unified schema to consumers (frontmatter
+# hook, `/wiki schema list`, future lint passes).
+#
+# CONTRACT — what fragments may declare:
+#   - plugin:               required; plugin slug for diagnostics
+#   - plugin-version:       required-ish; helps reconcile across upgrades
+#   - cross-references:     plugin-defined frontmatter ref fields
+#   - raw-source-types:     plugin-defined raw subtypes
+#
+# CONTRACT — what fragments must NOT declare:
+#   - page-types, statuses, detail-levels, authority-values, lint-checks,
+#     auto-fixes, thresholds, schema-version, migrations, clusters
+#   These are owned by the BASE schema (`_wiki/.schema.yml`).
+#
+# CONFLICT RULES:
+#   - Two fragments declaring the SAME ref-field with IDENTICAL attributes
+#     → no-op (allowed; useful when plugins overlap on shared fields).
+#   - Two fragments declaring the same ref-field with DIFFERING attributes
+#     → fragment merge error surfaced via `/wiki schema list` and the hook.
+#   - Same rules for raw-source-types (case-sensitive equality).
+#
+# See: docs/_bcos-framework/architecture/wiki-zone.md (Schema fragments overlay)
+# =============================================================================
+
+plugin: example-plugin
+plugin-version: 1.0.0
+
+# -----------------------------------------------------------------------------
+# Cross-reference ref fields contributed by this plugin.
+#
+# Each entry declares one frontmatter field name that wiki pages may use to
+# point at plugin-owned records. Field naming convention: `<plugin>-refs`
+# (singular `<plugin>-ref` is reserved for future scalar variants).
+# -----------------------------------------------------------------------------
+
+cross-references:
+
+  example-refs:
+    type: list
+    item-pattern: "^[a-z0-9-]+$"
+    backlinked-from: "docs/_example-plugin/<slug>/"
+    description: "Wiki page references an example-plugin record by slug."
+
+  # Compound references can use a separator pattern to point at a nested record.
+  # example-project-refs:
+  #   type: list
+  #   item-pattern: "^[a-z0-9-]+/[a-z0-9-]+$"
+  #   backlinked-from: "docs/_example-plugin/<initiative-slug>/<project-slug>.json"
+  #   description: "Wiki page references a project nested under an initiative."
+
+# -----------------------------------------------------------------------------
+# Raw-source subtypes contributed by this plugin.
+#
+# These extend the implicit enum in `docs/_wiki/raw/<type>/`. The base wiki
+# ships with `web`, `github`, `youtube`, `local`. Plugins may add new
+# subtypes that they routinely ingest (e.g. `meeting`, `whatsapp`, `email`).
+#
+# Either inline-list or block-list form is accepted.
+# -----------------------------------------------------------------------------
+
+raw-source-types:
+  - meeting
+  - whatsapp
+  - email

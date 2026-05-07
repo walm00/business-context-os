@@ -1,0 +1,1287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "sessionId": "20260504_154239_wiki-missing-layers",
+  "triggeredBy": "clear-planner",
+  "scenarioType": "agenting",
+  "scenarioSecondary": "documentation",
+  "taskDescription": "Build the missing layers of BCOS's context base: cross-zone retrieval surface, sub-agent isolation for big-body work, wiki-zone stub repair, and task-driven cross-zone routing. Wiki is one zone among several. Plan must work for empty and populated repos. Mechanical-first principle (D-10): LLM is opt-in escalation only, never auto-fires. Foundation reuses the canonical context_index.py / context-index.json shipped on 2026-05-04 (commit 871ff4d).",
+  "createdAt": "2026-05-04T15:42:39Z",
+  "planStatus": "completed",
+  "planStatusHistory": [
+    {
+      "status": "draft",
+      "timestamp": "2026-05-04T15:42:39Z",
+      "event": "Planning session started",
+      "triggeredBy": "clear-planner"
+    },
+    {
+      "status": "awaiting_approval",
+      "timestamp": "2026-05-04T15:55:00Z",
+      "event": "Plan artifacts created; presenting full plan for Gate 2 approval",
+      "triggeredBy": "clear-planner"
+    },
+    {
+      "status": "approved",
+      "timestamp": "2026-05-04T16:05:00Z",
+      "event": "User approved at Gate 2",
+      "triggeredBy": "user"
+    },
+    {
+      "status": "needs_revision",
+      "timestamp": "2026-05-04T18:10:00Z",
+      "event": "User audit flagged six blockers: status drift across files, schema-violating task IDs (P0_*a / PE_*), D-10 LLM auto-trigger contradiction in P1_005, missing acknowledgement of context_index.py canonical model, weak TDD ordering, sparse per-task verification",
+      "triggeredBy": "user"
+    },
+    {
+      "status": "approved",
+      "timestamp": "2026-05-04T18:25:00Z",
+      "event": "Pre-implementation cleanup pass: phases renumbered P1–P7 (was P0–P5+99); IDs schema-compliant; status synced; D-10 enforced (--semantic opt-in only); context_index.py acknowledged as P1/P2 foundation; TDD ordering applied (fixture + failing test first per phase); per-task verification added",
+      "triggeredBy": "user"
+    },
+    {
+      "status": "in_progress",
+      "timestamp": "2026-05-04T15:38:08Z",
+      "event": "P1 (Zone Registry) shipped: fixtures, drift test, context-zones.md, _context-zones.yml.tmpl, load_zone_registry.py, system-design + wiki-zone cross-links. 8/8 zone-registry tests pass; 16 wiki + 4 context-index tests still green; integration audit clean.",
+      "triggeredBy": "implementation"
+    },
+    {
+      "status": "in_progress",
+      "timestamp": "2026-05-04T16:16:38Z",
+      "event": "P2 (Cross-Zone Read Foundation) shipped: 5-doc fixture corpus, test_context_search.py (15 assertions), context_search.py (BM25 over context-index.json, --semantic opt-in only, slug-stable citation-ids), context-routing skill (SKILL.md + search.md), /wiki search sugar wired into bcos-wiki dispatch, wiki-zone.md RAG section rewritten as 'shipped today' with future RAG below, context-zones.md gains search entry-point. 15/15 search tests + 8/8 zone-registry + 16/16 wiki + 4/4 context-index + 16 frontmatter + 0 reference errors + integration audit clean. Ecosystem state refreshed (15 skills now).",
+      "triggeredBy": "implementation"
+    },
+    {
+      "status": "in_progress",
+      "timestamp": "2026-05-04T16:54:52Z",
+      "event": "P4 (Wiki Stub Repair) shipped: _wiki_yaml.py consolidated parser+emitter (refresh_wiki_index migrated; 6/6 parser tests), _wiki_http.py HEAD/ETag (6/6 tests), schema 1.0->1.1 migration recipe (real, reversible round-trip 3/3 tests), _wiki_lint.py Jaccard duplication detection per user choice (4/4 tests), schema template gains etag/last-modified/content-hash for source-summary, docs deltas in wiki-zone.md, lint.md Step K, migration-helpers.md. 20/20 stub-repair tests green; all prior regressions green.",
+      "triggeredBy": "implementation"
+    },
+    {
+      "status": "in_progress",
+      "timestamp": "2026-05-04T17:02:44Z",
+      "event": "P3 (Sub-Agent Isolation) shipped: wiki-fetch agent (input/output contract, 4000-token cap), wiring across run/refresh/promote/create with explicit anti-inline-fetch rule, _wiki_fetch_contract.py validator (canonical/error/malformed/oversized), _wiki_budget.py cumulative dispatch decider (parallel/serial per 80% rule), wiki-zone.md Operational Discipline section, ecosystem state refreshed (15 skills, 2 agents). 15/15 P3 tests + 20/20 P4 + all prior regressions green.",
+      "triggeredBy": "implementation"
+    },
+    {
+      "status": "in_progress",
+      "timestamp": "2026-05-04T19:05:32Z",
+      "event": "P5 (Task-Driven Cross-Zone Routing) shipped — the architectural one. _context.task-profiles.yml.tmpl with 9 profiles + per-repo override loader; validate_task_profiles.py; context_bundle.py resolver (mechanical pattern-matching, BFS edge walk, source-of-truth ranking, freshness verdicts, conflict detection on overlapping EXCLUSIVELY_OWNS across zones, coverage gaps, unsatisfied-zone-requirements); skill surface (context-routing/bundle.md + bcos-wiki/bundle.md); context-routing.md framework doc. D-10 strict: --resolve-conflicts and --verify-coverage are explicit opt-in only, both raise LLMEscalationNotImplementedError without --dry-run. 20/20 P5 tests + 119 prior regressions all green.",
+      "triggeredBy": "implementation"
+    },
+    {
+      "status": "completed",
+      "timestamp": "2026-05-04T19:55:46Z",
+      "event": "P7 (FIXED END) closed: doc-lint clean (frontmatter 17/17, references 0 errors, task-profiles 9/9), integration audit clean (no coverage gaps), ecosystem state refreshed (15 skills, 2 agents, 2 utilities, HEALTHY), 6 institutional learnings captured (L-017..L-022). All 7 phases shipped: P1 zone registry (8/8), P2 cross-zone search (9/9), P3 sub-agent isolation (9/9), P4 wiki stub repair (9/9), P5 task-driven routing (12/12), P6 embeddings deferred (conditional, not triggered), P7 fixed-end (5/5). 130 tests across 7 suites green. Ready for public PR.",
+      "triggeredBy": "implementation"
+    }
+  ],
+  "userApproval": {
+    "approved": true,
+    "timestamp": "2026-05-04T18:25:00Z",
+    "approvalType": "conditional",
+    "userComment": "Approved conceptually at Gate 2; cleanup pass before implementation per audit verdict.",
+    "conditions": [
+      "Renumber phases to P1–P7 with schema-compliant task IDs",
+      "Sync status across README, implementation-plan, plan-manifest",
+      "Drop LLM auto-trigger in P2_006; --semantic flag is the only escalation path",
+      "Reframe P1/P2 to build on context_index.py / context-index.json",
+      "Reorder each phase: fixture + failing test BEFORE implementation tasks",
+      "Every task carries a verification block"
+    ]
+  },
+  "discoveryResults": {
+    "agentsFound": [
+      "explore"
+    ],
+    "skillsFound": [
+      "bcos-wiki",
+      "clear-planner",
+      "context-audit",
+      "context-ingest",
+      "context-mine",
+      "context-onboarding",
+      "core-discipline",
+      "daydream",
+      "doc-lint",
+      "ecosystem-manager",
+      "lessons-consolidate",
+      "schedule-dispatcher",
+      "schedule-tune",
+      "todo-utilities"
+    ],
+    "scriptsFound": [
+      "context_index.py (canonical context model, shipped 2026-05-04)",
+      "build_document_index.py (consumer of context_index.py)",
+      "refresh_wiki_index.py",
+      "wiki_schema.py (migrate is stub)",
+      "validate_frontmatter.py",
+      "validate_references.py",
+      "test_wiki_capability.py (16 tests, green)",
+      "test_context_index.py (4 tests, green)",
+      "analyze_integration.py",
+      "refresh_ecosystem_state.py",
+      "generate_wakeup_context.py"
+    ],
+    "canonicalArtifacts": [
+      ".claude/quality/context-index.json (52 docs, frontmatter+edges+ownership+freshness+warnings)",
+      ".claude/quality/ecosystem/state.json (14 skills, 1 agent, lastAudit 2026-05-04)",
+      ".claude/quality/ecosystem/lessons.json (16 lessons; L-014/015/016 align with mechanical-first)",
+      ".claude/quality/schedule-config.template.json"
+    ],
+    "reuseCandidates": [
+      "context_index.py: provides zone classification (_zone_for), trust levels, freshness, edges — P1 wraps it declaratively, P2 reads its JSON output",
+      "context-index.json: already-built corpus with frontmatter+edges — P2 search reads from it (no re-walk)",
+      "build_document_index.py: consumer pattern for context_index.py — P2 search follows same shape",
+      "explore agent: sub-agent prior art for wiki-fetch shape (P3)",
+      "ecosystem-manager skill: FIXED END mandatory (P7)",
+      "doc-lint skill: FIXED END mandatory (P7)",
+      "AskUserQuestion: P4_009 lint-impl-or-remove decision; P5_009 conflict resolution UX",
+      "wiki-zone-integration plan precedent: durable-vs-runtime split, per-task verification convention"
+    ],
+    "gapsIdentified": [
+      "No /context search across zones (P2 fills)",
+      "No /context bundle for task-driven routing (P5 fills)",
+      "No sub-agent isolation for fetches (P3 fills)",
+      "No HEAD/ETag/Last-Modified impl despite wiki-zone.md claim (P4 fills)",
+      "wiki_schema.py migrate is a stub (P4 fills) — verified failing: 'No executable migration recipe'",
+      "duplication-vs-data-point lint described but not implemented (P4 resolves: impl or remove)",
+      "Three hand-rolled YAML parsers — no consolidation (P4 fills via _wiki_yaml.py)",
+      "No task-profile schema or .task-profiles.yml.tmpl (P5 fills)",
+      "No declarative zone registry to mirror context_index.py semantics (P1 fills)"
+    ]
+  },
+  "preFlightDecisions": [
+    {
+      "id": "D-01",
+      "topic": "Search command naming",
+      "default": "Both /wiki search and /context search, shared backend"
+    },
+    {
+      "id": "D-02",
+      "topic": "Collections as zone vs view",
+      "default": "Real zone"
+    },
+    {
+      "id": "D-03",
+      "topic": "Live MCP precedence",
+      "default": "Per-profile, not global"
+    },
+    {
+      "id": "D-04",
+      "topic": "Task-profile location",
+      "default": "Framework template + per-repo override"
+    },
+    {
+      "id": "D-05",
+      "topic": "Profile granularity",
+      "default": "Patterns, not concrete slugs"
+    },
+    {
+      "id": "D-06",
+      "topic": "_planned/ retrievability",
+      "default": "Yes, addressable as zone"
+    },
+    {
+      "id": "D-07",
+      "topic": "Missing-zone handling",
+      "default": "Graceful absence + unsatisfied-zone-requirements"
+    },
+    {
+      "id": "D-08",
+      "topic": ".claude/skills/ retrievability",
+      "default": "Yes, de-prioritized by default"
+    },
+    {
+      "id": "D-09",
+      "topic": "Plan file location",
+      "default": "docs/_planned/wiki-missing-layers/"
+    },
+    {
+      "id": "D-10",
+      "topic": "Mechanical/LLM split",
+      "default": "Mechanical-first; LLM-on-escalation ONLY via explicit opt-in flags. No auto-trigger paths."
+    }
+  ],
+  "requiredCapabilities": [
+    {
+      "type": "skill",
+      "name": "bcos-wiki",
+      "phase": "P2, P3, P4, P5",
+      "reason": "Extended with /wiki search and /wiki bundle subcommands; refresh/run/promote/create wired through wiki-fetch."
+    },
+    {
+      "type": "skill",
+      "name": "context-routing",
+      "phase": "P2, P5",
+      "reason": "NEW skill for cross-zone /context search and /context bundle."
+    },
+    {
+      "type": "agent",
+      "name": "wiki-fetch",
+      "phase": "P3",
+      "reason": "NEW sub-agent for big-body fetch isolation (URL, PDF, .docx)."
+    },
+    {
+      "type": "skill",
+      "name": "ecosystem-manager",
+      "phase": "P7",
+      "reason": "Integration audit + ecosystem state refresh + learnings capture (mandatory)."
+    },
+    {
+      "type": "skill",
+      "name": "doc-lint",
+      "phase": "P7",
+      "reason": "JSON + markdown quality checks (mandatory)."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "P1_001",
+      "phase": 1,
+      "content": "Create test fixtures: sample frontmatter set covering every zone (active, framework, wiki, planned, archive, inbox, collection-*) for zone-registry validation",
+      "activeForm": "Creating zone-registry test fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/zone_registry/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/zone_registry/README.md"
+      },
+      "status": "completed",
+      "note": "Mechanical: pure fixture data; TDD seed before implementation.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_002",
+      "phase": 1,
+      "content": "Write failing test: test_zone_registry.py asserts _context-zones.yml.tmpl loads, declares every zone context_index.py recognizes, and freshness-field/required-fields agree with context_index.py per zone",
+      "activeForm": "Writing failing zone-registry test",
+      "outputArtifact": ".claude/scripts/test_zone_registry.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_zone_registry.py || echo EXPECTED_RED"
+      },
+      "status": "completed",
+      "note": "TDD: this test must fail until P1_004 ships the YAML; documents the contract first.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_003",
+      "phase": 1,
+      "content": "Author docs/_bcos-framework/architecture/context-zones.md as the human-readable zone registry: one section per zone declared by context_index.py (path-glob, purpose, frontmatter shape, freshness field, source-of-truth role, addressing, optional flag)",
+      "activeForm": "Authoring context-zones.md",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "bcos-wiki"
+      },
+      "outputArtifact": "docs/_bcos-framework/architecture/context-zones.md",
+      "verification": {
+        "type": "file_exists_with_content",
+        "path": "docs/_bcos-framework/architecture/context-zones.md",
+        "patterns": [
+          "zone:",
+          "freshness",
+          "source-of-truth"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: pure documentation; companion to context_index.py (not a parallel definition).",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_004",
+      "phase": 1,
+      "content": "Create docs/_bcos-framework/templates/_context-zones.yml.tmpl as the machine-readable companion. Schema: {zones: [{id, path-glob, frontmatter-fields-required, freshness-field, freshness-model, source-of-truth-role, addressing, optional}]}. Zone IDs must match context_index.py outputs.",
+      "activeForm": "Creating _context-zones.yml.tmpl",
+      "outputArtifact": "docs/_bcos-framework/templates/_context-zones.yml.tmpl",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"import yaml; yaml.safe_load(open('docs/_bcos-framework/templates/_context-zones.yml.tmpl'))\""
+      },
+      "status": "completed",
+      "note": "Mechanical: declarative companion. Downstream code reads THIS plus context_index.py; the test asserts they agree.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_005",
+      "phase": 1,
+      "content": "Per-repo override loader (.claude/scripts/load_zone_registry.py): docs/.context-zones.yml if present, else framework template; expose load_zone_registry() returning the zones list",
+      "activeForm": "Wiring per-repo override loader",
+      "outputArtifact": ".claude/scripts/load_zone_registry.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"from load_zone_registry import load_zone_registry; assert load_zone_registry()\" 2>/dev/null || (cd .claude/scripts && python -c \"from load_zone_registry import load_zone_registry; assert load_zone_registry()\")"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P1_004"
+      ],
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_006",
+      "phase": 1,
+      "content": "Drift test in test_zone_registry.py: assert every zone returned by context_index.py._zone_for() on fixtures appears in the YAML, and vice versa. Should now pass green.",
+      "activeForm": "Verifying zone-registry drift test green",
+      "outputArtifact": ".claude/scripts/test_zone_registry.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_zone_registry.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P1_002",
+        "P1_004",
+        "P1_005"
+      ],
+      "note": "TDD red→green transition; P1 acceptance gate.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_007",
+      "phase": 1,
+      "content": "Update docs/_bcos-framework/architecture/system-design.md: add cross-zone retrieval section linking to context-zones.md and context_index.py canonical model",
+      "activeForm": "Updating system-design.md",
+      "outputArtifact": "docs/_bcos-framework/architecture/system-design.md",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/architecture/system-design.md",
+        "patterns": [
+          "context-zones.md",
+          "context_index"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: documentation.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P1_008",
+      "phase": 1,
+      "content": "Update docs/_bcos-framework/architecture/wiki-zone.md: cross-link to context-zones.md as the canonical zone registry (wiki is one zone among many)",
+      "activeForm": "Cross-linking wiki-zone to context-zones",
+      "outputArtifact": "docs/_bcos-framework/architecture/wiki-zone.md",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/architecture/wiki-zone.md",
+        "patterns": [
+          "context-zones.md"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: documentation.",
+      "completedAt": "2026-05-04T15:38:08Z"
+    },
+    {
+      "id": "P2_001",
+      "phase": 2,
+      "content": "Create test fixtures: small corpus across 3 zones (active, wiki, planned) with known title/tag/cluster signals for ranking validation",
+      "activeForm": "Creating cross-zone search fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/context_search/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/context_search/README.md"
+      },
+      "status": "completed",
+      "note": "Mechanical fixture; TDD seed.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_002",
+      "phase": 2,
+      "content": "Write failing test: test_context_search.py asserts ranked hits with shared schema {slug, zone, page-type, cluster, summary, builds-on, freshness-days, score, citation-id}; --zone filter; top-K cap; token budget; 0-hit empty repo case",
+      "activeForm": "Writing failing search test",
+      "outputArtifact": ".claude/scripts/test_context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_context_search.py || echo EXPECTED_RED"
+      },
+      "status": "completed",
+      "note": "TDD: must fail until P2_003 ships.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_003",
+      "phase": 2,
+      "content": "Build .claude/scripts/context_search.py: reads .claude/quality/context-index.json as corpus (no re-walk); BM25-style ranking (term frequency × inverse document frequency × recency boost × zone-priority from _context-zones.yml); top-K + token-budget; --zone filter; deterministic.",
+      "activeForm": "Building context_search.py",
+      "outputArtifact": ".claude/scripts/context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_search.py --query 'test' --top-k 1"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P1_004",
+        "P1_005"
+      ],
+      "note": "Mechanical: BM25 over context-index.json. Reuses canonical model; no parallel walking.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_004",
+      "phase": 2,
+      "content": "Stable slug-based citation-id generator (e.g., wiki:linkedin-tone#h2-tone-rules, plans:wiki-missing-layers#section-4); test stability across whitespace edits",
+      "activeForm": "Adding citation-id generator",
+      "outputArtifact": ".claude/scripts/context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_context_search.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P2_003"
+      ],
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_005",
+      "phase": 2,
+      "content": "Create .claude/skills/context-routing/SKILL.md (NEW skill, trigger /context) and search.md subcommand invoking context_search.py with --zone, --top-k, --token-budget flags",
+      "activeForm": "Creating context-routing skill",
+      "outputArtifact": ".claude/skills/context-routing/SKILL.md",
+      "verification": {
+        "type": "file_exists_with_content",
+        "path": ".claude/skills/context-routing/SKILL.md",
+        "patterns": [
+          "trigger:",
+          "/context"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_006",
+      "phase": 2,
+      "content": "LLM escalation path: --semantic flag ONLY (D-10 strict). User explicitly passes --semantic; LLM reformulates the query into 3 candidates; each runs mechanically; results merge. NO auto-trigger on 0-hit. Hard caps: 2000 tokens / 5s latency / 1 LLM call per invocation.",
+      "activeForm": "Adding --semantic opt-in escalation",
+      "outputArtifact": ".claude/scripts/context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_search.py --query 'test' --semantic --dry-run"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P2_003"
+      ],
+      "note": "LLM (opt-in only): explicit flag is the ONLY escalation path. D-10 strict; no auto-trigger paths.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_007",
+      "phase": 2,
+      "content": "Add /wiki search zone-scoped sugar: .claude/skills/bcos-wiki/search.md invokes context_search.py --zone wiki; update bcos-wiki/SKILL.md dispatch table",
+      "activeForm": "Adding /wiki search sugar",
+      "outputArtifact": ".claude/skills/bcos-wiki/search.md",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/skills/bcos-wiki/search.md"
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_008",
+      "phase": 2,
+      "content": "Drive P2_002 to green; extend test_wiki_capability.py with cross-zone cases; verify token budget, citation stability, --zone filter, 0-hit empty-repo path, --semantic opt-in flag (no auto-trigger assertion)",
+      "activeForm": "Driving search tests green",
+      "outputArtifact": ".claude/scripts/test_context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_context_search.py && python .claude/scripts/test_wiki_capability.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P2_002",
+        "P2_003",
+        "P2_006"
+      ],
+      "note": "TDD red→green transition; P2 acceptance gate.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P2_009",
+      "phase": 2,
+      "content": "Documentation deltas: rewrite wiki-zone.md RAG-readiness section with concrete reality; add search entry-point to context-zones.md; update bcos-wiki/SKILL.md dispatch",
+      "activeForm": "Updating retrieval documentation",
+      "outputArtifact": "docs/_bcos-framework/architecture/wiki-zone.md",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/architecture/wiki-zone.md",
+        "patterns": [
+          "context_search",
+          "/wiki search"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T16:16:38Z"
+    },
+    {
+      "id": "P3_001",
+      "phase": 3,
+      "content": "Create test fixtures: mock URL with synthetic 100k-token body; mock PDF/.docx extraction inputs; expected sub-agent result schema",
+      "activeForm": "Creating sub-agent isolation fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/wiki_fetch/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/wiki_fetch/README.md"
+      },
+      "status": "completed",
+      "note": "TDD seed.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_002",
+      "phase": 3,
+      "content": "Write failing test: contract-shape test for wiki-fetch result schema (≤4000 tokens regardless of input); isolation assertion (run.md uses Task tool, not direct fetch); cumulative-budget guard test",
+      "activeForm": "Writing failing isolation test",
+      "outputArtifact": ".claude/scripts/test_wiki_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_wiki_capability.py || echo EXPECTED_RED"
+      },
+      "status": "completed",
+      "note": "TDD: must fail until P3_003+ ship.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_003",
+      "phase": 3,
+      "content": "Create .claude/agents/wiki-fetch/AGENT.md: input {url|file-path, kind: web|github|youtube|pdf|docx|local, extraction-mode: shallow|deep}; output {title, h2-outline, key-sentences, suggested-page-type, suggested-cluster, raw-file-pointer, citation-banner-fields, error?}; hard cap 4000 result tokens",
+      "activeForm": "Creating wiki-fetch agent",
+      "outputArtifact": ".claude/agents/wiki-fetch/AGENT.md",
+      "verification": {
+        "type": "file_exists_with_content",
+        "path": ".claude/agents/wiki-fetch/AGENT.md",
+        "patterns": [
+          "name: wiki-fetch",
+          "kind:",
+          "extraction-mode"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical agent shape; LLM lives INSIDE the sub-agent only.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_004",
+      "phase": 3,
+      "content": "Wire wiki-fetch into bcos-wiki/run.md Pass 1: one sub-agent invocation per URL in queue; main thread receives only structured summary, never full body",
+      "activeForm": "Wiring wiki-fetch into /wiki run",
+      "outputArtifact": ".claude/skills/bcos-wiki/run.md",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/skills/bcos-wiki/run.md",
+        "patterns": [
+          "wiki-fetch",
+          "Task tool"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical wiring.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_005",
+      "phase": 3,
+      "content": "Wire wiki-fetch into wiki-source-refresh full-tier (refresh.md): when page past stale_threshold_days, dispatch sub-agent for refresh-must-rediscover; main thread compares delta",
+      "activeForm": "Wiring wiki-fetch into refresh",
+      "outputArtifact": ".claude/skills/bcos-wiki/refresh.md",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/skills/bcos-wiki/refresh.md",
+        "patterns": [
+          "wiki-fetch",
+          "full-tier"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical wiring.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_006",
+      "phase": 3,
+      "content": "Wire wiki-fetch (kind: pdf|docx) into promote.md and create.md Path B: binary stays at _wiki/raw/local/<slug>.<ext>; structured extract returns to main",
+      "activeForm": "Wiring wiki-fetch into promote/create",
+      "outputArtifact": ".claude/skills/bcos-wiki/promote.md",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/skills/bcos-wiki/promote.md",
+        "patterns": [
+          "wiki-fetch",
+          "kind: pdf"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical wiring.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_007",
+      "phase": 3,
+      "content": "Cumulative token budget guard in run.md: across N parallel sub-agent invocations, sum projected result tokens; if > 80% of main-context limit, queue subsequent sub-agents serially",
+      "activeForm": "Adding cumulative token guard",
+      "outputArtifact": ".claude/skills/bcos-wiki/run.md",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/skills/bcos-wiki/run.md",
+        "patterns": [
+          "cumulative",
+          "80%"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical token math.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_008",
+      "phase": 3,
+      "content": "Drive P3_002 to green; assert sub-agent result schema; assert main context never holds full body; cumulative-guard fires on synthetic 10-URL batch",
+      "activeForm": "Driving isolation tests green",
+      "outputArtifact": ".claude/scripts/test_wiki_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_wiki_capability.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P3_002",
+        "P3_003",
+        "P3_004",
+        "P3_007"
+      ],
+      "note": "TDD red→green transition; P3 acceptance gate.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P3_009",
+      "phase": 3,
+      "content": "Document sub-agent pattern in wiki-zone.md \"Operational Discipline\" section: when to use a sub-agent (work-tokens >> result-tokens), shape returned, why isolation matters",
+      "activeForm": "Documenting sub-agent pattern",
+      "outputArtifact": "docs/_bcos-framework/architecture/wiki-zone.md",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/architecture/wiki-zone.md",
+        "patterns": [
+          "Operational Discipline",
+          "sub-agent",
+          "wiki-fetch"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: documentation.",
+      "completedAt": "2026-05-04T17:02:44Z"
+    },
+    {
+      "id": "P4_001",
+      "phase": 4,
+      "content": "Create test fixtures: sample source-summary page, mock HEAD response (etag/last-modified/content-length), pre/post migration page bodies, YAML edge cases (multi-line scalars, anchors, special chars)",
+      "activeForm": "Creating stub-repair fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/wiki_stubs/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/wiki_stubs/README.md"
+      },
+      "status": "completed",
+      "note": "TDD seed.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_002",
+      "phase": 4,
+      "content": "Write failing tests: HEAD/ETag round-trip, schema migration 1.0↔1.1 round-trip (reversible), Jaccard lint detection (or removal verification gate), YAML parser equivalence across edge cases",
+      "activeForm": "Writing failing stub-repair tests",
+      "outputArtifact": ".claude/scripts/test_wiki_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_wiki_capability.py || echo EXPECTED_RED"
+      },
+      "status": "completed",
+      "note": "TDD: must fail until P4_003+ ship.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_003",
+      "phase": 4,
+      "content": "Consolidate three hand-rolled YAML parsers into .claude/scripts/_wiki_yaml.py (single parser, supports multi-line scalars, anchors, simple types). Replace usage in post_edit_frontmatter_check.py, refresh_wiki_index.py, wiki_schema.py.",
+      "activeForm": "Consolidating YAML parsers",
+      "outputArtifact": ".claude/scripts/_wiki_yaml.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"from _wiki_yaml import parse_frontmatter\" 2>/dev/null || (cd .claude/scripts && python -c \"from _wiki_yaml import parse_frontmatter\")"
+      },
+      "status": "completed",
+      "note": "Mechanical: pure parser. Parser-equivalence test must pass on existing fixtures.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_004",
+      "phase": 4,
+      "content": "Implement HEAD/ETag/Last-Modified for wiki-source-refresh quick-check tier (.claude/scripts/_wiki_http.py): head_check(url) → {etag, last-modified, status, content-length}; quick-check tier compares against stored values, bumps last-fetched if unchanged",
+      "activeForm": "Implementing HEAD/ETag check",
+      "outputArtifact": ".claude/scripts/_wiki_http.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"from _wiki_http import head_check\" 2>/dev/null || (cd .claude/scripts && python -c \"from _wiki_http import head_check\")"
+      },
+      "status": "completed",
+      "note": "Mechanical: HTTP HEAD + hash compare.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_005",
+      "phase": 4,
+      "content": "Source-summary frontmatter additions: etag, last-modified, content-hash. Update _wiki.schema.yml.tmpl page-type definition for source-summary.",
+      "activeForm": "Adding HTTP fields to source-summary schema",
+      "outputArtifact": "docs/_bcos-framework/templates/_wiki.schema.yml.tmpl",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/templates/_wiki.schema.yml.tmpl",
+        "patterns": [
+          "etag",
+          "last-modified",
+          "content-hash"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_006",
+      "phase": 4,
+      "content": "Schema migration recipe 1.0→1.1 (real, reversible, parametric): adds etag/last-modified/content-hash to source-summary pages. Use as reference impl; document recipe-registration pattern in migration-helpers.md.",
+      "activeForm": "Implementing migration recipe",
+      "outputArtifact": ".claude/scripts/wiki_schema.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/wiki_schema.py migrate --from 1.0 --to 1.1 --dry-run"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P4_005"
+      ],
+      "note": "Mechanical: parametric Python. Replaces 'No executable migration recipe' stub.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_007",
+      "phase": 4,
+      "content": "duplication-vs-data-point lint: implement Jaccard threshold check (similarity > 0.6 over ≥3 consecutive sentences) OR remove the lint ID cleanly from registry + docs. Decision via AskUserQuestion before merge.",
+      "activeForm": "Resolving phantom lint",
+      "outputArtifact": ".claude/scripts/_wiki_lint.py",
+      "verification": {
+        "type": "custom",
+        "checks": [
+          {
+            "command": "test -f .claude/scripts/_wiki_lint.py || ! grep -q duplication-vs-data-point .claude/skills/bcos-wiki/lint.md",
+            "expected": "0"
+          }
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: Jaccard math; user decides impl vs remove via AskUserQuestion.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_008",
+      "phase": 4,
+      "content": "Drive P4_002 to green: HEAD round-trip, migration round-trip (1.0↔1.1), lint detection or removal verification, parser equivalence",
+      "activeForm": "Driving stub-repair tests green",
+      "outputArtifact": ".claude/scripts/test_wiki_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_wiki_capability.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P4_002",
+        "P4_003",
+        "P4_004",
+        "P4_006",
+        "P4_007"
+      ],
+      "note": "TDD red→green transition; P4 acceptance gate.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P4_009",
+      "phase": 4,
+      "content": "Documentation deltas: rewrite wiki-zone.md quick-check tier section with actual implementation; update lint.md Step K; update migration-helpers.md with recipe-registration pattern",
+      "activeForm": "Updating P4 documentation",
+      "outputArtifact": "docs/_bcos-framework/architecture/wiki-zone.md",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/architecture/wiki-zone.md",
+        "patterns": [
+          "HEAD",
+          "etag",
+          "_wiki_http"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical: documentation.",
+      "completedAt": "2026-05-04T16:54:52Z"
+    },
+    {
+      "id": "P5_001",
+      "phase": 5,
+      "content": "Create test fixtures: 2 task profiles (market-report:write, engagement:plan) + corpus with disagreeing source-of-truth candidates + freshness boundary cases + coverage-gap scenarios",
+      "activeForm": "Creating routing fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/context_bundle/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/context_bundle/README.md"
+      },
+      "status": "completed",
+      "note": "TDD seed.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_002",
+      "phase": 5,
+      "content": "Write failing test: test_context_capability.py asserts bundle resolution per profile, conflict detection on disagreeing structured fields, freshness verdict (fresh|stale|past-threshold), coverage-gap detection, deterministic output (run twice = byte-identical bundle modulo generated-at)",
+      "activeForm": "Writing failing routing test",
+      "outputArtifact": ".claude/scripts/test_context_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_context_capability.py || echo EXPECTED_RED"
+      },
+      "status": "completed",
+      "note": "TDD: must fail until P5_003+ ship.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_003",
+      "phase": 5,
+      "content": "Task-profile schema in docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl: {id, description, required-zones, source-of-truth-ranking, freshness-thresholds, traversal-hints, coverage-assertions} per profile",
+      "activeForm": "Creating task-profile schema",
+      "outputArtifact": "docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"import yaml; yaml.safe_load(open('docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl'))\""
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P1_004"
+      ],
+      "note": "Mechanical: pure YAML schema.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_004",
+      "phase": 5,
+      "content": "Built-in profile catalog: market-report:write, engagement:plan, architecture:design, competitor:audit, customer:onboard, decision:log, incident:postmortem, skill:author, plan:revise. Each declares zones, source-of-truth ranking per D-03, freshness, coverage assertions per D-05 patterns.",
+      "activeForm": "Populating profile catalog",
+      "outputArtifact": "docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl",
+      "verification": {
+        "type": "file_contains",
+        "path": "docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl",
+        "patterns": [
+          "market-report:write",
+          "engagement:plan",
+          "architecture:design"
+        ]
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_003"
+      ],
+      "note": "Mechanical: declarative profile content.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_005",
+      "phase": 5,
+      "content": "Per-repo override loader (.claude/scripts/load_task_profiles.py): docs/.context.task-profiles.yml if present, else framework template",
+      "activeForm": "Wiring profile override loader",
+      "outputArtifact": ".claude/scripts/load_task_profiles.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python -c \"from load_task_profiles import load_task_profiles\" 2>/dev/null || (cd .claude/scripts && python -c \"from load_task_profiles import load_task_profiles\")"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_003"
+      ],
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_006",
+      "phase": 5,
+      "content": "Profile validator (.claude/scripts/validate_task_profiles.py): schema conformance, declared zones exist in _context-zones.yml, content-family patterns valid. Wired into doc-lint (P7).",
+      "activeForm": "Building profile validator",
+      "outputArtifact": ".claude/scripts/validate_task_profiles.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/validate_task_profiles.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_004",
+        "P1_005"
+      ],
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_007",
+      "phase": 5,
+      "content": "Bundle resolver (.claude/scripts/context_bundle.py): load profile, query context_search.py per family, apply source-of-truth ranking deterministically, walk typed edges per traversal-hints (depth cap), compute freshness verdict, detect mechanical conflicts (structured-field disagreement), compute coverage gaps. Returns structured bundle.",
+      "activeForm": "Building context_bundle.py",
+      "outputArtifact": ".claude/scripts/context_bundle.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_bundle.py --profile market-report:write"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P2_003",
+        "P5_005",
+        "P5_006"
+      ],
+      "note": "Mechanical (default): declarative rules + graph walk over typed edges in context-index.json.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_008",
+      "phase": 5,
+      "content": "Bundle output schema: {profile-id, generated-at, by-zone, by-family, freshness, source-of-truth-conflicts, missing-perspectives, traversal-hops, unsatisfied-zone-requirements, escalations}",
+      "activeForm": "Building bundle output formatter",
+      "outputArtifact": ".claude/scripts/context_bundle.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_bundle.py --profile market-report:write --json | python -c \"import json,sys; d=json.load(sys.stdin); assert all(k in d for k in ['profile-id','by-zone','by-family','freshness','unsatisfied-zone-requirements'])\""
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_007"
+      ],
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_009",
+      "phase": 5,
+      "content": "LLM escalation paths (D-10 strict opt-in only): --resolve-conflicts (LLM resolves unresolved conflicts; cap 5 calls/bundle, ~8k input each); --verify-coverage (LLM verifies prose-perspective coverage; cap 1 call/bundle, ~6k input). Both OFF by default; never auto-trigger.",
+      "activeForm": "Wiring opt-in LLM escalation in bundle",
+      "outputArtifact": ".claude/scripts/context_bundle.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_bundle.py --profile market-report:write --resolve-conflicts --dry-run"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_007"
+      ],
+      "note": "LLM (opt-in only): D-10 strict; flags are the ONLY escalation paths. Hard caps: 6 calls / ~50k tokens / ~30s latency total per bundle.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_010",
+      "phase": 5,
+      "content": "Skill surface: .claude/skills/context-routing/bundle.md invokes context_bundle.py; .claude/skills/bcos-wiki/bundle.md adds /wiki bundle <profile> zone-scoped sugar. Update dispatch tables.",
+      "activeForm": "Adding bundle subcommands",
+      "outputArtifact": ".claude/skills/context-routing/bundle.md",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/skills/context-routing/bundle.md"
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_011",
+      "phase": 5,
+      "content": "Drive P5_002 to green: bundle resolution per profile, conflict detection, freshness, coverage gap, deterministic output. Empty-repo path returns unsatisfied-zone-requirements without crash.",
+      "activeForm": "Driving routing tests green",
+      "outputArtifact": ".claude/scripts/test_context_capability.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_context_capability.py"
+      },
+      "status": "completed",
+      "dependsOn": [
+        "P5_002",
+        "P5_007",
+        "P5_008",
+        "P5_009"
+      ],
+      "note": "TDD red→green transition; P5 acceptance gate.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P5_012",
+      "phase": 5,
+      "content": "Documentation: NEW docs/_bcos-framework/architecture/context-routing.md (or merge into content-routing.md). Documents profile shape, ranking semantics, freshness model, traversal rules, escalation rules.",
+      "activeForm": "Authoring context-routing.md",
+      "outputArtifact": "docs/_bcos-framework/architecture/context-routing.md",
+      "verification": {
+        "type": "file_exists_with_content",
+        "path": "docs/_bcos-framework/architecture/context-routing.md",
+        "patterns": [
+          "task profile",
+          "source-of-truth",
+          "freshness"
+        ]
+      },
+      "status": "completed",
+      "note": "Mechanical.",
+      "completedAt": "2026-05-04T19:05:32Z"
+    },
+    {
+      "id": "P6_001",
+      "phase": 6,
+      "content": "CONDITIONAL: Create eval set + test fixtures for embeddings precision/recall harness against P2 mechanical baseline. Trigger only if P2 mechanical demonstrably hits a precision wall in real use (logged in lessons.json over first 1–2 months).",
+      "activeForm": "Creating embeddings eval fixtures",
+      "outputArtifact": ".claude/scripts/fixtures/embeddings/",
+      "verification": {
+        "type": "file_exists",
+        "path": ".claude/scripts/fixtures/embeddings/README.md"
+      },
+      "status": "pending",
+      "note": "CONDITIONAL on P2 outcomes; TDD seed."
+    },
+    {
+      "id": "P6_002",
+      "phase": 6,
+      "content": "CONDITIONAL: Write failing test (test_embedding_search.py) asserting --embedding mode returns ranked hits with same schema as P2; precision/recall ≥ P2 baseline on eval set.",
+      "activeForm": "Writing failing embedding test",
+      "outputArtifact": ".claude/scripts/test_embedding_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_embedding_search.py || echo EXPECTED_RED"
+      },
+      "status": "pending",
+      "note": "CONDITIONAL; TDD."
+    },
+    {
+      "id": "P6_003",
+      "phase": 6,
+      "content": "CONDITIONAL: Embedding generation pipeline (generate_embeddings.py): walk every zone via context_index.py, chunk per H2, generate embeddings (Anthropic embeddings API or local model per repo budget). Store at .claude/quality/embeddings/<zone>/<slug>.npy.",
+      "activeForm": "Building embedding pipeline",
+      "outputArtifact": ".claude/scripts/generate_embeddings.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/generate_embeddings.py --dry-run"
+      },
+      "status": "pending",
+      "note": "CONDITIONAL; LLM (embedding API)."
+    },
+    {
+      "id": "P6_004",
+      "phase": 6,
+      "content": "CONDITIONAL: context_search.py --embedding mode (vector similarity replaces BM25; same output schema)",
+      "activeForm": "Adding embedding search mode",
+      "outputArtifact": ".claude/scripts/context_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/context_search.py --query test --embedding --dry-run"
+      },
+      "status": "pending",
+      "note": "CONDITIONAL."
+    },
+    {
+      "id": "P6_005",
+      "phase": 6,
+      "content": "CONDITIONAL: Re-embed triggers wired into wiki-stale-propagation (a builds-on data point change re-embeds dependent wiki pages)",
+      "activeForm": "Wiring re-embed triggers",
+      "outputArtifact": ".claude/quality/schedule-config.template.json",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/quality/schedule-config.template.json",
+        "patterns": [
+          "re-embed",
+          "wiki-stale"
+        ]
+      },
+      "status": "pending",
+      "note": "CONDITIONAL."
+    },
+    {
+      "id": "P6_006",
+      "phase": 6,
+      "content": "CONDITIONAL: Drive P6_002 to green; document embeddings shipped in wiki-zone.md and context-routing.md",
+      "activeForm": "Driving embedding tests green",
+      "outputArtifact": ".claude/scripts/test_embedding_search.py",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/test_embedding_search.py"
+      },
+      "status": "pending",
+      "dependsOn": [
+        "P6_002",
+        "P6_003",
+        "P6_004"
+      ],
+      "note": "CONDITIONAL; TDD red→green; P6 acceptance gate."
+    },
+    {
+      "id": "P7_001",
+      "phase": 7,
+      "content": "doc-lint: JSON structure validation on profile YAMLs, schema YAMLs, plan-manifest.json",
+      "activeForm": "Running JSON validation",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "doc-lint"
+      },
+      "outputArtifact": null,
+      "verification": {
+        "type": "command_success",
+        "command": "python -m json.tool docs/_planned/wiki-missing-layers/plan-manifest.json > /dev/null"
+      },
+      "status": "completed",
+      "note": "FIXED END mandatory.",
+      "completedAt": "2026-05-04T19:55:46Z"
+    },
+    {
+      "id": "P7_002",
+      "phase": 7,
+      "content": "doc-lint: Markdown quality check on revised docs (wiki-zone.md, context-zones.md, context-routing.md, system-design.md)",
+      "activeForm": "Running markdown lint",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "doc-lint"
+      },
+      "outputArtifact": null,
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/validate_frontmatter.py"
+      },
+      "status": "completed",
+      "note": "FIXED END mandatory.",
+      "completedAt": "2026-05-04T19:55:46Z"
+    },
+    {
+      "id": "P7_003",
+      "phase": 7,
+      "content": "ecosystem-manager: Integration audit (analyze_integration.py --ci) + AI review of cross-references between new SKILL.md, AGENT.md, scripts, hooks, settings",
+      "activeForm": "Running integration audit",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "ecosystem-manager"
+      },
+      "outputArtifact": null,
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/analyze_integration.py --ci"
+      },
+      "status": "completed",
+      "note": "FIXED END NON-NEGOTIABLE.",
+      "completedAt": "2026-05-04T19:55:46Z"
+    },
+    {
+      "id": "P7_004",
+      "phase": 7,
+      "content": "ecosystem-manager: Refresh ecosystem state.json to reflect context-routing skill + wiki-fetch agent",
+      "activeForm": "Refreshing ecosystem state",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "ecosystem-manager"
+      },
+      "outputArtifact": ".claude/quality/ecosystem/state.json",
+      "verification": {
+        "type": "command_success",
+        "command": "python .claude/scripts/refresh_ecosystem_state.py"
+      },
+      "status": "completed",
+      "note": "FIXED END NON-NEGOTIABLE.",
+      "completedAt": "2026-05-04T19:55:46Z"
+    },
+    {
+      "id": "P7_005",
+      "phase": 7,
+      "content": "ecosystem-manager: Capture learnings (mechanical-first design choice, sub-agent contract pattern, profile-schema vocabulary, TDD ordering pattern, plan-manifest schema-compliance discipline)",
+      "activeForm": "Capturing learnings",
+      "requiredCapability": {
+        "type": "skill",
+        "name": "ecosystem-manager"
+      },
+      "outputArtifact": ".claude/quality/ecosystem/lessons.json",
+      "verification": {
+        "type": "file_contains",
+        "path": ".claude/quality/ecosystem/lessons.json",
+        "patterns": [
+          "wiki-missing-layers",
+          "mechanical-first"
+        ]
+      },
+      "status": "completed",
+      "note": "FIXED END NON-NEGOTIABLE.",
+      "completedAt": "2026-05-04T19:55:46Z"
+    }
+  ],
+  "plan": {
+    "totalPhases": 7,
+    "phases": [
+      "P1 — Zone Registry (foundational; declarative companion to context_index.py)",
+      "P2 — Cross-Zone Read Foundation (mechanical search over context-index.json)",
+      "P3 — Sub-Agent Isolation for Big-Body Work",
+      "P4 — Wiki Stub Repair (HEAD/ETag, migration, Jaccard, YAML consolidation)",
+      "P5 — Task-Driven Cross-Zone Routing (the architectural one)",
+      "P6 — Embeddings (CONDITIONAL on P2 outcomes)",
+      "P7 — FIXED END (doc-lint + integration audit + ecosystem state refresh + learnings capture)"
+    ],
+    "fixedStart": "Discovery + ecosystem overlap + canonical-model audit (complete during planning + cleanup pass)",
+    "fixedEnd": "Phase P7: doc-lint + integration audit + ecosystem state refresh + learnings capture (mandatory per AGENTING template)",
+    "tddOrdering": "Each implementation phase opens with: (1) fixture creation, (2) failing regression test, then (3+) implementation tasks, then a (final) red→green driver task. Documentation deltas come last in each phase."
+  },
+  "followUpTasks": [
+    {
+      "id": "FU_001",
+      "description": "Decision log / ADR zone (standalone, beyond wiki page-type)",
+      "priority": "medium",
+      "reason": "Spec'd as wiki page-type in wiki-zone.md; standalone zone is separate work"
+    },
+    {
+      "id": "FU_002",
+      "description": "Engagement / customer / account zone instantiation",
+      "priority": "medium",
+      "reason": "Pattern doc exists; per-deployment work"
+    },
+    {
+      "id": "FU_003",
+      "description": "HubSpot / live MCP integration in bundle resolver",
+      "priority": "high",
+      "reason": "Profile schema accommodates per D-03; MCP plumbing is separate work"
+    },
+    {
+      "id": "FU_004",
+      "description": "Atlas / galaxy node-type extension for wiki and context-zones",
+      "priority": "low",
+      "reason": "Visualization layer; not foundational"
+    },
+    {
+      "id": "FU_005",
+      "description": "Vector store / graph database (P6 deeper)",
+      "priority": "low",
+      "reason": "Only if mechanical hits precision wall"
+    },
+    {
+      "id": "FU_006",
+      "description": "Cross-tool adapter (AGENTS.md-style universal manual)",
+      "priority": "low",
+      "reason": "Speculative"
+    },
+    {
+      "id": "FU_007",
+      "description": "_collections/.schema.yml governance (carry-over from wiki-zone-integration)",
+      "priority": "medium",
+      "reason": "Same governance pattern as _wiki/.schema.yml"
+    },
+    {
+      "id": "FU_008",
+      "description": "Wire context_index.py output into generate_wakeup_context.py",
+      "priority": "medium",
+      "reason": "Wake-up context currently no-ops on empty top-level data points; could surface zone/freshness summary from context-index.json"
+    }
+  ]
+}

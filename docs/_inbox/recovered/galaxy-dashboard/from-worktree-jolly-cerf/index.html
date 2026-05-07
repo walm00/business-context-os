@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BCOS Context Galaxy</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/galaxy.css" />
+  <!-- Raw renderer imports Three.js as ES modules. The legacy force renderer
+       remains available with ?renderer=force and lazy-loads pinned
+       3d-force-graph@1.74.0 only for that fallback path. Do not add a
+       global THREE UMD. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+</head>
+<body>
+  <div id="hud">
+    <div class="hud-row hud-row--top">
+      <div class="hud-title">
+        <span class="hud-pulse"></span>
+        <span id="hud-repo">loading…</span>
+        <span class="hud-sep">·</span>
+        <span id="hud-counts" class="hud-muted">—</span>
+        <span class="hud-sep">·</span>
+        <span id="hud-sun" class="hud-sun hud-sun-empty" title="Galaxy core — canonical context root">—</span>
+      </div>
+      <div class="hud-controls">
+        <div class="hud-search" id="hud-search">
+          <input id="ctl-search" type="search" placeholder="Search docs" autocomplete="off" spellcheck="false" aria-label="Search docs" />
+          <div class="hud-search-results" id="hud-search-results" hidden></div>
+        </div>
+        <select id="ctl-repo" title="Switch repo"></select>
+        <select id="ctl-mode" title="View mode">
+          <option value="atlas">Atlas</option>
+          <option value="lifecycle">Lifecycle layers</option>
+          <option value="freshness">Freshness pulse</option>
+        </select>
+        <label class="hud-toggle" title="Include framework / inbox / archive">
+          <input type="checkbox" id="ctl-ambient" />
+          <span>Ambient</span>
+        </label>
+      </div>
+    </div>
+    <div class="hud-row hud-row--legend">
+      <div class="hud-legend" id="hud-legend"></div>
+      <div class="hud-help hud-muted">drag to orbit · scroll to zoom · hover to reveal relations · click a star</div>
+    </div>
+    <div class="hud-row hud-row--trail" id="hud-trail" hidden></div>
+  </div>
+
+  <div id="scene"></div>
+
+  <!-- In-page status overlay. Captures every boot step + any window error
+       so we can see what's happening without opening devtools. Auto-hides
+       once "rendered" status fires. Toggle with ?debug=1 to keep it
+       visible. -->
+  <div id="status-overlay" class="status-overlay">
+    <div class="status-header">
+      <span class="status-spinner"></span>
+      <span id="status-title">Booting Context Galaxy…</span>
+      <button id="status-close" class="status-close" aria-label="Close">×</button>
+    </div>
+    <ol id="status-log" class="status-log"></ol>
+  </div>
+
+  <aside id="drawer" class="drawer drawer--closed" aria-hidden="true">
+    <header class="drawer-header">
+      <div class="drawer-eyebrow" id="drawer-eyebrow">—</div>
+      <h2 class="drawer-title" id="drawer-title">—</h2>
+      <button class="drawer-close" id="drawer-close" aria-label="Close">×</button>
+    </header>
+    <dl class="drawer-meta" id="drawer-meta"></dl>
+    <section class="drawer-section">
+      <h3>Domain</h3>
+      <p class="drawer-domain" id="drawer-domain">—</p>
+    </section>
+    <section class="drawer-section" id="drawer-owns-wrap" hidden>
+      <h3>Exclusively owns</h3>
+      <ul class="drawer-list" id="drawer-owns"></ul>
+    </section>
+    <section class="drawer-section" id="drawer-edges-wrap" hidden>
+      <h3>Connections</h3>
+      <ul class="drawer-list" id="drawer-edges"></ul>
+    </section>
+    <section class="drawer-section drawer-doc-preview" id="drawer-doc-preview" hidden>
+      <h3>Markdown preview</h3>
+      <div class="drawer-doc-preview__body" id="drawer-doc-preview-body"></div>
+    </section>
+    <footer class="drawer-footer">
+      <button class="drawer-preview-toggle" id="drawer-preview-toggle" type="button">Preview markdown</button>
+      <code class="drawer-path" id="drawer-path">—</code>
+    </footer>
+  </aside>
+
+  <script src="/galaxy.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-05-04",
+  "lastAudit": "2026-05-04",
+  "inventory": {
+    "skills": {
+      "total": 15,
+      "list": [
+        "bcos-wiki",
+        "clear-planner",
+        "context-audit",
+        "context-ingest",
+        "context-mine",
+        "context-onboarding",
+        "context-routing",
+        "core-discipline",
+        "daydream",
+        "doc-lint",
+        "ecosystem-manager",
+        "lessons-consolidate",
+        "schedule-dispatcher",
+        "schedule-tune",
+        "todo-utilities"
+      ],
+      "overlayCapable": [
+        "core-discipline"
+      ],
+      "discoveryCapable": [
+        "context-onboarding",
+        "clear-planner",
+        "context-audit",
+        "ecosystem-manager",
+        "schedule-dispatcher"
+      ]
+    },
+    "agents": {
+      "total": 1,
+      "byCategory": {
+        "Exploration": [
+          "explore"
+        ]
+      }
+    },
+    "utilities": {
+      "total": 2,
+      "skills": [
+        "skill-discovery"
+      ],
+      "agents": [
+        "agent-discovery"
+      ]
+    }
+  },
+  "health": {
+    "overall": "HEALTHY",
+    "gaps": [],
+    "conflicts": [],
+    "duplications": []
+  },
+  "maintenanceBacklog": []
+}

@@ -1,0 +1,59 @@
+{
+  "planningSessionId": "20260504_191019_autonomy-ux-self-learning",
+  "triggeredBy": "clear-planner",
+  "createdAt": "2026-05-04T19:10:19Z",
+  "currentStep": 8,
+  "intent": "Implement Autonomy + UX + Self-Learning surface for the schedule-dispatcher / digest / dashboard / learning ecosystem. Eight phases (P8 conditional). Migrate digest action items from prose to typed events; introduce dashboard cards with one-click headless actions; record every fix to resolutions.jsonl with full schema from day 1; build a self-learning ladder (preselect -> auto-apply with undo -> silent) with an auto-fix auditor as the safety brake; surface everything in /settings/learning + /settings/auditor cockpit panels. Mechanical-first throughout; LLM only for v0.3 semantic-drift check.",
+  "scenarioType": "agenting",
+  "scenarioSecondary": "documentation",
+  "workflow": {
+    "steps": [
+      { "step": 1, "name": "Understand Intent", "status": "completed", "result": "Intent + planning-manifest.json captured" },
+      { "step": 2, "name": "Run Discovery", "status": "completed", "result": "1 agent (explore), 15 skills, 7 directly-relevant lessons" },
+      { "step": 3, "name": "Detect Scenario", "status": "completed", "result": "AGENTING primary, DOCUMENTATION secondary" },
+      { "step": 4, "name": "Gather Context", "status": "completed", "iterations": 1 },
+      { "step": 5, "name": "Load Scenario Template", "status": "completed", "result": "AGENTING template (FIXED START + DYNAMIC MIDDLE + FIXED END)" },
+      { "step": 6, "name": "Present Approach for Alignment", "status": "completed", "gate": { "response": "Proceed", "iterations": 1 } },
+      { "step": 7, "name": "Create Session & Artifacts", "status": "completed", "result": "implementation-plan.md + plan-manifest.json + README.md + pre-flight-decisions.md created in docs/_planned/autonomy-ux-self-learning/" },
+      { "step": 8, "name": "Present Full Plan for Approval", "status": "in_progress" }
+    ]
+  },
+  "gates": {
+    "approach": {
+      "options": ["Proceed", "Adjust"],
+      "behavior": {
+        "Proceed": "Continue to Step 7 (Create Session & Artifacts)",
+        "Adjust": "Return to Step 4 (Gather Context) with feedback"
+      }
+    },
+    "approval": {
+      "options": ["Approve", "Modify", "Cancel"],
+      "behavior": {
+        "Approve": "Update manifests (status=approved) -> Handoff to implementation",
+        "Modify": "Return to Step 4 (Gather Context) with existing plan as context",
+        "Cancel": "Stop planning"
+      }
+    }
+  },
+  "discoveryResults": {
+    "agentsFound": ["explore"],
+    "skillsFound": [
+      "bcos-wiki", "clear-planner", "context-audit", "context-ingest", "context-mine",
+      "context-onboarding", "context-routing", "core-discipline", "daydream", "doc-lint",
+      "ecosystem-manager", "lessons-consolidate", "schedule-dispatcher", "schedule-tune", "todo-utilities"
+    ],
+    "relevantLessonIds": [
+      "L-DASHBOARD-20260425-010", "L-DASHBOARD-20260425-011", "L-DASHBOARD-20260425-012",
+      "L-ECOSYSTEM-20260501-013", "L-ECOSYSTEM-20260504-014", "L-ECOSYSTEM-20260504-015", "L-ECOSYSTEM-20260504-016"
+    ]
+  },
+  "softDependencies": [
+    "docs/_planned/wiki-missing-layers/ (in implementation; resolutions.jsonl schema additions ride on whatever ships anyway)"
+  ],
+  "artifactsCreated": [
+    "docs/_planned/autonomy-ux-self-learning/implementation-plan.md",
+    "docs/_planned/autonomy-ux-self-learning/plan-manifest.json",
+    "docs/_planned/autonomy-ux-self-learning/README.md",
+    "docs/_planned/autonomy-ux-self-learning/pre-flight-decisions.md"
+  ]
+}

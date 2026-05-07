@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>diag</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    #scene { position: fixed; inset: 0; }
+    #log { position: fixed; top: 0; left: 0; color: lime; font: 12px monospace;
+           background: rgba(0,0,0,0.7); padding: 8px; z-index: 10; max-height: 50vh;
+           overflow: auto; }
+  </style>
+</head>
+<body>
+  <div id="log">booting…</div>
+  <div id="scene"></div>
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.74.0/dist/3d-force-graph.min.js"></script>
+  <script>
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += '\n' + msg;
+      console.log(msg);
+    };
+    log('ForceGraph3D type: ' + typeof window.ForceGraph3D);
+
+    try {
+      log('constructing…');
+      const g = ForceGraph3D()(document.getElementById('scene'))
+        .graphData({
+          nodes: [{id: 'a'}, {id: 'b'}, {id: 'c'}],
+          links: [{source: 'a', target: 'b'}, {source: 'b', target: 'c'}]
+        });
+      log('constructed: ' + (g ? 'ok' : 'null'));
+      log('data: ' + JSON.stringify(g.graphData()).slice(0, 80));
+    } catch (e) {
+      log('ERROR: ' + e.message);
+      console.error(e);
+    }
+  </script>
+</body>
+</html>

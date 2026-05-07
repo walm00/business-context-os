@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>diag2 — real data, minimal config</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    #scene { position: fixed; inset: 0; }
+    #log { position: fixed; top: 0; left: 0; color: lime; font: 12px monospace;
+           background: rgba(0,0,0,0.7); padding: 8px; z-index: 10; max-height: 50vh;
+           overflow: auto; max-width: 50vw; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="log">booting…</div>
+  <div id="scene"></div>
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.74.0/dist/3d-force-graph.min.js"></script>
+  <script>
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += '\n' + msg;
+      console.log(msg);
+    };
+
+    async function go() {
+      const resp = await fetch('/api/atlas?repo=theo-delivery-os&include=active');
+      const atlas = await resp.json();
+      log('atlas: ' + atlas.counts.total + ' docs, ' + atlas.edges.length + ' edges');
+
+      // SAME transform as galaxy.js
+      const docs = atlas.docs.filter(d => d.tier !== 'ambient');
+      const nodes = docs.map(d => ({ id: d.path, name: d.name }));
+      const ids = new Set(nodes.map(n => n.id));
+      const links = atlas.edges
+        .filter(e => ids.has(e.from) && (typeof e.to !== 'string' || ids.has(e.to)))
+        .map(e => ({ source: e.from, target: e.to }));
+      log('graph: ' + nodes.length + ' nodes, ' + links.length + ' links');
+
+      // Sanity: any link references missing?
+      let missing = 0;
+      for (const l of links) {
+        if (!ids.has(l.source)) missing++;
+        if (!ids.has(l.target)) missing++;
+      }
+      log('missing endpoints: ' + missing);
+
+      try {
+        const g = ForceGraph3D()(document.getElementById('scene'))
+          .graphData({ nodes, links });
+        log('constructed: ok');
+      } catch (e) {
+        log('CONSTRUCT ERROR: ' + e.message);
+        console.error(e);
+      }
+    }
+    go().catch(e => { log('GO ERROR: ' + e.message); console.error(e); });
+  </script>
+</body>
+</html>

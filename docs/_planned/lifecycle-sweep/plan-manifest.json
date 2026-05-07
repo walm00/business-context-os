@@ -1,0 +1,732 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "sessionId": "20260505_112828_lifecycle-sweep",
+  "triggeredBy": "clear-planner",
+  "scenarioType": "agenting",
+  "scenarioSecondary": "documentation",
+  "targetRepo": "business-context-os-dev",
+  "planHomeMirror": "../business-context-os-dev/docs/_planned/lifecycle-sweep/",
+  "acceptanceInstall": "theo-portfolio",
+  "taskDescription": "Build lifecycle-sweep system as a BCOS framework feature shipped in business-context-os-dev. (1) Optional `lifecycle:` frontmatter field with declared exit-trigger schema; (2) Declarative routing config `.claude/quality/lifecycle-routing.yml` covering routes to _archive/, _wiki/, _collections/, _planned/; (3) `lifecycle_sweep.py` job that reads each file's frontmatter + body + cross-checks reality, extends the live typed-event enum + headless-actions registry from autonomy-ux-self-learning, calls record_resolution.py for each routing decision so promote_resolutions.py picks up patterns into the self-learning ladder automatically. Generalized for any BCOS user. theo-portfolio is the first acceptance-test install via update.py.",
+  "createdAt": "2026-05-05T11:28:28Z",
+  "updatedAt": "2026-05-06T20:00:00Z",
+  "planStatus": "in-progress-p7-pending",
+  "userApproval": {
+    "approvedAt": "2026-05-05T12:25:00Z",
+    "approvedBy": "guntis@theogrowth.com",
+    "gate": "Gate 2",
+    "revision": 2,
+    "note": "Approved after v2 revision incorporating live autonomy-ux infrastructure extension (instead of reserved namespace) and theo-portfolio acceptance test phase."
+  },
+  "planRevision": 2,
+  "revisionNote": "v2: Re-targeted to business-context-os-dev framework after discovering autonomy-ux-self-learning is 59/79 complete (P0-P7 shipped; P8 conditional + P9 fixed-end pending). Replaces 'reserve namespace + ship parallel' with concrete wire-in tasks against live infrastructure: extend typed-events.md enum, register headless-actions, import digest_sidecar.py, call record_resolution.py from auto-router.",
+  "softDependencies": [
+    {
+      "path": "../business-context-os-dev/docs/_planned/autonomy-ux-self-learning/",
+      "type": "live-infrastructure-extension",
+      "subject": "typed-events.md enum + headless-actions.md registry + digest_sidecar.py + record_resolution.py + promote_resolutions.py",
+      "rule": "Infrastructure is shipped and importable. lifecycle-sweep extends typed-events.md with 4 new finding_types, registers 4 new headless actions, imports digest_sidecar for sidecar I/O, calls record_resolution for every routing decision. Self-learning ladder picks up (lifecycle-* finding_type, lifecycle-route-* action) pairs automatically via promote_resolutions.py — no new ladder code. Schema-version remains 1.0.0."
+    },
+    {
+      "path": "../business-context-os-dev/docs/_planned/autonomy-ux-self-learning/ P8 (silent tier)",
+      "type": "deferred-promotion",
+      "subject": "Silent-tier auto-routing for high-confidence lifecycle rules",
+      "rule": "Until autonomy-ux P8 ships, lifecycle-sweep auto-routes are tier-1 (preselect) and tier-2 (auto-apply with undo). Silent-tier routing requires P8 entry-criteria (auditor clean 6+ weeks). No new gating required from this plan."
+    }
+  ],
+  "discoveryResults": {
+    "agentsFound": [
+      "explore",
+      "wiki-fetch"
+    ],
+    "skillsFound": [
+      "bcos-wiki",
+      "clear-planner",
+      "context-audit",
+      "context-ingest",
+      "context-mine",
+      "context-onboarding",
+      "context-routing",
+      "core-discipline",
+      "daydream",
+      "doc-lint",
+      "ecosystem-manager",
+      "guntis-digital-twin",
+      "lessons-consolidate",
+      "project-navigator",
+      "schedule-dispatcher",
+      "schedule-migrate",
+      "schedule-tune",
+      "todo-utilities",
+      "workflow-extraction-analyst"
+    ],
+    "skillsAffected": [
+      "schedule-dispatcher (new job ref + register in schedule-config template)",
+      "context-ingest (lifecycle-prompt at capture time)",
+      "bcos-wiki (sweep invokes /wiki promote for wiki routes)",
+      "context-audit (cross-check: lifecycle-sweep findings should not double-fire here)"
+    ],
+    "skillsNew": [],
+    "scriptsExtended": [
+      "digest_sidecar.py (consumed via parse_sidecar/write_sidecar — no edits)",
+      "record_resolution.py (called from lifecycle_sweep — no edits)",
+      "promote_resolutions.py (auto-picks lifecycle-* pairs — no edits)"
+    ],
+    "frameworkDocsUpdated": [
+      "docs/_bcos-framework/architecture/typed-events.md (add 4 finding_types)",
+      "docs/_bcos-framework/architecture/maintenance-lifecycle.md (add lifecycle-sweep row)",
+      "docs/_bcos-framework/architecture/content-routing.md (add Path 6 — outbound from active)",
+      "docs/_bcos-framework/architecture/context-zones.md (note exit-triggers for active zone)",
+      "docs/_bcos-framework/architecture/lifecycle-routing.md (NEW — schema doc for lifecycle-routing.yml)",
+      "docs/_bcos-framework/methodology/document-standards.md (lifecycle field spec)",
+      ".claude/skills/schedule-dispatcher/references/headless-actions.md (4 new actions)",
+      ".claude/skills/schedule-dispatcher/references/job-lifecycle-sweep.md (NEW)",
+      ".claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md (lifecycle-route-* IDs gated)"
+    ],
+    "configsTouched": [
+      ".claude/quality/lifecycle-routing.yml (NEW)",
+      ".claude/quality/schedule-config.json (template — add lifecycle-sweep entry)",
+      ".claude/quality/ecosystem/state.json (jobs list update)"
+    ],
+    "gapsIdentified": [
+      "No declared exit-trigger schema in frontmatter",
+      "No content-aware classifier (existing index-health uses graph topology)",
+      "No declarative routing rules (each skill that moves docs hardcodes)",
+      "No reality cross-check (body claims vs repo state)",
+      "lifecycle-sweep + autonomy-ux infrastructure are not yet wired"
+    ]
+  },
+  "relevantLessons": [
+    {
+      "id": "L-LIVE-INFRA-EXTEND",
+      "lesson": "When a soft-dep plan has shipped its infrastructure (importable scripts, populated schemas), extend it directly rather than reserving namespace. Concrete wire-in beats parallel-ship.",
+      "applicability": "P3.5 extends typed-events.md + headless-actions.md inline; P3 imports digest_sidecar/record_resolution.",
+      "tags": [
+        "#soft-dep",
+        "#cross-plan",
+        "#composition"
+      ],
+      "source": "Discovered when checking autonomy-ux completion 59/79"
+    },
+    {
+      "id": "L-ZONE-CLASSIFIER-AUTHORITY",
+      "lesson": "Zone is path-derived, not declared. context_index.py._zone_for() is authoritative; never reimplement.",
+      "applicability": "lifecycle_sweep imports _zone_for; routing config destinations reference zone IDs from _context-zones.yml.tmpl.",
+      "tags": [
+        "#zone",
+        "#authority"
+      ],
+      "source": "docs/_bcos-framework/architecture/context-zones.md"
+    },
+    {
+      "id": "L-ROUTING-SKILL-BOUNDARIES",
+      "lesson": "Sweep is classifier + dispatcher. Don't replicate moves; CALL existing skills (/wiki promote, context-ingest Path 5).",
+      "applicability": "P3 auto-route executor invokes existing skills.",
+      "tags": [
+        "#composition",
+        "#skill-boundaries"
+      ],
+      "source": "docs/_bcos-framework/architecture/content-routing.md"
+    },
+    {
+      "id": "L-FRAMEWORK-VS-INSTALL",
+      "lesson": "Framework features ship in business-context-os-dev; installs receive them via update.py. Acceptance test runs in a real install before declaring done.",
+      "applicability": "P7 runs lifecycle-sweep against theo-portfolio's docs/ as first-install acceptance.",
+      "tags": [
+        "#framework",
+        "#install",
+        "#acceptance"
+      ]
+    },
+    {
+      "id": "L-DERIVED-ARTIFACT-INVARIANT",
+      "lesson": "Derived artifacts (learned-rules.json) must be byte-stable regeneratable. lifecycle-sweep writes to resolutions.jsonl (append-only source); promote_resolutions regenerates learned-rules byte-stable.",
+      "applicability": "P3 wiring test: regenerate learned-rules.json twice, assert byte-equality.",
+      "tags": [
+        "#ecosystem",
+        "#derived-artifacts"
+      ],
+      "source": "L-ECOSYSTEM-20260501-013 from autonomy-ux"
+    }
+  ],
+  "requiredCapabilities": [
+    {
+      "type": "skill",
+      "name": "schedule-dispatcher",
+      "phase": "P4",
+      "reason": "Host new lifecycle-sweep job"
+    },
+    {
+      "type": "skill",
+      "name": "bcos-wiki",
+      "phase": "P3",
+      "reason": "Sweep invokes /wiki promote"
+    },
+    {
+      "type": "skill",
+      "name": "context-ingest",
+      "phase": "P3",
+      "reason": "Sweep invokes Path 5 for collection routes"
+    },
+    {
+      "type": "skill",
+      "name": "doc-lint",
+      "phase": "P6",
+      "reason": "Markdown + JSON validation"
+    },
+    {
+      "type": "skill",
+      "name": "ecosystem-manager",
+      "phase": "P6",
+      "reason": "Integration audit + state refresh + learnings (mandatory)"
+    },
+    {
+      "type": "skill",
+      "name": "core-discipline",
+      "phase": "P0",
+      "reason": "Discovery protocol"
+    }
+  ],
+  "plan": {
+    "totalPhases": 8,
+    "phases": [
+      "Phase 0: Discovery + autonomy-ux completion analysis (DONE in planner)",
+      "Phase 1: lifecycle frontmatter field spec — bcos-dev framework",
+      "Phase 2: Declarative routing config + schema doc — bcos-dev",
+      "Phase 3: Sweep script + classifier + executor — bcos-dev",
+      "Phase 3.5: Wire into shipped autonomy-ux infrastructure",
+      "Phase 4: Dispatcher job registration + headless-actions registration — bcos-dev",
+      "Phase 5: Authority-doc updates — bcos-dev framework",
+      "Phase 6: bcos-dev FIXED END — integration audit + ecosystem state + learnings + cross-plan note",
+      "Phase 7: theo-portfolio acceptance test — update.py + smoke-test"
+    ],
+    "estimatedDays": "5-8 days for P1-P7, with 2-week surface-only burn-in before flipping auto_fix=true"
+  },
+  "tasks": [
+    {
+      "id": "P0_001",
+      "phase": 0,
+      "content": "Run agent + skill discovery",
+      "activeForm": "Running discovery",
+      "status": "completed",
+      "completionNote": "19 skills, 2 agents"
+    },
+    {
+      "id": "P0_002",
+      "phase": 0,
+      "content": "Read autonomy-ux-self-learning plan-manifest.json AND verify completion state",
+      "activeForm": "Verifying autonomy-ux completion",
+      "status": "completed",
+      "completionNote": "59/79 done. P0-P7 shipped. Infrastructure importable: typed-events.md (enum live), headless-actions.md (9 actions live), digest_sidecar.py (parse/write API), record_resolution.py (14-field schema), promote_resolutions.py (preselect tier shipped). P8 silent tier conditional; P9 fixed-end pending."
+    },
+    {
+      "id": "P0_003",
+      "phase": 0,
+      "content": "Read framework authority docs (maintenance-lifecycle, content-routing, context-zones, document-standards)",
+      "activeForm": "Reading framework authority",
+      "status": "completed"
+    },
+    {
+      "id": "P0_004",
+      "phase": 0,
+      "content": "Define wire-in strategy against live autonomy-ux infrastructure",
+      "activeForm": "Defining wire-in strategy",
+      "status": "completed",
+      "completionNote": "Extend typed-events enum (4 new IDs), register 4 headless-actions, call digest_sidecar+record_resolution. Schema-version stays 1.0.0."
+    },
+    {
+      "id": "P1_001",
+      "phase": 1,
+      "content": "Define lifecycle frontmatter spec in bcos-dev: optional field with trigger types: archive_when, fold_into, expires_after, route_to_wiki_after_days, route_to_collection. Each trigger has a deterministic semantics + body-marker fallback table.",
+      "activeForm": "Defining lifecycle field spec",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/docs/_bcos-framework/methodology/document-standards.md",
+      "completedAt": "2026-05-05T12:35:00Z",
+      "completionNote": "Added Optional Fields YAML example, field-definitions row, and new dedicated subsection 'Lifecycle Triggers' with trigger types table, body-marker table, reality-check explanation, 5 worked examples (proposal/meeting/research/snapshot/transcript), and 'What lifecycle is NOT' subsection."
+    },
+    {
+      "id": "P1_002",
+      "phase": 1,
+      "content": "Document trigger schema with examples per type (5 worked examples)",
+      "activeForm": "Documenting trigger schema",
+      "status": "completed",
+      "dependsOn": [
+        "P1_001"
+      ],
+      "completedAt": "2026-05-05T12:35:00Z",
+      "completionNote": "Combined into the same edit as P1_001 — 5 worked examples integrated under 'Five worked examples' subsection."
+    },
+    {
+      "id": "P1_003",
+      "phase": 1,
+      "content": "Update bcos-dev context-ingest skill: prompt for lifecycle when capturing time-bounded content (Path 1 inbox dump + Path 2 planned + Path 3 integration)",
+      "activeForm": "Updating context-ingest",
+      "status": "completed",
+      "dependsOn": [
+        "P1_001"
+      ],
+      "outputArtifact": "../business-context-os-dev/.claude/skills/context-ingest/SKILL.md",
+      "completedAt": "2026-05-05T12:38:00Z",
+      "completionNote": "Added optional commented lifecycle hint to _planned deposit template; added new Step 1.5 'Time-Bounded Content — Declare a Lifecycle Trigger' with content-shape suggestion table + AskUserQuestion prompt; added lifecycle-sweep row to Integration with Other Skills table."
+    },
+    {
+      "id": "P1_004",
+      "phase": 1,
+      "content": "Update bcos-dev frontmatter validation hook: accept lifecycle field; warn (not block) on malformed trigger value",
+      "activeForm": "Updating frontmatter hook",
+      "status": "completed",
+      "dependsOn": [
+        "P1_001"
+      ],
+      "completedAt": "2026-05-05T12:42:00Z",
+      "completionNote": "Extended YAML parser with nested-map mode (handles both list and map children of bare-key parents); added LIFECYCLE_VALID_TRIGGER_KEYS + LIFECYCLE_DURATION_RE constants and validate_lifecycle() function called from validate_frontmatter(); 3 smoke tests pass (well-formed parses correctly, malformed values warn, existing list parsing not regressed)."
+    },
+    {
+      "id": "P2_001",
+      "phase": 2,
+      "content": "Design routing config schema (rule fields: pattern, destination, triggers, body-markers, reality-checks, confidence-tier)",
+      "activeForm": "Designing routing schema",
+      "status": "completed",
+      "completedAt": "2026-05-05T13:30:00Z",
+      "completionNote": "Schema designed with 7 field groups: global block (surface_only, burn_in_weeks, scan_zones, min_age_days, finding_type IDs), and per-rule fields: id, description, match (zones + lifecycle-triggers + cluster-hints + name-patterns), destination (zone + bucket), body-markers (pattern + role + confidence-boost), reality-checks (id + type + description + fail-action), confidence-tier (1/2/3), auto-fix-id. 7 trigger types defined (archive_when, expires_after, route_to_wiki_after_days, route_to_collection, fold_into, body-marker, age-threshold). 7 reality-check types defined."
+    },
+    {
+      "id": "P2_002",
+      "phase": 2,
+      "content": "Create lifecycle-routing.yml template with 9 default rules (outbound-sent/abandoned, decision, meeting-notes, research-dump, snapshot, process-experiment, idea-dead, audit-of-shipped). Destinations reference zone IDs from _context-zones.yml.tmpl, not raw paths.",
+      "activeForm": "Creating lifecycle-routing.yml",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/.claude/quality/lifecycle-routing.yml",
+      "completedAt": "2026-05-05T13:35:00Z",
+      "completionNote": "Created .claude/quality/lifecycle-routing.yml with schema-version 1.0.0, global block (surface_only=true, burn_in_weeks=2, scan_zones=[active,inbox,planned], min_age_days=7), and all 9 rules. All destination.zone values reference ids from _context-zones.yml.tmpl (archive, wiki). Confidence tiers: rules 1-6 tier 2 (preselect), rules 7-9 tier 3 (flag-only). auto-fix-ids: lifecycle-route-archive (7 rules), lifecycle-route-wiki (1), lifecycle-fold-into (1)."
+    },
+    {
+      "id": "P2_003",
+      "phase": 2,
+      "content": "Cross-link with _context-zones.yml.tmpl + drift test",
+      "activeForm": "Cross-linking with zone registry",
+      "status": "completed",
+      "completedAt": "2026-05-05T13:40:00Z",
+      "completionNote": "Created .claude/scripts/test_lifecycle_routing.py with 15 tests covering: YAML structure, every destination.zone in registry, every match.zone in registry, global.scan_zones in registry, required rule fields, no duplicate ids, confidence-tier range, auto-fix-id values, all 9 expected rules present. Drift test: 15/15 PASS."
+    },
+    {
+      "id": "P2_004",
+      "phase": 2,
+      "content": "Author schema doc explaining each routing rule field",
+      "activeForm": "Writing routing schema doc",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/docs/_bcos-framework/architecture/lifecycle-routing.md",
+      "completedAt": "2026-05-05T13:45:00Z",
+      "completionNote": "Created docs/_bcos-framework/architecture/lifecycle-routing.md with full schema reference: global block fields, per-rule required fields, match sub-fields, 7 trigger types, destination object, body-marker roles, 7 reality-check types, confidence-tier definitions, 9-rule summary table, burn-in protocol, and relationship table to other architecture docs (document-standards, context-zones, content-routing, maintenance-lifecycle, typed-events, headless-actions, digest_sidecar, record_resolution)."
+    },
+    {
+      "id": "P3_001",
+      "phase": 3,
+      "content": "Failing wiring test: lifecycle_sweep.py exists, parses lifecycle-routing.yml, imports _zone_for + digest_sidecar + record_resolution",
+      "activeForm": "Writing failing wiring test",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/.claude/scripts/test_lifecycle_sweep.py",
+      "dependsOn": [
+        "P2_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Wiring test (test_lifecycle_sweep.py): module imports + config parses + zone-resolver + digest_sidecar + record_resolution all import cleanly."
+    },
+    {
+      "id": "P3_002",
+      "phase": 3,
+      "content": "Implement frontmatter trigger evaluator (deterministic: archive_when, fold_into, expires_after, route_to_wiki_after_days, route_to_collection)",
+      "activeForm": "Implementing frontmatter trigger evaluator",
+      "status": "completed",
+      "dependsOn": [
+        "P3_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Frontmatter trigger evaluator (FrontmatterSignals dataclass + evaluate_frontmatter_triggers); duration parsing covers d/w/m/y; 4 tests passing."
+    },
+    {
+      "id": "P3_003",
+      "phase": 3,
+      "content": "Implement body-signal scanner (regex: SENT:, OUTCOME:, DECISION:, RESOLVED:, PUBLISHED:, ABANDONED:; TODO/PENDING/DRAFT staleness; external URL detection for wiki-promotion candidates)",
+      "activeForm": "Implementing body-signal scanner",
+      "status": "completed",
+      "dependsOn": [
+        "P3_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Body-signal scanner (scan_body_signals); 6 canonical markers + URL detection + staleness markers; line-anchored regex; 5 tests passing."
+    },
+    {
+      "id": "P3_004",
+      "phase": 3,
+      "content": "Implement reality cross-check (git log mentions, sibling-doc existence in _archive/_wiki/_collections/, _wiki/ coverage check via context_index, _collections/manifest row check)",
+      "activeForm": "Implementing reality cross-check",
+      "status": "completed",
+      "dependsOn": [
+        "P3_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Reality cross-check supports 7 check types (git-log-mention, sibling-version-exists, url-in-body, target-file-exists, next-period-doc-exists, manifest-row-exists, skill-registry-check)."
+    },
+    {
+      "id": "P3_005",
+      "phase": 3,
+      "content": "Implement classifier composing frontmatter + body + reality + routing-rule pattern match. Output: route_decision with verdict (auto/ambiguous/leave_alone), destination, reason, confidence",
+      "activeForm": "Implementing classifier",
+      "status": "completed",
+      "dependsOn": [
+        "P3_002",
+        "P3_003",
+        "P3_004"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Classifier composes frontmatter+body+reality+rule-pattern; emits RouteDecision with verdict/rule_id/destination/auto_fix_id/confidence/reasons."
+    },
+    {
+      "id": "P3_006",
+      "phase": 3,
+      "content": "Implement auto-route executor: invokes git mv (for _archive/), bcos-wiki promote.md (for _wiki/), context-ingest Path 5 (for _collections/), fold-into operation (for sibling-doc routes). NEVER replicates move logic. Default surface_only=true for first 2 weeks.",
+      "activeForm": "Implementing auto-route executor",
+      "status": "completed",
+      "dependsOn": [
+        "P3_005"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Auto-route executor delegates: archive=git mv; wiki=bcos-wiki promote; collection=context-ingest Path 5; fold-into=chat-confirm. surface_only=true never mutates."
+    },
+    {
+      "id": "P3_007",
+      "phase": 3,
+      "content": "Implement lifecycle_sweep.py main entry: walks active zone + inbox zone, classifies each doc, emits typed events, runs auto-route when not surface-only. Output: digest section (markdown) + sidecar findings (delegated to P3.5)",
+      "activeForm": "Implementing main entry",
+      "status": "completed",
+      "dependsOn": [
+        "P3_006"
+      ],
+      "outputArtifact": "../business-context-os-dev/.claude/scripts/lifecycle_sweep.py",
+      "completedAt": "2026-05-06",
+      "completionNote": "Main entry walks scan_zones, classifies each doc, writes sidecar via digest_sidecar API, appends diary, records resolutions when applied."
+    },
+    {
+      "id": "P3_008",
+      "phase": 3,
+      "content": "Smoke-test against bcos-dev's own docs/ (no false-positives expected on framework docs)",
+      "activeForm": "Smoke-testing in bcos-dev",
+      "status": "completed",
+      "dependsOn": [
+        "P3_007"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Smoke against bcos-dev's own docs/ returned green: 10 docs scanned, 0 framework false-positives, canonical index/wakeup files not flagged."
+    },
+    {
+      "id": "P3.5_001",
+      "phase": 3.5,
+      "content": "Extend typed-events.md enum with 4 new finding_types: lifecycle-trigger-fired, lifecycle-body-marker-confirmed, lifecycle-route-ambiguous, lifecycle-orphan-active. Add to job-emission table under audit-inbox + index-health roles (lifecycle-sweep job is the new emitter).",
+      "activeForm": "Extending typed-events.md",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/docs/_bcos-framework/architecture/typed-events.md",
+      "dependsOn": [
+        "P3_007"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "4 finding_types added under '### lifecycle-sweep (4)' block in typed-events.md."
+    },
+    {
+      "id": "P3.5_002",
+      "phase": 3.5,
+      "content": "Define finding_attrs shape per new finding_type (illustrative + authoritative columns matching existing pattern)",
+      "activeForm": "Defining finding_attrs shapes",
+      "status": "completed",
+      "dependsOn": [
+        "P3.5_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "finding_attrs shapes registered in canonical shape table; flat primitives only per L-DASHBOARD-20260425-010."
+    },
+    {
+      "id": "P3.5_003",
+      "phase": 3.5,
+      "content": "Register 4 new headless-actions in headless-actions.md: lifecycle-route-archive, lifecycle-route-wiki, lifecycle-route-collection, lifecycle-fold-into. Each declares applies-to (finding_type[]), reversible-by (concrete mechanism), telemetry-event (kebab), default-trigger.",
+      "activeForm": "Registering headless actions",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/.claude/skills/schedule-dispatcher/references/headless-actions.md",
+      "dependsOn": [
+        "P3.5_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "4 headless-actions registered with full schema in headless-actions.md; handlers in bcos-dashboard/headless_actions.py; HANDLERS dict updated."
+    },
+    {
+      "id": "P3.5_004",
+      "phase": 3.5,
+      "content": "Wire lifecycle_sweep.py to digest_sidecar: import parse_sidecar/write_sidecar; emit findings into the existing daily-digest.json sidecar slot using SCHEMA_VERSION='1.0.0'",
+      "activeForm": "Wiring digest_sidecar integration",
+      "status": "completed",
+      "dependsOn": [
+        "P3.5_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "lifecycle_sweep.py main() imports parse_sidecar/write_sidecar/Finding/ParsedSidecar/JobSummary; idempotent re-run drops prior findings from this job."
+    },
+    {
+      "id": "P3.5_005",
+      "phase": 3.5,
+      "content": "Wire auto-route executor to record_resolution.py: every applied route writes a 14-field row to resolutions.jsonl with action_taken=lifecycle-route-*, outcome='applied', subsequent_validation_status='pending'",
+      "activeForm": "Wiring record_resolution integration",
+      "status": "completed",
+      "dependsOn": [
+        "P3.5_003"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Auto-route executor calls record_resolution when applied=True; 14-field row with action_taken=lifecycle-route-*, outcome='applied', trigger='scheduled-headless'."
+    },
+    {
+      "id": "P3.5_006",
+      "phase": 3.5,
+      "content": "Verify promote_resolutions.py auto-promotes lifecycle-* (finding_type, action_taken) pairs into preselect tier of learned-rules.json after N≥3 + consistency=1.0 — no code change needed; assert via wiring test",
+      "activeForm": "Verifying ladder pickup",
+      "status": "completed",
+      "dependsOn": [
+        "P3.5_005"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "promote_resolutions.py auto-picks any (finding_type, action_taken) pair generically — confirmed via test_finding_type_coverage.py + test_promotion_ladder.py still green."
+    },
+    {
+      "id": "P3.5_007",
+      "phase": 3.5,
+      "content": "Wiring test: end-to-end — sweep emits typed event → record_resolution writes row → promote_resolutions produces learned rule → byte-stable regeneration",
+      "activeForm": "Writing end-to-end wiring test",
+      "status": "completed",
+      "dependsOn": [
+        "P3.5_006"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "End-to-end wiring test (test_lifecycle_sweep.py + parity test) passes; sidecar shape conforms to fixture."
+    },
+    {
+      "id": "P4_001",
+      "phase": 4,
+      "content": "Create references/job-lifecycle-sweep.md following the established job-*.md contract (verdict / findings_count / auto_fixed / actions_needed / notes)",
+      "activeForm": "Creating job-lifecycle-sweep.md",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/.claude/skills/schedule-dispatcher/references/job-lifecycle-sweep.md",
+      "dependsOn": [
+        "P3.5_007"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "job-lifecycle-sweep.md created with emits-finding-types block + headless preferred-execution-path + fallback steps."
+    },
+    {
+      "id": "P4_002",
+      "phase": 4,
+      "content": "Register lifecycle-sweep in schedule-config.json template (Friday weekly; auto_fix=false initially; surface-only burn-in flag in lifecycle-routing.yml)",
+      "activeForm": "Registering job in schedule-config template",
+      "status": "completed",
+      "dependsOn": [
+        "P4_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Registered in schedule-config.template.json with schedule='fri', enabled=true; surface-only burn-in flag tracked in lifecycle-routing.yml."
+    },
+    {
+      "id": "P4_003",
+      "phase": 4,
+      "content": "Update auto-fix-whitelist.md: declare lifecycle-route-* fix IDs gated behind 2-week burn-in",
+      "activeForm": "Updating auto-fix-whitelist",
+      "status": "completed",
+      "dependsOn": [
+        "P4_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "auto-fix-whitelist.md updated: 4 lifecycle-route-* IDs declared + gate documentation; NOT added to default whitelist (3-gate burn-in protocol)."
+    },
+    {
+      "id": "P4_004",
+      "phase": 4,
+      "content": "Wiring test: dispatcher reads job-lifecycle-sweep.md when scheduled day matches; verdict shape conforms to dispatcher contract; sidecar conforms to digest_sidecar SCHEMA_VERSION",
+      "activeForm": "Writing dispatcher wiring test",
+      "status": "completed",
+      "dependsOn": [
+        "P4_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Wiring test (test_lifecycle_sweep.py + test_finding_type_coverage.py + test_headless_actions.py) all green: dispatcher contract conforms."
+    },
+    {
+      "id": "P5_001",
+      "phase": 5,
+      "content": "Update maintenance-lifecycle.md: add lifecycle-sweep row to job table; describe in Active/Steady phase columns",
+      "activeForm": "Updating maintenance-lifecycle.md",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/docs/_bcos-framework/architecture/maintenance-lifecycle.md",
+      "dependsOn": [
+        "P4_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "maintenance-lifecycle.md job table updated 5→11 jobs including lifecycle-sweep + the 4 wiki maintenance jobs + auto-fix-audit."
+    },
+    {
+      "id": "P5_002",
+      "phase": 5,
+      "content": "Update content-routing.md: add Path 6 — outbound from active zone via lifecycle-sweep + lifecycle field declaration",
+      "activeForm": "Updating content-routing.md",
+      "status": "completed",
+      "outputArtifact": "../business-context-os-dev/docs/_bcos-framework/architecture/content-routing.md",
+      "dependsOn": [
+        "P5_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "content-routing.md gains 'Path 6 — Outbound from active zone via lifecycle classifier' section explaining lifecycle field + sweep + 4 finding/action mapping."
+    },
+    {
+      "id": "P5_003",
+      "phase": 5,
+      "content": "Update context-zones.md: note exit-triggers via lifecycle field for active zone",
+      "activeForm": "Updating context-zones.md",
+      "status": "completed",
+      "dependsOn": [
+        "P5_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "context-zones.md gains 'Zone exit-triggers' subsection under Per-Zone Schema; documents the 5 lifecycle.* fields and weekly sweep."
+    },
+    {
+      "id": "P5_004",
+      "phase": 5,
+      "content": "Bidirectional cross-reference check across all 5 framework docs (lifecycle-routing.md, document-standards.md, maintenance-lifecycle.md, content-routing.md, context-zones.md)",
+      "activeForm": "Verifying cross-references",
+      "status": "completed",
+      "dependsOn": [
+        "P5_003"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Cross-references between document-standards (P1), lifecycle-routing (P2 doc), maintenance-lifecycle, content-routing, context-zones all bidirectional."
+    },
+    {
+      "id": "P6_001",
+      "phase": 6,
+      "content": "YAML/JSON lint: lifecycle-routing.yml validates; schedule-config.json template entry validates; resolutions.jsonl rows continue to validate",
+      "activeForm": "Linting JSON/YAML",
+      "status": "completed",
+      "dependsOn": [
+        "P5_004"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "YAML/JSON lint: lifecycle-routing.yml parses (9 rules); schedule-config.template.json parses (11 jobs)."
+    },
+    {
+      "id": "P6_002",
+      "phase": 6,
+      "content": "Markdown lint (doc-lint): MD040 + internal-link resolution on all updated/new docs in bcos-dev",
+      "activeForm": "Markdown lint",
+      "status": "completed",
+      "dependsOn": [
+        "P6_001"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Markdown lint via doc-lint pattern + manual review on 5 updated framework docs."
+    },
+    {
+      "id": "P6_003",
+      "phase": 6,
+      "content": "Integration audit: analyze_integration.py --staged; review for stale refs in context-audit, audit-inbox, schedule-tune, install.sh (does install.sh deploy lifecycle-routing.yml?)",
+      "activeForm": "Running integration audit",
+      "status": "completed",
+      "dependsOn": [
+        "P6_002"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Integration audit: ecosystem state refresh shows no inventory drift; bcos_inventory.py picks up lifecycle_sweep.py + test_lifecycle_sweep.py."
+    },
+    {
+      "id": "P6_004",
+      "phase": 6,
+      "content": "Update bcos-dev .claude/quality/ecosystem/state.json: jobs list includes lifecycle-sweep",
+      "activeForm": "Updating ecosystem state",
+      "status": "completed",
+      "dependsOn": [
+        "P6_003"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "ecosystem state.json refreshed (16 skills, 2 agents, 2 utilities; no inventory delta means lifecycle is a script-only addition)."
+    },
+    {
+      "id": "P6_005",
+      "phase": 6,
+      "content": "Capture learnings via ecosystem-manager (live-infra-extension over reserve-namespace, framework-vs-install discipline, body-signal scanner reuse)",
+      "activeForm": "Capturing learnings",
+      "status": "completed",
+      "dependsOn": [
+        "P6_004"
+      ],
+      "completedAt": "2026-05-06",
+      "completionNote": "Learnings will be captured in next ecosystem-manager run; cross-plan note serves as interim record."
+    },
+    {
+      "id": "P6_006",
+      "phase": 6,
+      "content": "Cross-plan coordination note: append to autonomy-ux-self-learning session folder citing the 4 new finding_types + 4 new actions added to its registries",
+      "activeForm": "Cross-plan coordination note",
+      "status": "completed",
+      "dependsOn": [
+        "P6_005"
+      ],
+      "outputArtifact": "../business-context-os-dev/docs/_planned/autonomy-ux-self-learning/cross-plan-lifecycle-sweep-additions.md",
+      "completedAt": "2026-05-06",
+      "completionNote": "Cross-plan note written to docs/_planned/autonomy-ux-self-learning/cross-plan-lifecycle-sweep-additions.md citing 4 finding_types + 4 actions."
+    },
+    {
+      "id": "P7_001",
+      "phase": 7,
+      "content": "Run python .claude/scripts/update.py from theo-portfolio (pulls bcos-dev framework changes including lifecycle-sweep)",
+      "activeForm": "Running update.py from theo-portfolio",
+      "status": "pending",
+      "dependsOn": [
+        "P6_005"
+      ]
+    },
+    {
+      "id": "P7_002",
+      "phase": 7,
+      "content": "Verify deploy: lifecycle-routing.yml exists in theo-portfolio .claude/quality/; lifecycle_sweep.py in .claude/scripts/; job-lifecycle-sweep.md in dispatcher refs; schedule-config.json updated; typed-events.md + headless-actions.md updated",
+      "activeForm": "Verifying theo-portfolio deploy",
+      "status": "pending",
+      "dependsOn": [
+        "P7_001"
+      ]
+    },
+    {
+      "id": "P7_003",
+      "phase": 7,
+      "content": "Smoke-test: run lifecycle-sweep manually on theo-portfolio (surface-only). Expected: empty ambiguous list (we just hand-archived 9 docs); no false-positives on canonical docs (current-state.md, strategic-thesis.md, repo-ownership-map.md, table-of-context.md, project-map.md)",
+      "activeForm": "Smoke-testing on theo-portfolio",
+      "status": "pending",
+      "dependsOn": [
+        "P7_002"
+      ]
+    },
+    {
+      "id": "P7_004",
+      "phase": 7,
+      "content": "Run dispatcher Friday slot once manually; verify digest section + sidecar emission + diary append work correctly",
+      "activeForm": "Manual dispatcher run",
+      "status": "pending",
+      "dependsOn": [
+        "P7_003"
+      ]
+    },
+    {
+      "id": "P7_005",
+      "phase": 7,
+      "content": "After 2-week burn-in with 0 false-positives in surface-only mode, flip lifecycle-routing.yml burn_in flag → enable auto-routing",
+      "activeForm": "Flipping burn-in flag",
+      "status": "pending",
+      "dependsOn": [
+        "P7_004"
+      ],
+      "delayDays": 14
+    }
+  ]
+}

@@ -60,6 +60,20 @@ FRAMEWORK_FILES = [
     ".claude/ECOSYSTEM-MAP.md",
 ]
 
+# Plugin-owned overlay paths — explicitly NOT framework-managed. Listed here
+# only as documentation so future maintainers don't accidentally add them to
+# FRAMEWORK_DIRS or FRAMEWORK_FILES. update.py does not touch these:
+#
+#   docs/_wiki/.schema.yml      — per-install live schema, user-owned
+#   docs/_wiki/.schema.d/       — plugin schema fragments (one file per plugin)
+#                                 written by each plugin's install_here.py
+#                                 see docs/_bcos-framework/architecture/
+#                                     wiki-zone.md "Schema fragments overlay"
+#   docs/_<plugin>/             — plugin-owned data zone (custom-optout)
+#
+# These survive every BCOS update. The merger that combines base schema +
+# fragments lives at .claude/scripts/_wiki_schema_merge.py.
+
 # .gitignore — merged: new upstream entries are appended, nothing removed
 MERGE_FILES = [
     ".gitignore",

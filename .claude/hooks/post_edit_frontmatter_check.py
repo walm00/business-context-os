@@ -62,6 +62,7 @@ SKIP_PATHS = [
     "docs/_wiki/.archive/",
     "docs/_wiki/.config.yml",
     "docs/_wiki/.schema.yml",
+    "docs/_wiki/.schema.d/",   # plugin schema fragments (see wiki-zone.md "Schema fragments overlay")
     "docs/_wiki/log.md",        # append-only, format-policed elsewhere
     "docs/_wiki/index.md",      # derived artifact (refresh_wiki_index.py)
     "docs/_wiki/overview.md",   # authored zone overview, not a page document
@@ -406,12 +407,62 @@ def parse_wiki_schema(text: str) -> dict:
     return result
 
 
+# Cached merger module — loaded once per process. None means "not available
+# on this install" (e.g. stale framework snapshot without the helper file).
+_MERGER_MODULE = None
+_MERGER_LOADED = False
+
+
+def _load_schema_merger():
+    """Lazy-import the schema fragment merger so the hook keeps working
+    even if the helper is missing on a stale install. Returns the module
+    or None.
+
+    The module is cached after the first call; the helper itself is
+    pure-stdlib and immutable across the hook's lifetime, so re-importing
+    on every call is wasteful.
+    """
+    global _MERGER_MODULE, _MERGER_LOADED
+    if _MERGER_LOADED:
+        return _MERGER_MODULE
+    _MERGER_LOADED = True
+    try:
+        import importlib.util
+        scripts_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "scripts",
+            "_wiki_schema_merge.py",
+        )
+        if not os.path.isfile(scripts_path):
+            return None
+        spec = importlib.util.spec_from_file_location("_wiki_schema_merge", scripts_path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        # Register in sys.modules BEFORE exec — @dataclass walks
+        # `sys.modules.get(cls.__module__).__dict__` during class creation;
+        # if the module isn't registered yet, that lookup returns None and
+        # the import raises AttributeError. See _wiki_schema_merge.py top.
+        sys.modules["_wiki_schema_merge"] = module
+        spec.loader.exec_module(module)
+        _MERGER_MODULE = module
+        return module
+    except Exception:
+        return None
+
+
 def load_wiki_schema(repo_root: str) -> tuple[dict, str]:
     """
     Load the wiki schema with project-first / framework-fallback semantics (D-02).
 
     Returns (schema_dict, source_label) where source_label is 'project' / 'framework' / 'none'.
     Caches by file mtime for sub-millisecond repeat reads (P2_005).
+
+    Also merges plugin schema fragments from `docs/_wiki/.schema.d/*.yml`
+    into the parsed result under `cross-references` and `raw-source-types`.
+    See wiki-zone.md "Schema fragments overlay" and
+    `.claude/scripts/_wiki_schema_merge.py`. Fragment parse / merge errors
+    are surfaced under the `_fragment-errors` key for diagnostic consumers.
     """
     project_path = os.path.join(repo_root, "docs", "_wiki", ".schema.yml")
     framework_path = os.path.join(repo_root, "docs", "_bcos-framework", "templates", "_wiki.schema.yml.tmpl")
@@ -426,19 +477,70 @@ def load_wiki_schema(repo_root: str) -> tuple[dict, str]:
         chosen_path = framework_path
         source = "framework"
 
+    # Build a cache key that covers base schema + every fragment so updates
+    # to a fragment file invalidate the cache cleanly.
+    merger = _load_schema_merger()
+    if merger is not None:
+        frag_signature = merger.fragments_signature(repo_root)
+    else:
+        frag_signature = (0.0, 0)
+
     if chosen_path is None:
-        # Schema missing entirely — return permissive defaults so the hook no-ops gracefully
-        return parse_wiki_schema(""), "none"
+        # Schema missing entirely — still merge fragments (they're inert
+        # without the base, but a caller may want raw-source-types).
+        cache_key = ("__none__", 0.0, frag_signature)
+        cached = _SCHEMA_CACHE.get(cache_key)
+        if cached:
+            return cached[1], "none"
+        parsed = parse_wiki_schema("")
+        _attach_fragments(parsed, repo_root, merger)
+        _SCHEMA_CACHE[cache_key] = (0.0, parsed)
+        return parsed, "none"
 
     mtime = os.path.getmtime(chosen_path)
-    cached = _SCHEMA_CACHE.get(chosen_path)
-    if cached and cached[0] == mtime:
+    cache_key = (chosen_path, mtime, frag_signature)
+    cached = _SCHEMA_CACHE.get(cache_key)
+    if cached:
         return cached[1], source
 
     text = _read_text(chosen_path) or ""
     parsed = parse_wiki_schema(text)
-    _SCHEMA_CACHE[chosen_path] = (mtime, parsed)
+    _attach_fragments(parsed, repo_root, merger)
+    _SCHEMA_CACHE[cache_key] = (mtime, parsed)
     return parsed, source
+
+
+def _attach_fragments(parsed: dict, repo_root: str, merger) -> None:
+    """Run the fragment merger and attach results under stable keys.
+
+    Adds:
+      cross-references:       merged ref-field declarations (dict of dicts)
+      raw-source-types:       merged list of raw subtypes
+      _fragments:             list of {plugin, plugin-version, path}
+      _fragment-errors:       list of error strings (empty when clean)
+
+    Keys prefixed with `_` are diagnostic; production validators should
+    rely on the un-prefixed registries.
+    """
+    if merger is None:
+        parsed.setdefault("cross-references", {})
+        parsed.setdefault("raw-source-types", [])
+        parsed.setdefault("_fragments", [])
+        parsed.setdefault("_fragment-errors", [])
+        return
+
+    base_xrefs = parsed.get("cross-references")
+    base_raw = parsed.get("raw-source-types")
+
+    merged = merger.load_and_merge_fragments(repo_root, base_xrefs, base_raw)
+
+    parsed["cross-references"] = merged.cross_references
+    parsed["raw-source-types"] = merged.raw_source_types
+    parsed["_fragments"] = [
+        {"plugin": f.plugin, "plugin-version": f.plugin_version, "path": f.path}
+        for f in merged.fragments
+    ]
+    parsed["_fragment-errors"] = list(merged.errors)
 
 
 # Framework's expected schema-version (bump in lockstep when the schema breaks).

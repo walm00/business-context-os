@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BCOS Context Galaxy</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/galaxy.css" />
+  <!-- Load 3d-force-graph as a UMD bundle (self-contained, all transitives
+       baked in). The earlier ESM attempt via jsDelivr's +esm endpoint
+       caused multiple THREE module instances because each transitive
+       (three-forcegraph, three-render-objects) was re-bundled with its
+       own three import, breaking the d3-force layout init and crashing
+       tickFrame. UMD is one IIFE, one THREE, no module-resolution wrinkles. -->
+  <!-- Pinned to 1.74.0. 1.79.0's bundled animation cycle has an init race
+       where renderObjs (the three-render-objects instance) is undefined
+       when the first tickFrame fires, crashing on `renderObjs.tick()`.
+       Confirmed by inspecting both bundles — 1.74.0 doesn't have the
+       same pattern. Revisit once a fixed 1.79+ ships. -->
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.74.0/dist/3d-force-graph.min.js"></script>
+  <!-- NOTE: NOT loading a second THREE UMD here — empirically, adding
+       window.THREE alongside 3d-force-graph 1.74 UMD makes the bundle's
+       internal three-render-objects pick up the wrong global and crash
+       on `renderObjs.tick()` undefined. Polish layers will instead share
+       3d-force-graph's bundled THREE by extracting it from a scene
+       object's prototype chain (see galaxy.js attachPolish). -->
+
+</head>
+<body>
+  <div id="hud">
+    <div class="hud-row hud-row--top">
+      <div class="hud-title">
+        <span class="hud-pulse"></span>
+        <span id="hud-repo">loading…</span>
+        <span class="hud-sep">·</span>
+        <span id="hud-counts" class="hud-muted">—</span>
+      </div>
+      <div class="hud-controls">
+        <select id="ctl-repo" title="Switch repo"></select>
+        <select id="ctl-mode" title="View mode">
+          <option value="atlas">Atlas</option>
+          <option value="lifecycle">Lifecycle layers</option>
+          <option value="freshness">Freshness pulse</option>
+        </select>
+        <label class="hud-toggle" title="Include framework / inbox / archive">
+          <input type="checkbox" id="ctl-ambient" />
+          <span>Ambient</span>
+        </label>
+      </div>
+    </div>
+    <div class="hud-row hud-row--legend">
+      <div class="hud-legend" id="hud-legend"></div>
+      <div class="hud-help hud-muted">drag to orbit · scroll to zoom · click a star</div>
+    </div>
+  </div>
+
+  <div id="scene"></div>
+
+  <!-- In-page status overlay. Captures every boot step + any window error
+       so we can see what's happening without opening devtools. Auto-hides
+       once "rendered" status fires. Toggle with ?debug=1 to keep it
+       visible. -->
+  <div id="status-overlay" class="status-overlay">
+    <div class="status-header">
+      <span class="status-spinner"></span>
+      <span id="status-title">Booting Context Galaxy…</span>
+      <button id="status-close" class="status-close" aria-label="Close">×</button>
+    </div>
+    <ol id="status-log" class="status-log"></ol>
+  </div>
+
+  <aside id="drawer" class="drawer drawer--closed" aria-hidden="true">
+    <header class="drawer-header">
+      <div class="drawer-eyebrow" id="drawer-eyebrow">—</div>
+      <h2 class="drawer-title" id="drawer-title">—</h2>
+      <button class="drawer-close" id="drawer-close" aria-label="Close">×</button>
+    </header>
+    <dl class="drawer-meta" id="drawer-meta"></dl>
+    <section class="drawer-section">
+      <h3>Domain</h3>
+      <p class="drawer-domain" id="drawer-domain">—</p>
+    </section>
+    <section class="drawer-section" id="drawer-owns-wrap" hidden>
+      <h3>Exclusively owns</h3>
+      <ul class="drawer-list" id="drawer-owns"></ul>
+    </section>
+    <section class="drawer-section" id="drawer-edges-wrap" hidden>
+      <h3>Connections</h3>
+      <ul class="drawer-list" id="drawer-edges"></ul>
+    </section>
+    <footer class="drawer-footer">
+      <code class="drawer-path" id="drawer-path">—</code>
+    </footer>
+  </aside>
+
+  <script src="/galaxy.js"></script>
+</body>
+</html>

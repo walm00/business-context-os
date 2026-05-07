@@ -1,0 +1,21 @@
+{
+  "sessionId": "20260424_203941_bcos-dashboard-steps-4-7",
+  "plannerVersion": "clear-planner-v1",
+  "triggeredAt": "2026-04-24T20:39:41Z",
+  "userIntent": "Create a fresh-session-resumable plan for Steps 4-7 of the BCOS Dashboard cockpit-and-drawer rebuild. Steps 1-3 already shipped (translation map / cockpit shell / attention-inbox promoted into cockpit). Remaining work moves the four standalone panels still on the main page (jobs_panel, snapshot_freshness, run_history, file_health) into either a click-driven side drawer (Step 4) or a dedicated /settings route (Step 5), then polishes states (Step 6) and accessibility/responsive/dark-mode (Step 7). Each step ships independently with its own commit. Audience is the average BCOS knowledge worker — non-technical, wants to know if their context system is healthy and what they need to do.",
+  "currentStep": 7,
+  "fastTrack": true,
+  "fastTrackReason": "Design + IA decisions (cockpit+drawer, knowledge-worker audience, headline copy, dot strip always visible, list-not-prioritize attention, settings as separate route) were already locked in extensive Part 1 + Part 2 deliberation in the prior session; user explicitly invoked clear-planner to capture the manifest, not to re-litigate the design.",
+  "workflow": {
+    "steps": [
+      { "step": 1, "name": "Understand Intent",        "status": "completed", "result": "Steps 4-7 of cockpit-and-drawer rebuild for the standalone bcos-dashboard. Goal: produce artifacts a fresh session can pick up from cold." },
+      { "step": 2, "name": "Run Discovery",            "status": "completed", "result": "Skipped formal discovery scripts. The bcos-dashboard is a self-contained module under .claude/scripts/bcos-dashboard/; no new skills/agents are being created. All relevant ecosystem context is captured in the implementation-plan's 'Architecture facts' section." },
+      { "step": 3, "name": "Detect Scenario",          "status": "completed", "result": "AGENTING (modifying files under .claude/scripts/). No DOCUMENTATION secondary — dashboard is read-only against docs/." },
+      { "step": 4, "name": "Gather Context",           "status": "completed", "result": "Pre-gathered from prior session. Architecture facts, decision log, and per-step design specs all captured in implementation-plan.md sections 4-7." },
+      { "step": 5, "name": "Load Scenario Template",   "status": "completed", "result": "AGENTING template. FIXED START done (discovery). DYNAMIC MIDDLE = phases 1-4 (one per Step). FIXED END = integration audit + ecosystem state + learnings (phase 5)." },
+      { "step": 6, "name": "Present Approach",         "status": "completed", "gate": { "name": "approach_alignment", "response": "Proceed", "fastTracked": true, "rationale": "Approach already approved across 6+ AskUserQuestion rounds in the prior session." } },
+      { "step": 7, "name": "Create Session Artifacts", "status": "completed" },
+      { "step": 8, "name": "Present Full Plan",        "status": "completed", "gate": { "name": "plan_approval", "response": "Approve", "respondedAt": "2026-04-25T00:05:00Z" } }
+    ]
+  }
+}

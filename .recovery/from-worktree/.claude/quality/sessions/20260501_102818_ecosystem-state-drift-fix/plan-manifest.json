@@ -1,0 +1,179 @@
+{
+  "sessionId": "20260501_102818_ecosystem-state-drift-fix",
+  "triggeredBy": "clear-planner",
+  "scenarioType": "agenting",
+  "taskDescription": "Fix systemic ecosystem state.json drift across BCOS-enabled repos by replacing additive-merge with disk-scan regeneration, wiring into install/daily/monthly checkpoints, and adding ecosystem-state-refresh to the auto-fix whitelist.",
+  "createdAt": "2026-05-01T10:30:00Z",
+  "planStatus": "completed",
+  "userApproval": {
+    "approvedAt": "2026-05-01T10:35:00Z",
+    "response": "Approve",
+    "gate": "Step 8 — full plan approval"
+  },
+  "completedAt": "2026-05-01T11:15:00Z",
+  "discoveryResults": {
+    "agentsFound": ["explore", "agent-discovery (utility, no AGENT.md)"],
+    "skillsFound": [
+      "clear-planner", "context-audit", "context-ingest", "context-mine",
+      "context-onboarding", "core-discipline", "daydream", "doc-lint",
+      "ecosystem-manager", "lessons-consolidate", "schedule-dispatcher",
+      "schedule-tune", "skill-discovery (utility, no SKILL.md)", "todo-utilities"
+    ],
+    "relevantLessons": [
+      "L-INIT-20260404-009: Discovery scripts are the source of truth for what exists. State files record what discovery found, not the definition itself.",
+      "L-INIT-20260404-002: Context rot is the natural state. Without active maintenance, all business context degrades over time."
+    ]
+  },
+  "plan": {
+    "totalPhases": 5,
+    "phases": [
+      "Phase 1: Design refresh_ecosystem_state.py specification + classification rule",
+      "Phase 2: Implement refresh_ecosystem_state.py + tests",
+      "Phase 3: Wire into update.py + job-index-health.md (install + daily)",
+      "Phase 4: Wire into auto-fix whitelist + schedule-config.template + job-architecture-review.md (monthly defense)",
+      "Phase 5: FIXED END — Integration audit + ecosystem state refresh + learnings capture"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "P1_001",
+      "phase": 1,
+      "content": "Define classification rule: skill = directory in .claude/skills/ containing SKILL.md; agent = directory in .claude/agents/ containing AGENT.md; utility = directory in either tree without those markers. Document in script docstring.",
+      "activeForm": "Defining classification rule",
+      "status": "pending"
+    },
+    {
+      "id": "P1_002",
+      "phase": 1,
+      "content": "Define output schema: inventory.skills.{total,list,overlayCapable,discoveryCapable}, inventory.agents.{total,byCategory}, inventory.utilities.{total,skills,agents}. Preserve user-authored fields (overlayCapable, discoveryCapable, health, maintenanceBacklog) — don't overwrite, only top up.",
+      "activeForm": "Defining output schema",
+      "status": "pending"
+    },
+    {
+      "id": "P1_003",
+      "phase": 1,
+      "content": "Define agent category inference: read AGENT.md frontmatter `category` field. Default to 'Uncategorized' if missing. Preserve existing byCategory placement if user manually moved an agent.",
+      "activeForm": "Defining agent category inference",
+      "status": "pending"
+    },
+    {
+      "id": "P2_001",
+      "phase": 2,
+      "content": "Create .claude/scripts/refresh_ecosystem_state.py — disk scan via Path.glob('.claude/skills/*/SKILL.md') and equivalent for agents. Output to state.json.",
+      "activeForm": "Implementing refresh script",
+      "status": "pending"
+    },
+    {
+      "id": "P2_002",
+      "phase": 2,
+      "content": "Implement preservation logic: read existing state.json first, preserve overlayCapable, discoveryCapable arrays (filtered to only contain entries that still exist on disk), preserve health + maintenanceBacklog verbatim.",
+      "activeForm": "Implementing preservation logic",
+      "status": "pending"
+    },
+    {
+      "id": "P2_003",
+      "phase": 2,
+      "content": "Implement utilities classification: scan .claude/skills/ and .claude/agents/ for directories WITHOUT marker file; record in inventory.utilities section.",
+      "activeForm": "Implementing utilities classification",
+      "status": "pending"
+    },
+    {
+      "id": "P2_004",
+      "phase": 2,
+      "content": "Add CLI flags: --dry-run (print diff, don't write), --json (output result as JSON), --quiet (no output unless changes). Default = apply + print summary line.",
+      "activeForm": "Adding CLI flags",
+      "status": "pending"
+    },
+    {
+      "id": "P2_005",
+      "phase": 2,
+      "content": "Test in dev repo: run script, confirm output matches current curated state.json (13 skills, 1 agent) plus a new utilities section with skill-discovery + agent-discovery.",
+      "activeForm": "Testing refresh script in dev repo",
+      "status": "pending"
+    },
+    {
+      "id": "P3_001",
+      "phase": 3,
+      "content": "Modify update.py: replace merge_ecosystem_state() call (line 730) with subprocess invocation of refresh_ecosystem_state.py. Print '  state.json: refreshed from disk (N skills, M agents, K utilities)' in summary.",
+      "activeForm": "Modifying update.py",
+      "status": "pending"
+    },
+    {
+      "id": "P3_002",
+      "phase": 3,
+      "content": "Decide fate of merge_ecosystem_state() function: leave it as dead code with deprecation comment OR remove it. Recommend removal — additive merge was the original bug, no other caller.",
+      "activeForm": "Removing dead merge function",
+      "status": "pending"
+    },
+    {
+      "id": "P3_003",
+      "phase": 3,
+      "content": "Modify job-index-health.md: add Step 6 'Refresh ecosystem state' after document index rebuild. Steps: invoke refresh_ecosystem_state.py, capture summary, surface count of changed entries in `notes`. If script errors, log as non-fatal warning (don't fail the whole job).",
+      "activeForm": "Wiring refresh into index-health job",
+      "status": "pending"
+    },
+    {
+      "id": "P3_004",
+      "phase": 3,
+      "content": "Verify: run schedule-dispatcher's index-health job manually in dev repo. Confirm state.json gets updated lastUpdated to today, no other unintended changes.",
+      "activeForm": "Verifying daily wiring",
+      "status": "pending"
+    },
+    {
+      "id": "P4_001",
+      "phase": 4,
+      "content": "Modify auto-fix-whitelist.md: add ecosystem-state-refresh fix ID with detection (state.json doesn't match disk-scan output) and fix (run refresh_ecosystem_state.py). Justify with the 5 safety criteria (deterministic, no business-content change, idempotent, easy to audit, reversible by git).",
+      "activeForm": "Adding ecosystem-state-refresh to whitelist",
+      "status": "pending"
+    },
+    {
+      "id": "P4_002",
+      "phase": 4,
+      "content": "Modify schedule-config.template.json: add 'ecosystem-state-refresh' to default auto_fix.whitelist array. New deployments get the fix enabled by default.",
+      "activeForm": "Updating schedule-config template",
+      "status": "pending"
+    },
+    {
+      "id": "P4_003",
+      "phase": 4,
+      "content": "Modify job-architecture-review.md: (a) fix --staged -> --ci typo at line 47; (b) replace ad-hoc 'check that state.json matches what actually exists' bullet with 'invoke ecosystem-state-refresh fix if drift detected'; (c) remove the explicit 'Does not modify state.json' line at 142-143; (d) update verdict logic so ecosystem drift no longer auto-triggers red (the auto-fix resolves it).",
+      "activeForm": "Updating architecture-review job",
+      "status": "pending"
+    },
+    {
+      "id": "P4_004",
+      "phase": 4,
+      "content": "Document the design decision: add a section in document-standards.md or a new architecture note explaining 'state.json is a derived artifact, not authored truth' — invoking lesson L-INIT-20260404-009 explicitly.",
+      "activeForm": "Documenting derived-artifact policy",
+      "status": "pending"
+    },
+    {
+      "id": "P5_001",
+      "phase": 5,
+      "content": "FIXED END: Run python .claude/scripts/analyze_integration.py --ci against the change. Resolve any flagged coverage gaps before commit.",
+      "activeForm": "Running integration audit",
+      "status": "pending"
+    },
+    {
+      "id": "P5_002",
+      "phase": 5,
+      "content": "FIXED END: Run python .claude/scripts/refresh_ecosystem_state.py in dev repo. Verify state.json now includes utilities section. Commit the regenerated state.json as part of the change.",
+      "activeForm": "Refreshing dev repo ecosystem state",
+      "status": "pending"
+    },
+    {
+      "id": "P5_003",
+      "phase": 5,
+      "content": "FIXED END: Capture lessons. Add to lessons.json: 'L-ECOSYSTEM-20260501: A state file that exists to mirror disk should be regenerated from disk, never authored. When authored, drift is inevitable. — applies to: any cache, registry, or inventory file derived from filesystem state.'",
+      "activeForm": "Capturing lessons",
+      "status": "pending"
+    },
+    {
+      "id": "P5_004",
+      "phase": 5,
+      "content": "FIXED END: Verify CI checks pass. Run validate_frontmatter.py, validate_references.py, and analyze_integration.py --ci. All must pass before commit.",
+      "activeForm": "Verifying CI checks",
+      "status": "pending"
+    }
+  ]
+}
