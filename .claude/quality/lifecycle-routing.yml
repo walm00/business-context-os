@@ -233,8 +233,11 @@ rules:
     description: >
       Research documents with external URLs that have aged past the declared
       route_to_wiki_after_days threshold. Sweep confirms an external URL exists
-      in the body (otherwise it's not source-summary material), then calls
-      /wiki promote to produce a source-summary page.
+      in the body and then delegates to /wiki promote — the bcos-wiki skill
+      chooses the destination bucket (pages/ vs source-summary/) based on the
+      document's shape, so the sweep MUST NOT encode the bucket itself. The
+      `destination.bucket: auto` value documents this delegation; lifecycle_sweep
+      surfaces a "delegate to /wiki promote" finding rather than moving files.
     match:
       zones: [active]
       lifecycle-triggers:
@@ -242,7 +245,7 @@ rules:
       cluster-hints: [market-intelligence, research, competitive, reference]
     destination:
       zone: wiki
-      bucket: source-summary
+      bucket: auto  # bcos-wiki picks pages/ vs source-summary/ on promote
     body-markers:
       - pattern: "https?://"
         role: require

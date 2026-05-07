@@ -17,7 +17,7 @@ description: |
 
   DO NOT USE:
   - For actually running jobs (that's the `schedule-dispatcher` skill)
-  - For onboarding first-time setup (that's `context-onboarding` Step 6)
+  - For initial config creation when no `schedule-config.json` exists yet — `context-onboarding` Step 6 handles seeding from the template + creating the OS-level scheduled task. After Step 6 completes, this skill IS the right place to adjust cadences (e.g. "now turn audit-inbox to weekly").
 category: maintenance
 ---
 

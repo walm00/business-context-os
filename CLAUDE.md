@@ -44,7 +44,7 @@ Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/documen
 
 **The folder IS the signal.** `_planned/` = idea. `_archive/` = history. `_<anything>/` = framework-ignored. Don't confuse them with reality.
 
-**Authority hierarchy (when claims conflict):** `docs/*.md` (canonical) > `_wiki/pages/` `canonical-process` > `_wiki/pages/` `internal-reference` > `_wiki/source-summary/` `external-reference`. The full mapping table and the lint that catches questionable overrides live in `docs/_bcos-framework/architecture/wiki-zone.md` "Authority Semantics".
+**Authority hierarchy (when claims conflict):** `_collections/` `external-evidence` (the source artifact itself — invoice, signed contract, transcript) > `docs/*.md` (canonical) > `_wiki/pages/` `canonical-process` > `_wiki/pages/` `internal-reference` > `_wiki/source-summary/` `external-reference`. Evidence outranks canonical because the artifact IS the truth and the doc is a summary of it. The full mapping table and the lint that catches questionable overrides live in `docs/_bcos-framework/architecture/wiki-zone.md` "Authority Semantics".
 
 For the full convention (when to use `_<custom>/` vs `.private/`, what scanners scan, examples), see `docs/_bcos-framework/guides/folder-conventions.md`.
 

@@ -27,10 +27,14 @@ mkdir -p "$STATE_DIR" "$SESSIONS_DIR"
 # ---------------------------------------------------------------------------
 INPUT=$(cat)
 
-# Extract fields using python (available everywhere, no jq dependency)
-read -r STOP_HOOK_ACTIVE SESSION_ID TRANSCRIPT_PATH <<< "$(python3 -c "
+# Extract fields using python (available everywhere, no jq dependency).
+# Pipe $INPUT to stdin — never interpolate untrusted hook input into a -c string.
+read -r STOP_HOOK_ACTIVE SESSION_ID TRANSCRIPT_PATH <<< "$(printf '%s' "$INPUT" | python3 -c "
 import json, sys
-data = json.loads('''$INPUT''')
+try:
+    data = json.loads(sys.stdin.read())
+except Exception:
+    data = {}
 active = str(data.get('stop_hook_active', False)).lower()
 sid = data.get('session_id', 'unknown')
 tp = data.get('transcript_path', '')
@@ -53,11 +57,13 @@ if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
     exit 0
 fi
 
-EXCHANGE_COUNT=$(python3 -c "
-import json, sys
+# Pass transcript path via env var — never interpolate into source.
+EXCHANGE_COUNT=$(BCOS_TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c "
+import json, os
 count = 0
+path = os.environ.get('BCOS_TRANSCRIPT_PATH', '')
 try:
-    with open('$TRANSCRIPT_PATH', 'r') as f:
+    with open(path, 'r') as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -66,7 +72,6 @@ try:
                 entry = json.loads(line)
                 if entry.get('role') == 'user':
                     content = str(entry.get('content', ''))
-                    # Skip slash commands and system messages
                     if '<command-message>' not in content:
                         count += 1
             except json.JSONDecodeError:

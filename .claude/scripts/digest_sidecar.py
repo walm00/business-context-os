@@ -31,7 +31,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "1.0.0"
+# Schema version is owned by the central registry (_schema_versions.py).
+# Re-exported here as SCHEMA_VERSION for backwards-compat with existing
+# importers; new code should call validate_schema("digest-sidecar", ...) and
+# read REGISTRY["digest-sidecar"].current directly.
+try:
+    from _schema_versions import REGISTRY, validate_schema  # type: ignore
+    SCHEMA_VERSION = REGISTRY["digest-sidecar"].current
+    _USE_REGISTRY = True
+except ImportError:
+    SCHEMA_VERSION = "1.0.0"
+    _USE_REGISTRY = False
 _TOLERATED_VERSIONS = {SCHEMA_VERSION, "0.1.0-provisional"}
 
 
@@ -89,7 +99,12 @@ def parse_sidecar(path: Path) -> ParsedSidecar | None:
     data = json.loads(raw)
 
     schema_version = data.get("schema_version", SCHEMA_VERSION)
-    if schema_version not in _TOLERATED_VERSIONS:
+    if _USE_REGISTRY:
+        # Strict policy: raises SchemaVersionError on incompatibility.
+        # Caller (parse_sidecar consumers — dashboard, dispatcher) should
+        # handle that and prompt the user to migrate rather than crashing.
+        validate_schema("digest-sidecar", schema_version, path=Path(path))
+    elif schema_version not in _TOLERATED_VERSIONS:
         raise ValueError(
             f"sidecar {path}: schema_version {schema_version!r} not in "
             f"{sorted(_TOLERATED_VERSIONS)}"

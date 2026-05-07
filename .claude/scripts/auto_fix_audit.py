@@ -88,20 +88,36 @@ def _parse_ts(s: str | None) -> datetime | None:
 
 
 def _load_rows(path: Path | None) -> list[dict[str, Any]]:
+    """Load resolutions.jsonl with corruption tracking.
+
+    Drops are no longer silent — `_LAST_LOAD_REPORT` exposes a
+    `CorruptionReport` for the dispatcher to surface as a finding.
+    """
     p = path or DEFAULT_RESOLUTIONS
-    if not p.is_file():
-        return []
-    out: list[dict[str, Any]] = []
-    with p.open(encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                out.append(json.loads(line))
-            except Exception:
-                continue
-    return out
+    try:
+        from _jsonl_safe import safe_load_jsonl  # type: ignore
+    except ImportError:
+        # Defensive fallback if the helper isn't on path
+        if not p.is_file():
+            return []
+        out: list[dict[str, Any]] = []
+        with p.open(encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    out.append(json.loads(line))
+                except Exception:
+                    continue
+        return out
+    rows, report = safe_load_jsonl(p)
+    global _LAST_LOAD_REPORT
+    _LAST_LOAD_REPORT = report
+    return rows
+
+
+_LAST_LOAD_REPORT = None  # type: ignore[assignment]
 
 
 def _load_diary(path: Path | None) -> list[dict[str, Any]]:

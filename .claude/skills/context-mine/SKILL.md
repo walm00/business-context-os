@@ -6,6 +6,8 @@ category: context-management
 
 # Context Mine
 
+> **See also:** `context-ingest` is the single public entry point for new material. If the user dropped a conversation export of unknown shape, prefer `context-ingest` — it dispatches here automatically when it detects a Slack/transcript/chat-log shape. Use `context-mine` directly only when the user explicitly names mining ("mine this transcript", "extract decisions from this Slack export"). Mine extracts → ingest classifies and routes.
+
 ## Purpose
 
 **This skill IS:**

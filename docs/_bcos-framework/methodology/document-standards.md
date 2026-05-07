@@ -235,20 +235,6 @@ These fields are emitted by `.claude/scripts/context_index.py` into `.claude/qua
 
 Wiki-zone pages add fields such as `page-type`, `domain`, `exclusively-owns`, `builds-on`, `references`, `last-reviewed`, and source-summary provenance fields. Source summaries also keep `last-fetched`; that records source refresh, while `last-reviewed` records validation of the authored summary. The authoritative list lives in `docs/_wiki/.schema.yml`; the framework fallback template is `docs/_bcos-framework/templates/_wiki.schema.yml.tmpl`.
 
-### Mechanical Index Facets
-
-The canonical context index derives fields from the path so authors do not duplicate them in frontmatter:
-
-| Derived field | Meaning |
-|---------------|---------|
-| `zone` | Active, wiki, collection-manifest, inbox, planned, archive, framework, generated, or custom opt-out |
-| `bucket` | Lifecycle bucket used by Atlas/Galaxy: `active`, `_inbox`, `_planned`, `_archive`, `_bcos-framework`, `_collections` |
-| `folder` | Parent path of the file |
-| `path-tags` | Folder components used as searchable facets |
-| `trust-level` | Derived trust class such as high, high-derived, future, historical, low, system, or evidence |
-
-These fields are emitted by `.claude/scripts/context_index.py` into `.claude/quality/context-index.json` and rendered into `docs/document-index.md`. Do not hand-maintain them in YAML.
-
 ### Mandatory Refinement Step
 
 **Every time you update a document, you MUST:**

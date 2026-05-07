@@ -114,6 +114,17 @@ __pycache__/
 # Lessons (user-specific, accumulates over time — starter template ships instead)
 .claude/quality/ecosystem/lessons.json
 
+# Self-learning ladder event log + derived state. These are append-only
+# event streams written by the dispatcher, dashboard, and click handlers.
+# Tracking them in git produces guaranteed merge conflicts on multi-machine
+# / multi-branch workflows, and publish.sh's conflict resolution would
+# silently truncate the click history that the auditor's reversal
+# thresholds depend on. They regenerate from disk; never commit.
+.claude/quality/ecosystem/resolutions.jsonl
+.claude/quality/ecosystem/learned-rules.json
+.claude/quality/ecosystem/learning-blocklist.json
+.claude/quality/ecosystem/state.json
+
 # Auto-generated wake-up context (regenerated per user)
 docs/.wake-up-context.md
 
