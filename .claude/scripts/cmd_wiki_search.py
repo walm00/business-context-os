@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-cmd_wiki_search.py — search wiki pages by query (filename + frontmatter name).
+cmd_wiki_search.py — search wiki pages through the shared context backend.
 
-User-triggered command (mirrors `/wiki search <query>` chat path). Mechanical
-substring + token match against page slugs and `name` frontmatter fields.
+User-triggered command (mirrors `/wiki search <query>` chat path). This is
+zone-scoped sugar over context_search.py with `zone=wiki`.
 
 CLI:
     python .claude/scripts/cmd_wiki_search.py --query "pricing"
@@ -20,7 +20,7 @@ _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from _wiki_yaml import parse_frontmatter  # noqa: E402
+import context_search_service  # noqa: E402
 
 
 def repo_root() -> Path:
@@ -35,14 +35,6 @@ def repo_root() -> Path:
 
 def search(query: str, *, root: Path | None = None, limit: int = 25) -> dict:
     r = root or repo_root()
-    wiki_dir = r / "docs" / "_wiki"
-    if not wiki_dir.is_dir():
-        return {
-            "ok": True, "status": "green", "query": query,
-            "notes": "No wiki zone present.",
-            "results": [],
-        }
-
     q = query.strip().lower()
     if not q:
         return {
@@ -50,32 +42,34 @@ def search(query: str, *, root: Path | None = None, limit: int = 25) -> dict:
             "notes": "Query cannot be empty.",
         }
 
-    results: list[dict] = []
-    for sub in ("pages", "source-summary"):
-        base = wiki_dir / sub
-        if not base.is_dir():
-            continue
-        for path in sorted(base.rglob("*.md")):
-            slug = path.stem
-            fm = parse_frontmatter(path) or {}
-            name = (fm.get("name") or "").strip()
-            page_type = (fm.get("page-type") or fm.get("type") or "").strip()
-            haystack = f"{slug} {name}".lower()
-            if q in haystack:
-                rel = path.relative_to(r).as_posix()
-                results.append({
-                    "slug": slug,
-                    "name": name or slug,
-                    "page_type": page_type,
-                    "path": rel,
-                    "subdir": sub,
-                })
-                if len(results) >= limit:
-                    break
+    result, status = context_search_service.search_context(
+        r,
+        {"q": query, "zone": "wiki", "top": str(limit)},
+    )
+    if status >= 400:
+        return {
+            "ok": False, "status": "red", "query": query,
+            "notes": result.get("message") or result.get("error") or f"HTTP {status}",
+            "result": result,
+        }
+    hits = result.get("hits") or []
+    results = [
+        {
+            "slug": hit.get("slug"),
+            "name": hit.get("name") or hit.get("summary") or hit.get("slug"),
+            "page_type": hit.get("page-type") or "",
+            "path": hit.get("path") or (hit.get("citation-id") or "").split(":", 1)[-1],
+            "score": hit.get("score"),
+            "citation_id": hit.get("citation-id"),
+        }
+        for hit in hits
+    ]
 
     return {
         "ok": True, "status": "green", "query": query,
         "notes": f"{len(results)} match(es).",
+        "hits": hits,
+        "warning": result.get("warning"),
         "results": results,
     }
 

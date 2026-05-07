@@ -786,12 +786,29 @@ def collect_actions_inbox() -> dict:
     hidden = 0
     seen_titles: set[str] = set()
 
+    import re as _re
+    _PATH_RE = _re.compile(r"(docs/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)")
+
     def _emit(title: str, source: str, source_job: str | None, number: int | None, body: str) -> None:
         nonlocal hidden
         fp = fingerprint(title)
         if fp in resolved:
             hidden += 1
             return
+        # Detect referenced repo-relative file path and flag whether it
+        # actually exists. The seed/fixture digest references demo paths
+        # (Q1-notes.md, competitor-x.md, …) that won't resolve on a fresh
+        # repo — surfacing the "example" tag prevents users from clicking
+        # Open file and getting a silent "path not found" error.
+        ref_path: str | None = None
+        path_exists = True
+        m = _PATH_RE.search(title)
+        if m:
+            ref_path = m.group(1)
+            try:
+                path_exists = (REPO_ROOT / ref_path).exists()
+            except Exception:  # noqa: BLE001
+                path_exists = False
         item = {
             "source": source,
             "source_job": source_job,
@@ -799,6 +816,8 @@ def collect_actions_inbox() -> dict:
             "title": title,
             "body": body,
             "fingerprint": fp,
+            "ref_path": ref_path,
+            "path_exists": path_exists,
         }
         decorate_action(item)
         items.append(item)

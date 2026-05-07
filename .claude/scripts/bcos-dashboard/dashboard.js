@@ -783,6 +783,53 @@
   // Build one action-inbox <li>. Shared by renderActionsInbox (legacy
   // path, still registered for backward compat) and the cockpit renderer
   // where the attention items now live.
+  // Convert run-now script tail into a friendly status message.
+  // Mechanical scripts (wiki-staleness, wiki-graveyard, etc.) print a
+  // verdict object as their last line; raw JSON in a toast is unhelpful.
+  // Pull `verdict` + `notes` if we can parse it; otherwise pass through.
+  const _RUN_VERDICT_LABELS = {
+    green: "Healthy",
+    amber: "Needs attention",
+    red:   "Problem",
+    error: "Error",
+  };
+  function _formatRunSummary(raw) {
+    const text = String(raw || "Done.").trim();
+    if (!text || (text[0] !== "{" && text[0] !== "[")) return text;
+    try {
+      const obj = JSON.parse(text);
+      const verdict = obj && typeof obj === "object" ? String(obj.verdict || "") : "";
+      const label = _RUN_VERDICT_LABELS[verdict] || verdict;
+      const findings = (obj && typeof obj.findings_count === "number") ? obj.findings_count : null;
+      const notes = obj && typeof obj.notes === "string" ? obj.notes.trim() : "";
+      const parts = [];
+      if (label) parts.push(label);
+      if (findings !== null) parts.push(findings + " finding" + (findings === 1 ? "" : "s"));
+      if (notes) parts.push(notes);
+      return parts.length ? parts.join(" · ") : text;
+    } catch (_) {
+      return text;
+    }
+  }
+
+  // Recognise repo-relative file paths inside an action title so we can
+  // turn them into "Open file" / "Open folder" buttons. Server now sets
+  // it.ref_path + it.path_exists; the regex is a fallback for older payloads.
+  const _ACTION_PATH_RE = /(docs\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)/;
+  function _extractActionPath(title) {
+    const m = _ACTION_PATH_RE.exec(String(title || ""));
+    return m ? m[1] : null;
+  }
+
+  // Source jobs we can fire mechanically from an action item. Mirrors the
+  // server-side SCRIPTABLE map; chat-hint jobs are excluded here so we
+  // only show "Run now" when something actually happens client-side.
+  const _ACTION_RUNNABLE = new Set([
+    "index-health", "auto-fix-audit", "lifecycle-sweep",
+    "wiki-stale-propagation", "wiki-source-refresh", "wiki-graveyard",
+    "wiki-coverage-audit", "wiki-canonical-drift",
+  ]);
+
   function _actionItemNode(it, onResolved) {
     const li = el("li", { class: "actions-inbox__item", "data-fingerprint": String(it.fingerprint || "") });
     const head = el("div", { class: "actions-inbox__head" });
@@ -831,7 +878,117 @@
         markBtn.title = (res && res.error) || "failed";
       }
     });
-    head.appendChild(markBtn);
+    // Right-aligned cluster for all inline buttons (open file, folder,
+    // run now, mark done). Keeps the chips on the left and actions on the
+    // right with predictable spacing.
+    const btnCluster = el("div", { class: "actions-inbox__btns" });
+
+    // "Example" tag when the title references a path that doesn't exist
+    // in the repo. Prevents the user from clicking Open file and getting a
+    // silent "path not found" — they at least know it's seed data.
+    const isExample = (it.path_exists === false);
+    if (isExample) {
+      btnCluster.appendChild(el("span", {
+        class: "actions-inbox__example-tag",
+        title: "Path referenced by this finding doesn't exist — likely seed/example data",
+      }, "example"));
+    }
+
+    // Inline action buttons: open the referenced file/folder, and run the
+    // source job if it's mechanically scriptable. Keeps the user on the
+    // dashboard for fix-it-now flows instead of forcing a context switch.
+    const actionPath = it.ref_path || _extractActionPath(it.title);
+    if (actionPath && !isExample) {
+      const openFile = el("button", {
+        type: "button",
+        class: "action-inline-btn",
+        title: "Open " + actionPath,
+      }, "📄 Open file");
+      openFile.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await atlasOpenPath(actionPath, "file");
+      });
+      btnCluster.appendChild(openFile);
+
+      const openFolder = el("button", {
+        type: "button",
+        class: "action-inline-btn",
+        title: "Reveal folder containing " + actionPath,
+      }, "📁 Folder");
+      openFolder.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await atlasOpenPath(actionPath, "folder");
+      });
+      btnCluster.appendChild(openFolder);
+    }
+
+    // Helper: mark this item resolved (same flow as the Mark-done button).
+    // Used both by the explicit click and by the auto-resolve when a
+    // Run-now result comes back green.
+    async function _resolveAndDismiss(toastText) {
+      const res = await _postJSON("/api/actions/resolve", {
+        title: it.title,
+        source_job: it.source_job || null,
+      });
+      if (res && res.ok) {
+        if (toastText) {
+          const toast = el("div", { class: "actions-inbox__toast" }, toastText);
+          li.appendChild(toast);
+        }
+        li.classList.add("actions-inbox__item--resolved");
+        setTimeout(() => {
+          li.remove();
+          if (typeof onResolved === "function") onResolved();
+        }, 700);
+      }
+      return res;
+    }
+
+    if (it.source_job && _ACTION_RUNNABLE.has(String(it.source_job))) {
+      const runHere = el("button", {
+        type: "button",
+        class: "action-inline-btn action-inline-btn--primary",
+        title: "Run " + (it.display_source_job || it.source_job) + " now",
+      }, "▶ Run now");
+      runHere.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        runHere.disabled = true;
+        runHere.textContent = "…";
+        const res = await _postJSON("/api/jobs/run-now", { job: it.source_job });
+        if (res && res.ok && res.ran === "script") {
+          // Try to read the verdict from the script's tail JSON. If green
+          // and zero findings, the action is genuinely resolved — clear it
+          // automatically. Anything else: show the result and let the user
+          // decide whether to mark done.
+          let verdict = "";
+          let findings = null;
+          try {
+            const obj = JSON.parse(String(res.summary || ""));
+            verdict = String(obj.verdict || "").toLowerCase();
+            if (typeof obj.findings_count === "number") findings = obj.findings_count;
+          } catch (_) { /* non-JSON tail — leave verdict empty */ }
+          const summaryText = _formatRunSummary(res.summary);
+          if (verdict === "green" && (findings === 0 || findings === null)) {
+            runHere.textContent = "✓ Resolved";
+            await _resolveAndDismiss(summaryText);
+          } else {
+            runHere.textContent = "✓ " + summaryText;
+            runHere.disabled = false;
+          }
+        } else {
+          runHere.disabled = false;
+          runHere.textContent = "✗ retry";
+          runHere.title = (res && res.error) || "failed";
+        }
+      });
+      btnCluster.appendChild(runHere);
+    }
+
+    btnCluster.appendChild(markBtn);
+    head.appendChild(btnCluster);
     li.appendChild(head);
 
     const title = el("div", { class: "actions-inbox__title" });
@@ -1325,9 +1482,9 @@
         if (res && res.ok) {
           if (res.ran === "script") {
             runBtn.textContent = "✓ Ran";
-            const msg = el("div", { class: "job-card__toast" }, String(res.summary || "Done."));
+            const msg = el("div", { class: "job-card__toast" }, _formatRunSummary(res.summary));
             card.appendChild(msg);
-            setTimeout(() => { runBtn.disabled = false; runBtn.textContent = "Run now"; }, 4000);
+            setTimeout(() => { runBtn.disabled = false; runBtn.textContent = "Run now"; }, 6000);
           } else if (res.ran === "chat-hint") {
             runBtn.textContent = "Tell Claude";
             const msg = el("div", { class: "job-card__toast" });
@@ -1376,7 +1533,6 @@
     // link in the page header is the single canonical entry point — no
     // per-state inline link.
     const headlineText = String(data?.headline || "");
-    const tone = String(data?.tone || "");
     const suppressHeadline = (
       tone === "ok"
       || tone === "info"
@@ -1838,6 +1994,25 @@
 
   function _atlasPathActions(item) {
     const actions = el("div", { class: "atlas-signal-file__actions" });
+    // Primary CTA — surface the suggested next_action ("Add description",
+    // "Add frontmatter", "Check usage", …) as a real button. Every concrete
+    // fix here ends with the user editing the file, so the button just
+    // opens it for editing — but we keep the action label so the user
+    // sees *what* to do, not just where to do it.
+    const action = item?.next_action;
+    if (action && action !== "No action") {
+      const ctaBtn = el("button", {
+        type: "button",
+        class: "atlas-path-action atlas-path-action--primary",
+        title: action + " — opens the file for editing",
+      }, action);
+      ctaBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        atlasOpenPath(item?.path, "file");
+      });
+      actions.appendChild(ctaBtn);
+    }
     [
       ["Open", "file"],
       ["Folder", "folder"],
@@ -1857,6 +2032,39 @@
       copyAtlasPath(item?.path);
     });
     actions.appendChild(copy);
+    // "Ignore" — append the artifact to atlas-ignore.json so the row stops
+    // appearing in subsequent passes. For docs, the kind is empty/falsy
+    // (it's a `bucket` instead) — the server figures out which list to
+    // touch from the path.
+    const ignoreBtn = el("button", {
+      type: "button",
+      class: "atlas-path-action atlas-path-action--ignore",
+      title: "Add this path to .claude/quality/atlas-ignore.json — stops it appearing in future signals",
+    }, "Ignore");
+    ignoreBtn.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ignoreBtn.disabled = true;
+      ignoreBtn.textContent = "…";
+      const res = await _postJSON("/api/atlas/ignore", {
+        path: item?.path,
+        kind: item?.kind || "doc",
+      });
+      if (res && res.ok) {
+        ignoreBtn.textContent = "✓ Ignored";
+        if (typeof window._refreshPanel === "function") {
+          window._refreshPanel("atlas_ecosystem");
+          window._refreshPanel("atlas_lifecycle");
+          window._refreshPanel("atlas_relationships");
+          window._refreshPanel("atlas_ownership");
+        }
+      } else {
+        ignoreBtn.disabled = false;
+        ignoreBtn.textContent = "✗ retry";
+        ignoreBtn.title = (res && res.error) || "failed";
+      }
+    });
+    actions.appendChild(ignoreBtn);
     return actions;
   }
 
@@ -2510,8 +2718,8 @@
     { id: "technical", path: "/settings/technical", label: "Technical" },
   ];
   const ATLAS_LENSES = [
-    { id: "ownership",     label: "Ownership",     panel: "atlas_ownership",     renderer: renderAtlasOwnership },
     { id: "lifecycle",     label: "Lifecycle",     panel: "atlas_lifecycle",     renderer: renderAtlasLifecycle },
+    { id: "ownership",     label: "Ownership",     panel: "atlas_ownership",     renderer: renderAtlasOwnership },
     { id: "relationships", label: "Relationships", panel: "atlas_relationships", renderer: renderAtlasRelationships },
     { id: "ecosystem",     label: "Ecosystem",     panel: "atlas_ecosystem",     renderer: renderAtlasEcosystem },
   ];
@@ -2520,9 +2728,9 @@
     const p = location.pathname || "/";
     if (p === "/atlas" || p === "/atlas/") {
       const qp = new URLSearchParams(location.search);
-      const lens = qp.get("lens") || "ownership";
+      const lens = qp.get("lens") || "lifecycle";
       const known = ATLAS_LENSES.find((x) => x.id === lens);
-      return { mode: "atlas", lens: known ? lens : "ownership" };
+      return { mode: "atlas", lens: known ? lens : "lifecycle" };
     }
     if (p === "/wiki" || p === "/wiki/") {
       return { mode: "wiki" };
@@ -2547,6 +2755,13 @@
 
   function routeAndRender() {
     const route = _currentRoute();
+    // Always clean up the floating save bar — only the schedules sub-page
+    // wants it; any other route should hide it. The schedules renderer
+    // recreates it fresh.
+    const existingSaveBar = document.getElementById("settings-save-bar-fixed");
+    if (existingSaveBar && !(route.mode === "settings" && route.sub === "schedules")) {
+      existingSaveBar.remove();
+    }
     if (route.mode === "atlas") {
       renderAtlas(route.lens);
     } else if (route.mode === "wiki") {
@@ -2588,6 +2803,124 @@
     }
   }
 
+  function _renderAtlasSearch(scope) {
+    const wrap = el("section", { class: "atlas-search" });
+    const form = el("form", { class: "atlas-search__form" });
+    const input = el("input", {
+      class: "atlas-search__input",
+      type: "search",
+      placeholder: "Search context...",
+      "aria-label": "Search context",
+      autocomplete: "off",
+    });
+    const include = el("select", { class: "atlas-search__select", "aria-label": "Search scope" });
+    [
+      ["active", "Active"],
+      ["all", "All"],
+    ].forEach(([value, label]) => {
+      const opt = el("option", { value: value }, label);
+      if ((scope === "all" && value === "all") || (scope !== "all" && value === "active")) opt.selected = true;
+      include.appendChild(opt);
+    });
+    const mode = el("select", { class: "atlas-search__select", "aria-label": "Search mode" });
+    [
+      ["mechanical", "Mechanical"],
+      ["semantic", "Semantic"],
+    ].forEach(([value, label]) => mode.appendChild(el("option", { value: value }, label)));
+    const submit = el("button", { type: "submit", class: "atlas-search__button" }, "Search");
+    form.appendChild(input);
+    form.appendChild(include);
+    form.appendChild(mode);
+    form.appendChild(submit);
+    wrap.appendChild(form);
+
+    const results = el("div", { class: "atlas-search__results" });
+    wrap.appendChild(results);
+    let seq = 0;
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const query = String(input.value || "").trim();
+      const mySeq = ++seq;
+      results.innerHTML = "";
+      if (!query) {
+        results.appendChild(el("div", { class: "atlas-search__empty" }, "No query"));
+        return;
+      }
+      results.appendChild(el("div", { class: "atlas-search__empty" }, "Searching..."));
+      const qs = new URLSearchParams({
+        q: query,
+        include: include.value,
+        top: "8",
+        explain: "true",
+      });
+      if (mode.value === "semantic") qs.set("mode", "semantic");
+      try {
+        const r = await fetch("/api/context-search?" + qs.toString(), { cache: "no-store" });
+        const data = await r.json();
+        if (mySeq !== seq) return;
+        if (!r.ok || data.error) throw new Error(data.message || data.error || ("HTTP " + r.status));
+        const hits = Array.isArray(data.hits) ? data.hits : [];
+        results.innerHTML = "";
+        if (!hits.length) {
+          results.appendChild(el("div", { class: "atlas-search__empty" },
+            data.warning ? "Context index missing" : "No context sources"));
+          return;
+        }
+        hits.forEach((hit) => results.appendChild(_renderAtlasSearchHit(hit)));
+      } catch (err) {
+        if (mySeq !== seq) return;
+        results.innerHTML = "";
+        results.appendChild(el("div", { class: "atlas-search__empty atlas-search__empty--error" },
+          err.message || String(err)));
+      }
+    });
+
+    return wrap;
+  }
+
+  function _renderAtlasSearchHit(hit) {
+    const card = el("button", { type: "button", class: "atlas-search-hit" });
+    const head = el("span", { class: "atlas-search-hit__head" });
+    head.appendChild(el("span", { class: "atlas-search-hit__citation" },
+      String(hit?.["citation-id"] || hit?.zone || "")));
+    head.appendChild(el("span", { class: "atlas-search-hit__score" },
+      hit?.score != null ? String(hit.score) : ""));
+    card.appendChild(head);
+    card.appendChild(el("span", { class: "atlas-search-hit__name" },
+      String(hit?.name || hit?.slug || hit?.path || "")));
+    const meta = [
+      hit?.zone,
+      hit?.type || hit?.["page-type"],
+      hit?.cluster,
+      hit?.["freshness-days"] != null ? hit["freshness-days"] + "d" : "",
+    ].filter(Boolean).join(" - ");
+    card.appendChild(el("span", { class: "atlas-search-hit__meta" }, meta));
+    const reason = _contextSearchReason(hit);
+    if (reason) card.appendChild(el("span", { class: "atlas-search-hit__reason" }, reason));
+    const snippet = hit?.first_paragraph || hit?.summary || "";
+    if (snippet) card.appendChild(el("span", { class: "atlas-search-hit__snippet" }, String(snippet)));
+    card.addEventListener("click", () => {
+      openAtlasDocDrawer({
+        ...hit,
+        age_days: hit?.["freshness-days"],
+        page_type: hit?.["page-type"],
+        exclusive_count: Array.isArray(hit?.exclusively_owns) ? hit.exclusively_owns.length : 0,
+      }, { name: "Search" });
+    });
+    return card;
+  }
+
+  function _contextSearchReason(hit) {
+    const b = hit && hit["score-breakdown"];
+    if (!b) return "";
+    const matched = Array.isArray(b["matched-terms"]) ? b["matched-terms"].join(", ") : "";
+    const missing = Array.isArray(b["missing-terms"]) && b["missing-terms"].length
+      ? "missing " + b["missing-terms"].join(", ")
+      : "all terms";
+    return [b["match-tier"], matched ? "matched " + matched : "", missing].filter(Boolean).join(" - ");
+  }
+
   function renderAtlas(activeLens) {
     const scope = _atlasScope();
     const container = document.getElementById("panels");
@@ -2623,6 +2956,7 @@
     scopeMount.appendChild(el("div", { class: "atlas-scope-select atlas-scope-select--loading" }, "Filter"));
     navRow.appendChild(scopeMount);
     shell.appendChild(navRow);
+    shell.appendChild(_renderAtlasSearch(scope));
 
     const content = el("main", { class: "atlas-content" });
     shell.appendChild(content);
@@ -2778,32 +3112,286 @@
       }
 
       const jobs = (jobsPayload.data && jobsPayload.data.jobs) || [];
-      // Bulk preset table
+
+      // Save-on-demand state across the whole Settings → Schedules page.
+      // Three independent buckets — the user can change any combination,
+      // see one count, save once.
+      const _pending = {
+        schedules: new Map(),       // jobId → presetId
+        autoCommit: undefined,      // bool when changed; undefined = no change
+        autoCommitOriginal: false,  // initial state for revert
+        profile: undefined,         // "shared" | "personal" when changed
+        profileOriginal: null,      // initial state for revert
+      };
+
+      function _pendingTotal() {
+        let n = _pending.schedules.size;
+        if (_pending.autoCommit !== undefined && _pending.autoCommit !== _pending.autoCommitOriginal) n += 1;
+        if (_pending.profile !== undefined && _pending.profile !== _pending.profileOriginal) n += 1;
+        return n;
+      }
+
       mount.appendChild(el("h2", { class: "settings-h2" }, "Job schedules"));
       mount.appendChild(el("p", { class: "settings-p settings-p--muted" },
-        "Set how often each maintenance check runs. Saved instantly to schedule-config.json."));
+        "Pick a cadence per check. Changes are pending until you click Save."));
+
+      // ----- Floating save bar (top-right, fixed to viewport) -----------
+      // Placed on document.body so it's always visible regardless of which
+      // settings sub-page or scroll position the user is at. Self-hides
+      // when no pending changes remain.
+      let saveBar = document.getElementById("settings-save-bar-fixed");
+      if (saveBar) saveBar.remove();
+      saveBar = el("div", {
+        id: "settings-save-bar-fixed",
+        class: "settings-save-bar settings-save-bar--floating settings-save-bar--idle",
+      });
+      const saveCount = el("span", { class: "settings-save-bar__count" }, "");
+      const saveMsg = el("span", { class: "settings-save-bar__msg" }, "No pending changes");
+      const saveBtn = el("button", {
+        type: "button",
+        class: "card-action-btn card-action-btn--primary settings-save-bar__btn",
+        disabled: "",
+      }, "Save");
+      const cancelBtn = el("button", {
+        type: "button",
+        class: "card-action-btn settings-save-bar__btn-cancel",
+        disabled: "",
+      }, "Discard");
+      saveBar.appendChild(saveCount);
+      saveBar.appendChild(saveMsg);
+      saveBar.appendChild(cancelBtn);
+      saveBar.appendChild(saveBtn);
+      document.body.appendChild(saveBar);
+
+      function _updateSaveBar() {
+        const n = _pendingTotal();
+        if (n === 0) {
+          saveBar.classList.remove("settings-save-bar--dirty");
+          saveBar.classList.add("settings-save-bar--idle");
+          saveBtn.disabled = true;
+          cancelBtn.disabled = true;
+          saveCount.textContent = "";
+          saveMsg.textContent = "No pending changes";
+        } else {
+          saveBar.classList.remove("settings-save-bar--idle");
+          saveBar.classList.add("settings-save-bar--dirty");
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          saveCount.textContent = "(" + n + ")";
+          saveMsg.textContent = n === 1 ? "1 pending change" : n + " pending changes";
+        }
+      }
+
+      cancelBtn.addEventListener("click", () => {
+        _pending.schedules.clear();
+        _pending.autoCommit = undefined;
+        _pending.profile = undefined;
+        // Re-render schedules rows
+        Array.from(tbody.children).forEach((tr) => {
+          const cell = tr.querySelector(".settings-schedules__presets");
+          const jobId = tr.getAttribute("data-job-id");
+          const job = jobs.find((j) => j.job === jobId);
+          if (cell && job) {
+            cell.innerHTML = "";
+            cell.appendChild(_renderPresetButtons(job));
+          }
+        });
+        // Reset auto-commit checkbox to original
+        if (typeof acCb !== "undefined" && acCb) acCb.checked = _pending.autoCommitOriginal;
+        // Reset profile radios — re-render the section
+        if (typeof profileMount !== "undefined" && profileMount) {
+          profileMount.innerHTML = "";
+          profileMount.appendChild(_renderPendingProfileSection(_pending, _updateSaveBar));
+        }
+        _updateSaveBar();
+      });
+
+      saveBtn.addEventListener("click", async () => {
+        if (_pendingTotal() === 0) return;
+        saveBtn.disabled = true; cancelBtn.disabled = true;
+        saveBtn.textContent = "Saving…";
+        let okCount = 0; let failed = [];
+
+        // 1. Schedule changes (batch)
+        for (const [jobId, presetId] of _pending.schedules.entries()) {
+          const res = await _postJSON("/api/schedule/preset", { job: jobId, preset: presetId });
+          if (res && res.ok) okCount += 1;
+          else failed.push({ what: "schedule:" + jobId, error: (res && res.error) || "failed" });
+        }
+        // 2. Auto-commit
+        if (_pending.autoCommit !== undefined && _pending.autoCommit !== _pending.autoCommitOriginal) {
+          const res = await _postJSON("/api/schedule/auto-commit", { enabled: !!_pending.autoCommit });
+          if (res && res.ok) okCount += 1;
+          else failed.push({ what: "auto-commit", error: (res && res.error) || "failed" });
+        }
+        // 3. Profile
+        if (_pending.profile !== undefined && _pending.profile !== _pending.profileOriginal) {
+          const res = await _postJSON("/api/profile", { profile: _pending.profile });
+          if (res && res.ok) okCount += 1;
+          else failed.push({ what: "profile", error: (res && res.error) || "failed" });
+        }
+
+        saveBtn.textContent = "Save";
+        if (!failed.length) {
+          // Reset state + re-fetch + re-render
+          if (typeof window._refreshPanel === "function") window._refreshPanel("jobs_panel");
+          setTimeout(() => _renderSettingsSchedules(mount), 250);
+        } else {
+          _updateSaveBar();
+          window.alert("Saved " + okCount + ". " + failed.length + " failed:\n" +
+            failed.map((f) => "  - " + f.what + ": " + f.error).join("\n"));
+        }
+      });
+
+      // ===== Pending-state-aware profile section =========================
+      // Replaces the stand-alone _renderProfileSection so radio clicks
+      // record into _pending.profile instead of writing immediately.
+      function _renderPendingProfileSection() {
+        const wrap = el("div", { class: "settings-profile" });
+        wrap.appendChild(el("h2", { class: "settings-h2" }, "Repo profile"));
+        wrap.appendChild(el("p", { class: "settings-p settings-p--muted" },
+          "Tells BCOS whether this repo is a shared team codebase or your personal knowledge store. Switching regenerates .gitignore so the right files are tracked."));
+
+        const status = el("div", { class: "settings-profile__status" }, "Loading…");
+        wrap.appendChild(status);
+        const choices = el("div", { class: "settings-profile__choices" });
+        wrap.appendChild(choices);
+
+        fetch("/api/profile?_=" + Date.now()).then((r) => r.json()).then((data) => {
+          const current = String(data.current || "shared");
+          if (_pending.profileOriginal === null) _pending.profileOriginal = current;
+          const available = data.available || ["shared", "personal"];
+          const desc = data.descriptions || {};
+          const effective = _pending.profile !== undefined ? _pending.profile : current;
+          status.textContent = "Current: " + current + (
+            _pending.profile && _pending.profile !== current
+              ? "  (pending: " + _pending.profile + ")" : ""
+          );
+          choices.innerHTML = "";
+          available.forEach((p) => {
+            const card = el("label", {
+              class: "profile-choice"
+                + (p === effective ? " profile-choice--active" : "")
+                + (p === effective && p !== current ? " profile-choice--pending" : ""),
+            });
+            const radio = el("input", { type: "radio", name: "bcos-profile" });
+            if (p === effective) radio.checked = true;
+            card.appendChild(radio);
+            const body = el("div", { class: "profile-choice__body" });
+            body.appendChild(el("div", { class: "profile-choice__name" },
+              p.charAt(0).toUpperCase() + p.slice(1)));
+            body.appendChild(el("div", { class: "profile-choice__desc" },
+              String(desc[p] || "")));
+            card.appendChild(body);
+            radio.addEventListener("change", () => {
+              if (!radio.checked) return;
+              _pending.profile = (p === current) ? undefined : p;
+              // Re-render section to reflect pending state
+              wrap.parentElement.replaceChild(_renderPendingProfileSection(), wrap);
+              _updateSaveBar();
+            });
+            choices.appendChild(card);
+          });
+        }).catch((err) => {
+          status.textContent = "Couldn't load profile: " + (err.message || err);
+        });
+
+        return wrap;
+      }
+
+      // ----- The presets table ------------------------------------------
+      function _renderPresetButtons(job) {
+        const wrap = el("div", { class: "schedule-presets" });
+        const currentSchedule = String(job.schedule || "");
+        const pending = _pending.schedules.get(job.job);
+        const row = el("div", { class: "schedule-presets__row" });
+        SCHEDULE_PRESETS.forEach((p) => {
+          const isOriginal = p.matches(currentSchedule, job);
+          const isPending = pending === p.id;
+          // Visible state:
+          //   pending  → selected with "pending" indicator
+          //   original (no pending) → selected normal
+          //   neither → idle
+          const klass = "schedule-preset"
+            + (isPending ? " schedule-preset--pending" : "")
+            + (!pending && isOriginal ? " schedule-preset--active" : "")
+            + (pending && isOriginal && !isPending ? " schedule-preset--was-original" : "");
+          const btn = el("button", {
+            type: "button",
+            class: klass,
+            "data-preset-id": p.id,
+            "data-job-id": job.job,
+            "aria-pressed": (isPending || (!pending && isOriginal)) ? "true" : "false",
+          }, p.label);
+          btn.addEventListener("click", () => {
+            if (isOriginal && !pending) return;  // already at original, nothing to do
+            if (pending === p.id) {
+              // Click pending button again → cancel pending, revert to original
+              _pending.schedules.delete(job.job);
+            } else {
+              if (isOriginal) {
+                _pending.schedules.delete(job.job);  // back to original = remove pending
+              } else {
+                _pending.schedules.set(job.job, p.id);
+              }
+            }
+            // Re-render this row's buttons
+            const cell = btn.closest(".settings-schedules__presets");
+            if (cell) {
+              cell.innerHTML = "";
+              cell.appendChild(_renderPresetButtons(job));
+            }
+            _updateSaveBar();
+          });
+          row.appendChild(btn);
+        });
+        wrap.appendChild(row);
+        return wrap;
+      }
+
       const tbl = el("table", { class: "settings-schedules" });
       const thead = el("thead");
       const hr = el("tr");
-      ["Check", "Status", "Current cadence", "Change frequency"].forEach((h) =>
+      ["Check", "Current cadence", "Change frequency"].forEach((h) =>
         hr.appendChild(el("th", null, h)));
       thead.appendChild(hr);
       tbl.appendChild(thead);
       const tbody = el("tbody");
       jobs.forEach((j) => {
-        const tr = el("tr");
-        tr.appendChild(el("td", { class: "settings-schedules__name" }, String(j.display_name || j.job)));
-        tr.appendChild(el("td", null, String(j.display_status || j.status || "—")));
-        tr.appendChild(el("td", null, String(j.display_schedule_long || j.schedule || "—")));
+        const tr = el("tr", { "data-job-id": j.job });
+        // Name + hint icon (hover tooltip via title attr)
+        const nameCell = el("td", { class: "settings-schedules__name" });
+        nameCell.appendChild(el("span", { class: "settings-schedules__name-text" },
+          String(j.display_name || j.job)));
+        const hint = j.display_hint || j.hint || "";
+        if (hint) {
+          nameCell.appendChild(el("span", {
+            class: "settings-schedules__help",
+            title: hint,
+            "aria-label": hint,
+          }, "?"));
+        }
+        // Surface "Not yet run" / status as a small line under the name
+        const statusText = j.display_status || j.status;
+        if (statusText && statusText !== "configured" && statusText !== "Active") {
+          nameCell.appendChild(el("div", { class: "settings-schedules__substatus" },
+            String(j.placeholder || statusText)));
+        }
+        tr.appendChild(nameCell);
+        // Current cadence (human-readable)
+        const cad = String(j.display_schedule_long || j.schedule || "—");
+        tr.appendChild(el("td", { class: "settings-schedules__cadence" }, cad));
+        // Preset buttons cell
         const presetCell = el("td", { class: "settings-schedules__presets" });
-        presetCell.appendChild(_renderSchedulePresets(j));
+        presetCell.appendChild(_renderPresetButtons(j));
         tr.appendChild(presetCell);
         tbody.appendChild(tr);
       });
       tbl.appendChild(tbody);
       mount.appendChild(tbl);
+      _updateSaveBar();
 
-      // Auto-commit toggle (global)
+      // Auto-commit toggle — defers write into the pending bucket
       mount.appendChild(el("h2", { class: "settings-h2" }, "Auto-commit"));
       mount.appendChild(el("p", { class: "settings-p settings-p--muted" },
         "When on, scheduled jobs commit their generated artifacts (digest, index, diary, wake-up) at the end of each run — but only if the working tree has no other changes. Never pushes, never branches."));
@@ -2814,16 +3402,17 @@
         if (acFetch.ok) {
           const acRes = await acFetch.json();
           if (acRes && acRes.enabled) acCb.checked = true;
+          _pending.autoCommitOriginal = !!(acRes && acRes.enabled);
         }
       } catch (e) { /* default unchecked */ }
-      acCb.addEventListener("change", async () => {
-        acCb.disabled = true;
-        const res = await _postJSON("/api/schedule/auto-commit", { enabled: acCb.checked });
-        acCb.disabled = false;
-        if (!res || !res.ok) {
-          acCb.checked = !acCb.checked;
-          acWrap.title = (res && res.error) || "save failed";
+      acCb.addEventListener("change", () => {
+        // Record into pending; revert is via Discard
+        if (acCb.checked === _pending.autoCommitOriginal) {
+          _pending.autoCommit = undefined;  // back to original
+        } else {
+          _pending.autoCommit = acCb.checked;
         }
+        _updateSaveBar();
       });
       acWrap.appendChild(acCb);
       acWrap.appendChild(el("code", { class: "settings-whitelist__id" }, "auto-commit"));
@@ -2838,10 +3427,10 @@
       // Power users can still edit the JSON directly. Surface it back if
       // user research shows it's missed.
 
-      // Repo profile — shared (drop-in to a team repo) vs personal
-      // (knowledge sync). Toggling regenerates .gitignore from the
-      // template; same logic as `bash .claude/scripts/set_profile.sh`.
-      mount.appendChild(_renderProfileSection());
+      // Repo profile — pending-aware version (defers write until Save)
+      const profileMount = el("div", { class: "settings-profile-mount" });
+      profileMount.appendChild(_renderPendingProfileSection());
+      mount.appendChild(profileMount);
     } catch (err) {
       mount.innerHTML = "";
       mount.appendChild(el("div", { class: "settings-error sev-warn" },
@@ -2852,36 +3441,43 @@
   async function _renderSettingsTechnical(mount) {
     mount.appendChild(el("div", { class: "settings-loading" }, "Loading technical view…"));
     try {
-      const [snap, cfgRes, healthRes] = await Promise.all([
+      const [snap, healthRes] = await Promise.all([
         _fetchPanel("snapshot_freshness"),
-        fetch("/api/schedule/config?_ts=" + Date.now()).then((r) => r.json()),
         fetch("/api/health").then((r) => r.json()),
       ]);
       mount.innerHTML = "";
 
-      // Snapshot freshness — verbose form
-      mount.appendChild(el("h2", { class: "settings-h2" }, "Schedules snapshot canary"));
-      const snapBox = el("div", { class: "settings-card" });
-      snapBox.appendChild(renderMetric(snap.data || {}));
+      // Snapshot freshness — compact form with a "Tell Claude to refresh" CTA.
+      // The actual refresh runs through an MCP tool in a Claude session, so
+      // the dashboard can't do it itself — but it can hand the user the exact
+      // command to paste.
+      const snapStats = (snap.data && Array.isArray(snap.data.stats) && snap.data.stats[0]) || snap.data || {};
+      const snapValue = snapStats.value !== undefined ? snapStats.value : "—";
+      const snapHint = snapStats.hint || "";
+      mount.appendChild(el("h2", { class: "settings-h2" }, "Schedules snapshot"));
+      const snapBox = el("div", { class: "settings-card settings-snapshot" });
+      const snapLine = el("div", { class: "settings-snapshot__line" });
+      snapLine.appendChild(el("span", {
+        class: "settings-snapshot__value sev-" + (snapStats.severity || "muted"),
+      }, String(snapValue)));
+      if (snapHint) snapLine.appendChild(el("span", { class: "settings-snapshot__hint" }, snapHint));
+      snapBox.appendChild(snapLine);
+      const snapCmd = "run mcp__scheduled-tasks__list_scheduled_tasks";
+      const snapActions = el("div", { class: "settings-snapshot__actions" });
+      const copyCmdBtn = el("button", {
+        type: "button",
+        class: "card-action-btn",
+      }, "Copy refresh command");
+      copyCmdBtn.addEventListener("click", () => {
+        try {
+          navigator.clipboard.writeText(snapCmd);
+          copyCmdBtn.textContent = "✓ Copied — paste in Claude chat";
+          setTimeout(() => { copyCmdBtn.textContent = "Copy refresh command"; }, 3000);
+        } catch (_) {}
+      });
+      snapActions.appendChild(copyCmdBtn);
+      snapBox.appendChild(snapActions);
       mount.appendChild(snapBox);
-
-      // (Manual "Refresh the snapshot" copy-paste block removed — populating
-      // ~/.local-dashboard/schedules.json is now an onboarding/install
-      // responsibility, not something the user should be hand-running.)
-
-      // Raw schedule-config.json viewer — only render when there's
-      // something worth seeing. An empty `{}` is just noise on fresh
-      // installs and adds no diagnostic value.
-      const cfgObj = cfgRes.config || {};
-      const cfgHasContent = cfgObj && typeof cfgObj === "object" && Object.keys(cfgObj).length > 0;
-      if (cfgHasContent) {
-        mount.appendChild(el("h2", { class: "settings-h2" }, "schedule-config.json"));
-        mount.appendChild(el("p", { class: "settings-p settings-p--muted" },
-          String(cfgRes.config_path || "")));
-        const pre = el("pre", { class: "settings-rawjson" },
-          JSON.stringify(cfgObj, null, 2));
-        mount.appendChild(pre);
-      }
 
       // Debug info
       mount.appendChild(el("h2", { class: "settings-h2" }, "Debug info"));
@@ -2889,8 +3485,7 @@
       const dbgRows = [
         ["Server time", healthRes.ts || "—"],
         ["Refresh interval (ms)", String(window._refreshMs || "—")],
-        ["Active panels", _lastData && _lastData.panels ? _lastData.panels.map((p) => p.id).join(", ") : "—"],
-        ["URL", location.href],
+        ["URL", location.origin],
       ];
       dbgRows.forEach(([k, v]) => {
         dl.appendChild(el("dt", null, k));
@@ -2931,7 +3526,7 @@
 
   async function loadData() {
     const route = _currentRoute();
-    if (route.mode === "settings" || route.mode === "atlas") {
+    if (route.mode === "settings" || route.mode === "atlas" || route.mode === "wiki") {
       // On routed views, the panels container is owned by the route renderer.
       // Just refresh the header health badge so it stays current.
       try {
@@ -3530,36 +4125,69 @@
   document.addEventListener("DOMContentLoaded", initFilterState);
 
   // ---------------------------------------------------------------------
-  // Wiki tab — user-action commands rendered as input + button cards
+  // Wiki tab — three-section progressive disclosure
   //
-  // Each command card mirrors a /wiki sub-command. Mechanical commands
-  // (cmd_wiki_*.py scripts via /api/commands/run) get a real button.
-  // LLM-judgment commands (run, create, promote, refresh, schema) get
-  // a "Copy and run via chat" affordance instead — honest about what
-  // can and can't fire headlessly.
+  //   Quick           Search + Build bundle (search-shaped, used often)
+  //   Manage pages    Review / Archive (frontmatter-only ops)
+  //   Add content     ONE unified card — URL / path / paste — routes via
+  //                   chat to context-ingest which decides wiki vs
+  //                   collection vs canonical update
+  //   Advanced (toggle)
+  //                   Init zone (highlighted if missing), Lint, Govern
+  //                   schema, Queue raw URL, Refresh source, Remove
+  //
+  // The status banner at the top surfaces zone state: page count, lint
+  // state, stale count. If wiki zone isn't initialized, the banner
+  // surfaces that and the Init action gets a visual highlight.
   // ---------------------------------------------------------------------
 
-  // Mechanical commands — registry-driven, will render dynamically from /api/commands.
+  // Display metadata for the 7 mechanical commands the registry knows about.
+  // Keyed by command id; value is the icon + UI hint that complements the
+  // registry's own label/script/args contract.
   const _WIKI_COMMAND_META = {
-    "wiki-init":      { icon: "🌱", desc: "Scaffold docs/_wiki/ with starter pages, source-summary, raw, queue.md, schema, config.", inputs: [] },
-    "wiki-review":    { icon: "✓",  desc: "Bump last-reviewed: today on a wiki page (frontmatter only).", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
-    "wiki-archive":   { icon: "📦", desc: "Soft-delete a wiki page (sets status: archived, file stays). Reversible.", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
-    "wiki-queue-add": { icon: "🔗", desc: "Add a URL to docs/_wiki/queue.md without fetching. Process later via /wiki run in chat.", inputs: [{ key: "url", placeholder: "https://...", type: "url" }] },
-    "wiki-lint":      { icon: "🔍", desc: "Validate docs/_wiki/.schema.yml + frontmatter on all wiki pages.", inputs: [] },
-    "wiki-search":    { icon: "🔎", desc: "Search wiki page slugs and frontmatter names.", inputs: [{ key: "query", placeholder: "search term…", type: "text" }] },
-    "wiki-remove":    { icon: "🗑️", desc: "Permanently delete a wiki page + its raw files (git rm). Cannot be undone outside git.", inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+    "wiki-init":      { icon: "🌱", short: "Initialize",       desc: "Scaffold docs/_wiki/ with starter pages, source-summary, raw, queue.md, schema, config.",                       inputs: [] },
+    "wiki-review":    { icon: "✓",  short: "Mark reviewed",    desc: "Bump last-reviewed: today on a wiki page (frontmatter only).",                                                  inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+    "wiki-archive":   { icon: "📦", short: "Archive",          desc: "Soft-delete a wiki page (sets status: archived, file stays). Reversible.",                                       inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
+    "wiki-queue-add": { icon: "🔗", short: "Queue raw URL",    desc: "Append URL to queue.md without fetching. The fetch + classify happens later through Add content.",              inputs: [{ key: "url", placeholder: "https://...", type: "url" }] },
+    "wiki-lint":      { icon: "🔍", short: "Lint schema",      desc: "Validate docs/_wiki/.schema.yml + frontmatter on all wiki pages.",                                               inputs: [] },
+    "wiki-search":    { icon: "🔎", short: "Search wiki",      desc: "Search wiki page slugs and frontmatter names.",                                                                  inputs: [{ key: "query", placeholder: "search term…", type: "text" }] },
+    "wiki-remove":    { icon: "🗑️", short: "Remove page",      desc: "Permanently delete a wiki page + its raw files (git rm). Cannot be undone outside git.",                          inputs: [{ key: "slug", placeholder: "page-slug", picker: "wiki-page" }] },
   };
 
-  // LLM-judgment commands — chat-only fallback cards. Each carries a
-  // copyable command string the user pastes into chat to run.
-  const _WIKI_CHAT_COMMANDS = [
-    { id: "wiki-run",      icon: "🌐", label: "Fetch URL into wiki",          desc: "Fetch a URL, classify content, generate frontmatter, save as a wiki page. Needs Claude in the loop for page-type classification + citation banner authoring.", chat: "/wiki run <url>" },
-    { id: "wiki-create",   icon: "📝", label: "Create from local content",    desc: "Ingest a local file or pasted text into the wiki. Page-type classification is judgment-driven.",                                                  chat: "/wiki create from <path-or-paste>" },
-    { id: "wiki-promote",  icon: "⬆️", label: "Promote inbox capture",        desc: "Convert a docs/_inbox/ capture into a wiki page. Picks the right page-type and authors the source-summary banner.",                          chat: "/wiki promote <inbox-path>" },
-    { id: "wiki-refresh",  icon: "♻️", label: "Refresh existing source",      desc: "Re-fetch an existing source-summary page, diff content, decide if rewrite is needed. Diff judgment requires Claude.",                          chat: "/wiki refresh <slug>" },
-    { id: "wiki-schema",   icon: "📐", label: "Govern schema vocabulary",     desc: "Add / rename / retire wiki page-types. Schema migration is judgment-driven.",                                                                  chat: "/wiki schema add|rename|retire <args>" },
-    { id: "wiki-bundle",   icon: "🎁", label: "Build context bundle",         desc: "Resolve a task into a curated context bundle across zones.",                                                                                  chat: "/wiki bundle <task>" },
-  ];
+  // Layout sections — assigns each command to a section bucket.
+  // "advanced" defaults to collapsed; the others render expanded.
+  const _WIKI_SECTIONS = {
+    "wiki-search":    "quick",
+    "wiki-review":    "manage",
+    "wiki-archive":   "manage",
+    "wiki-init":      "advanced",
+    "wiki-lint":      "advanced",
+    "wiki-queue-add": "advanced",
+    "wiki-remove":    "advanced",
+  };
+
+  // The unified "Add content" card replaces the four chat-fallback ingest
+  // variants (run / create / promote / refresh). A single input + a single
+  // button: the user supplies a URL, path, or paste; the routing happens
+  // via the context-ingest skill which classifies and decides whether the
+  // content lands in active docs, the wiki, _collections/, or stays in
+  // _inbox for review. One mental model, one input, one button.
+  const _WIKI_ADD_CONTENT = {
+    icon: "➕",
+    label: "Add content",
+    desc: "Drop a URL, file path, or paste content. Claude classifies and routes — wiki for explainers, collections for evidence, active docs for canonical updates, inbox if it needs more thought.",
+    placeholder: "https://… or docs/_inbox/notes.md or paste text",
+    chatPrefix: "ingest the following content into context: ",
+  };
+
+  // Other chat-only commands that don't fit the unified ingest pattern.
+  // Build context bundle is search-shaped (lives in Quick); the others
+  // live in Advanced.
+  const _WIKI_CHAT_OTHER = {
+    "wiki-bundle":  { icon: "🎁", section: "quick",    label: "Build context bundle", desc: "Resolve a task into a curated context bundle across zones.",                                       chat: "/context bundle <task>",                placeholder: "task name (e.g. customer-onboarding)" },
+    "wiki-refresh": { icon: "♻️", section: "advanced", label: "Refresh existing source", desc: "Re-fetch an existing source-summary page; Claude diffs and decides if a rewrite is needed.",   chat: "/wiki refresh <slug>",                  placeholder: "page-slug" },
+    "wiki-schema":  { icon: "📐", section: "advanced", label: "Govern schema vocabulary", desc: "Add / rename / retire wiki page-types. Schema migration is judgment-driven.",                  chat: "/wiki schema add|rename|retire <args>", placeholder: null },
+  };
 
   let _wikiPageCache = null;
 
@@ -3585,24 +4213,52 @@
     }
   }
 
-  function _renderWikiHeader() {
-    const repo = (_lastData && _lastData.meta && _lastData.meta.subtitle) || "";
-    const head = el("header", { class: "settings-header" });
-    const back = el("button", { type: "button", class: "settings-back" }, "← Back to dashboard");
-    back.addEventListener("click", () => navigateTo("/"));
-    head.appendChild(back);
-    if (repo) head.appendChild(el("span", { class: "settings-repo" }, repo));
-    head.appendChild(el("h1", { class: "settings-title" }, "Wiki actions"));
-    return head;
+  // Status banner at the top of the wiki tab. Surfaces zone state:
+  //   - not initialized → big "Initialize wiki zone" highlight
+  //   - initialized → page count, status counts (active / archived),
+  //     plus a hint when no recent activity is detected
+  function _renderWikiStatusBanner(pages) {
+    const bar = el("div", { class: "wiki-status-bar" });
+    if (!pages.length) {
+      bar.classList.add("wiki-status-bar--empty");
+      bar.appendChild(el("span", { class: "wiki-status-bar__icon" }, "🌱"));
+      bar.appendChild(el("div", { class: "wiki-status-bar__text" },
+        el("strong", {}, "Wiki zone not yet initialized."),
+        el("span", { class: "wiki-status-bar__hint" },
+          " Open Advanced ▾ below to scaffold the zone — one click. After that, this banner shows page counts and lint state.")
+      ));
+      return bar;
+    }
+    const total = pages.length;
+    const active = pages.filter((p) => p.status !== "archived").length;
+    const archived = total - active;
+    const sourceSum = pages.filter((p) => p.subdir === "source-summary").length;
+    const explainers = pages.filter((p) => p.subdir === "pages").length;
+    bar.appendChild(el("span", { class: "wiki-status-bar__icon" }, "📚"));
+    const text = el("div", { class: "wiki-status-bar__text" });
+    text.appendChild(el("strong", {}, total + " wiki page" + (total === 1 ? "" : "s")));
+    const detail = [
+      explainers + " explainer" + (explainers === 1 ? "" : "s"),
+      sourceSum + " source-summary",
+    ];
+    if (archived) detail.push(archived + " archived");
+    text.appendChild(el("span", { class: "wiki-status-bar__hint" },
+      " · " + detail.join(" · ")));
+    bar.appendChild(text);
+    return bar;
   }
 
-  function _renderCommandCard(cmd, meta, allPages) {
+  function _renderCommandCard(cmd, meta, allPages, opts) {
+    opts = opts || {};
     const card = el("section", { class: "wiki-cmd-card", "data-cmd-id": cmd.id });
+    if (opts.highlight) card.classList.add("wiki-cmd-card--highlight");
     const head = el("header", { class: "wiki-cmd-head" });
     head.appendChild(el("span", { class: "wiki-cmd-icon" }, meta.icon || "•"));
-    head.appendChild(el("h3", { class: "wiki-cmd-title" }, cmd.label));
+    head.appendChild(el("h3", { class: "wiki-cmd-title" }, meta.short || cmd.label));
     if (cmd.destructive) {
       head.appendChild(el("span", { class: "wiki-cmd-badge wiki-cmd-badge--destructive" }, "DESTRUCTIVE"));
+    } else if (opts.highlight) {
+      head.appendChild(el("span", { class: "wiki-cmd-badge wiki-cmd-badge--highlight" }, "RECOMMENDED"));
     }
     card.appendChild(head);
     card.appendChild(el("p", { class: "wiki-cmd-desc" }, meta.desc || ""));
@@ -3689,6 +4345,10 @@
     return card;
   }
 
+  // Chat-fallback card with optional input field. If `placeholder` is set,
+  // the card renders an input that gets interpolated into the chat command
+  // when the user clicks Copy. If null, the card just shows the bare
+  // command template for manual completion in chat.
   function _renderChatFallbackCard(spec) {
     const card = el("section", { class: "wiki-cmd-card wiki-cmd-card--chat" });
     const head = el("header", { class: "wiki-cmd-head" });
@@ -3698,12 +4358,24 @@
     card.appendChild(head);
     card.appendChild(el("p", { class: "wiki-cmd-desc" }, spec.desc));
 
+    let input = null;
+    if (spec.placeholder) {
+      input = el("input", {
+        class: "wiki-cmd-input",
+        type: "text",
+        placeholder: spec.placeholder,
+      });
+      card.appendChild(input);
+    }
     const wrap = el("div", { class: "wiki-cmd-chathint" });
-    wrap.appendChild(el("code", { class: "wiki-cmd-chatcmd" }, spec.chat));
+    const codeEl = el("code", { class: "wiki-cmd-chatcmd" }, spec.chat);
+    wrap.appendChild(codeEl);
     const copy = el("button", { type: "button", class: "wiki-cmd-btn wiki-cmd-btn--ghost" }, "Copy");
     copy.addEventListener("click", async () => {
+      const arg = input && input.value.trim();
+      const cmd = arg ? spec.chat.replace(/<[^>]+>/, arg) : spec.chat;
       try {
-        await navigator.clipboard.writeText(spec.chat);
+        await navigator.clipboard.writeText(cmd);
         copy.textContent = "Copied ✓";
         setTimeout(() => { copy.textContent = "Copy"; }, 1200);
       } catch (err) {
@@ -3715,37 +4387,315 @@
     return card;
   }
 
-  async function renderWikiTab() {
-    const main = document.getElementById("dashboard-main") || document.body;
-    main.innerHTML = "";
-    main.appendChild(_renderWikiHeader());
+  // Unified ingest card — replaces 4 old chat-only "ingest" variants
+  // (run / create / promote / refresh). The user supplies a URL, a path,
+  // or pasted content; clicking Copy puts a single chat command on the
+  // clipboard that delegates to context-ingest, which handles routing.
+  function _renderAddContentCard() {
+    const spec = _WIKI_ADD_CONTENT;
+    const card = el("section", { class: "wiki-cmd-card wiki-cmd-card--addcontent" });
+    const head = el("header", { class: "wiki-cmd-head" });
+    head.appendChild(el("span", { class: "wiki-cmd-icon" }, spec.icon));
+    head.appendChild(el("h3", { class: "wiki-cmd-title" }, spec.label));
+    head.appendChild(el("span", { class: "wiki-cmd-badge wiki-cmd-badge--unified" }, "UNIFIED"));
+    card.appendChild(head);
+    card.appendChild(el("p", { class: "wiki-cmd-desc" }, spec.desc));
 
-    const intro = el("p", { class: "settings-p settings-p--muted" },
-      "User-triggered wiki actions. Mechanical commands (top section) run instantly via the dashboard. Judgment-required commands (bottom section) need Claude in the loop — copy the command and paste it into chat.");
-    main.appendChild(intro);
+    const ta = el("textarea", {
+      class: "wiki-cmd-input wiki-cmd-input--textarea",
+      rows: "2",
+      placeholder: spec.placeholder,
+    });
+    card.appendChild(ta);
 
-    const [commands, pages] = await Promise.all([_fetchCommands(), _fetchWikiPages()]);
+    const wrap = el("div", { class: "wiki-cmd-chathint" });
+    const copy = el("button", { type: "button", class: "wiki-cmd-btn" }, "Process via chat");
+    copy.addEventListener("click", async () => {
+      const value = ta.value.trim();
+      if (!value) {
+        ta.focus();
+        return;
+      }
+      const cmd = spec.chatPrefix + value;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        copy.textContent = "Copied ✓ — paste into chat";
+        setTimeout(() => { copy.textContent = "Process via chat"; }, 1800);
+      } catch (err) {
+        copy.textContent = "Manual copy please";
+      }
+    });
+    wrap.appendChild(copy);
+    wrap.appendChild(el("span", { class: "wiki-cmd-chathint__note" },
+      "Routes via context-ingest — Claude classifies and decides where it lands"));
+    card.appendChild(wrap);
+    return card;
+  }
 
-    // Mechanical section
-    const mechSection = el("section", { class: "wiki-cmd-section" });
-    mechSection.appendChild(el("h2", { class: "wiki-cmd-section-title" }, "Mechanical actions"));
-    const mechGrid = el("div", { class: "wiki-cmd-grid" });
-    commands
-      .filter((c) => c.id.startsWith("wiki-"))
-      .forEach((cmd) => {
-        const meta = _WIKI_COMMAND_META[cmd.id] || { icon: "•", desc: "", inputs: [] };
-        mechGrid.appendChild(_renderCommandCard(cmd, meta, pages));
+  // Auto-initialize the wiki zone silently when the user first acts on the
+  // Wiki tab without an existing zone. The user shouldn't have to click an
+  // "Initialize" button — the action is mechanical, idempotent, and obvious
+  // from intent. Returns true on success, false on failure.
+  async function _autoInitWikiZone() {
+    try {
+      const r = await fetch("/api/commands/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "wiki-init", args: {} }),
       });
-    mechSection.appendChild(mechGrid);
-    main.appendChild(mechSection);
+      const json = await r.json();
+      _wikiPageCache = null;
+      return !!(json && json.ok);
+    } catch (err) {
+      return false;
+    }
+  }
 
-    // Chat-only section
-    const chatSection = el("section", { class: "wiki-cmd-section" });
-    chatSection.appendChild(el("h2", { class: "wiki-cmd-section-title" }, "Needs Claude in chat"));
-    const chatGrid = el("div", { class: "wiki-cmd-grid" });
-    _WIKI_CHAT_COMMANDS.forEach((spec) => chatGrid.appendChild(_renderChatFallbackCard(spec)));
-    chatSection.appendChild(chatGrid);
-    main.appendChild(chatSection);
+  // ===== Add content card (top-row, compact, side-by-side with Search) =====
+  function _renderWikiAddContentRow() {
+    const spec = _WIKI_ADD_CONTENT;
+    const card = el("section", { class: "wiki-row-card wiki-row-card--add" });
+    const head = el("header", { class: "wiki-row-card__head" });
+    head.appendChild(el("span", { class: "wiki-row-card__icon" }, spec.icon));
+    head.appendChild(el("h3", { class: "wiki-row-card__title" }, spec.label));
+    head.appendChild(el("span", {
+      class: "wiki-row-card__help",
+      title: "Drop a URL, file path, or paste text. Claude classifies and routes — wiki for explainers, collections for evidence, active docs for canonical updates.",
+    }, "?"));
+    card.appendChild(head);
+
+    const ta = el("textarea", {
+      class: "wiki-row-card__input wiki-row-card__input--textarea",
+      rows: "1",
+      placeholder: spec.placeholder,
+    });
+    card.appendChild(ta);
+
+    const status = el("span", { class: "wiki-row-card__status" });
+    const btn = el("button", { type: "button", class: "wiki-row-card__btn" }, "Add");
+    btn.addEventListener("click", async () => {
+      const value = ta.value.trim();
+      if (!value) { ta.focus(); return; }
+      btn.disabled = true;
+      status.textContent = "Preparing…";
+      // Silent zone init if missing — user shouldn't see a separate step
+      const pages = await _fetchWikiPages();
+      if (pages.length === 0) {
+        status.textContent = "Initializing wiki zone…";
+        await _autoInitWikiZone();
+      }
+      const cmd = spec.chatPrefix + value;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        status.textContent = "Copied — paste into chat to process";
+        setTimeout(() => { status.textContent = ""; }, 2400);
+      } catch (err) {
+        status.textContent = "Manual copy needed";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    const row = el("div", { class: "wiki-row-card__row" });
+    row.appendChild(btn);
+    row.appendChild(status);
+    card.appendChild(row);
+    return card;
+  }
+
+  // ===== Search card — live filter against the page list ==================
+  function _renderWikiSearchRow(allPages, onFilter) {
+    const card = el("section", { class: "wiki-row-card wiki-row-card--search" });
+    const head = el("header", { class: "wiki-row-card__head" });
+    head.appendChild(el("span", { class: "wiki-row-card__icon" }, "🔎"));
+    head.appendChild(el("h3", { class: "wiki-row-card__title" }, "Search"));
+    head.appendChild(el("span", {
+      class: "wiki-row-card__help",
+      title: "Live-filters the page list below by slug or name. Case-insensitive substring match.",
+    }, "?"));
+    card.appendChild(head);
+
+    const input = el("input", {
+      class: "wiki-row-card__input",
+      type: "text",
+      placeholder: "filter pages by name or slug…",
+    });
+    input.addEventListener("input", () => onFilter((input.value || "").toLowerCase()));
+    card.appendChild(input);
+    return card;
+  }
+
+  // ===== Page list — the actual content of the wiki tab ===================
+  // Each row carries hover-revealed action menu (Mark reviewed / Archive /
+  // Remove). No standalone "manage pages" cards. Maintenance is contextual.
+  function _renderWikiPageList(pages) {
+    const wrap = el("section", { class: "wiki-pagelist" });
+    const head = el("div", { class: "wiki-pagelist__head" });
+    head.appendChild(el("h2", { class: "wiki-pagelist__title" },
+      "Pages " + el("span", { class: "wiki-pagelist__count" }, "(" + pages.length + ")").outerHTML));
+    // Hack: outerHTML is a string not a node, so build that span properly
+    head.innerHTML = "";
+    head.appendChild(el("h2", { class: "wiki-pagelist__title" }, "Pages"));
+    head.appendChild(el("span", { class: "wiki-pagelist__count" }, pages.length + ""));
+
+    // Filter chips
+    const chips = el("div", { class: "wiki-pagelist__chips" });
+    const filterState = { kind: "all", query: "", showArchived: false };
+
+    function applyFilter() {
+      const q = filterState.query;
+      Array.from(table.children).forEach((row) => {
+        const slug = row.getAttribute("data-slug") || "";
+        const name = row.getAttribute("data-name") || "";
+        const subdir = row.getAttribute("data-subdir") || "";
+        const status = row.getAttribute("data-status") || "active";
+        let match = true;
+        if (filterState.kind === "explainers" && subdir !== "pages") match = false;
+        if (filterState.kind === "source-summary" && subdir !== "source-summary") match = false;
+        if (!filterState.showArchived && status === "archived") match = false;
+        if (q && !(slug.toLowerCase().includes(q) || name.toLowerCase().includes(q))) match = false;
+        row.style.display = match ? "" : "none";
+      });
+    }
+
+    function makeChip(label, kindValue) {
+      const c = el("button", { type: "button", class: "wiki-chip" }, label);
+      if (filterState.kind === kindValue) c.classList.add("wiki-chip--active");
+      c.addEventListener("click", () => {
+        filterState.kind = kindValue;
+        Array.from(chips.children).forEach((x) => x.classList.remove("wiki-chip--active"));
+        c.classList.add("wiki-chip--active");
+        applyFilter();
+      });
+      return c;
+    }
+    chips.appendChild(makeChip("All", "all"));
+    chips.appendChild(makeChip("Explainers", "explainers"));
+    chips.appendChild(makeChip("Source summaries", "source-summary"));
+
+    const archCheck = el("label", { class: "wiki-pagelist__archive-toggle" });
+    const cb = el("input", { type: "checkbox" });
+    cb.addEventListener("change", () => {
+      filterState.showArchived = cb.checked;
+      applyFilter();
+    });
+    archCheck.appendChild(cb);
+    archCheck.appendChild(document.createTextNode(" show archived"));
+    chips.appendChild(archCheck);
+    head.appendChild(chips);
+    wrap.appendChild(head);
+
+    // The list (table-like; div rows for ⋯ menu positioning)
+    const table = el("div", { class: "wiki-pagelist__rows" });
+    if (!pages.length) {
+      wrap.appendChild(el("div", { class: "wiki-pagelist__empty" },
+        "No wiki pages yet. Use Add content above to start — paste a URL or path, hit Add."));
+      return { node: wrap, applyFilter, filterState };
+    }
+    pages.forEach((p) => {
+      const row = el("div", {
+        class: "wiki-pagelist__row" + (p.status === "archived" ? " wiki-pagelist__row--archived" : ""),
+        "data-slug": p.slug,
+        "data-name": p.name || p.slug,
+        "data-subdir": p.subdir,
+        "data-status": p.status || "active",
+      });
+      row.appendChild(el("div", { class: "wiki-pagelist__row-name" }, p.name || p.slug));
+      const meta = el("div", { class: "wiki-pagelist__row-meta" });
+      const subLabel = p.subdir === "source-summary" ? "source-summary" : "explainer";
+      meta.appendChild(el("span", { class: "wiki-pagelist__row-type" }, subLabel));
+      if (p.page_type) meta.appendChild(el("span", { class: "wiki-pagelist__row-pagetype" }, p.page_type));
+      if (p.status === "archived") meta.appendChild(el("span", { class: "wiki-pagelist__row-archived" }, "archived"));
+      row.appendChild(meta);
+
+      // Row actions (⋯ menu)
+      const actions = el("div", { class: "wiki-pagelist__row-actions" });
+      const menuBtn = el("button", { type: "button", class: "wiki-pagelist__menu-btn", title: "More actions" }, "⋯");
+      const menu = el("div", { class: "wiki-pagelist__menu", hidden: "" });
+
+      function runRowCommand(cmdId, args, label, opts) {
+        opts = opts || {};
+        if (opts.destructive) {
+          const ok = window.confirm("Destructive: " + label + "\nThis cannot be undone outside git.\nContinue?");
+          if (!ok) return;
+          args.confirmed = true;
+        }
+        menuBtn.disabled = true;
+        menuBtn.textContent = "…";
+        fetch("/api/commands/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cmdId, args: args }),
+        }).then((r) => r.json()).then((json) => {
+          const inner = json.result || {};
+          const note = inner.notes || (json.ok ? "Done." : "Failed.");
+          menuBtn.textContent = json.ok ? "✓" : "✗";
+          menuBtn.title = note;
+          // Refresh page state
+          _wikiPageCache = null;
+          setTimeout(() => renderWikiTab(), 600);
+        }).catch((err) => {
+          menuBtn.textContent = "✗";
+          menuBtn.title = String(err);
+        }).finally(() => { menuBtn.disabled = false; });
+      }
+
+      const mItem = (label, cb) => {
+        const item = el("button", { type: "button", class: "wiki-pagelist__menu-item" }, label);
+        item.addEventListener("click", () => { menu.hidden = true; cb(); });
+        return item;
+      };
+      menu.appendChild(mItem("Mark reviewed", () =>
+        runRowCommand("wiki-review", { slug: p.slug }, "Mark reviewed")));
+      if (p.status !== "archived") {
+        menu.appendChild(mItem("Archive", () =>
+          runRowCommand("wiki-archive", { slug: p.slug }, "Archive")));
+      }
+      menu.appendChild(mItem("Remove (destructive)", () =>
+        runRowCommand("wiki-remove", { slug: p.slug }, "Remove", { destructive: true })));
+
+      menuBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        // Close other menus
+        document.querySelectorAll(".wiki-pagelist__menu").forEach((m) => {
+          if (m !== menu) m.hidden = true;
+        });
+        menu.hidden = !menu.hidden;
+      });
+      actions.appendChild(menuBtn);
+      actions.appendChild(menu);
+      row.appendChild(actions);
+      table.appendChild(row);
+    });
+    wrap.appendChild(table);
+
+    // Click outside to close menus
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".wiki-pagelist__menu").forEach((m) => { m.hidden = true; });
+    });
+
+    return { node: wrap, applyFilter, filterState };
+  }
+
+  async function renderWikiTab() {
+    const container = document.getElementById("panels");
+    if (!container) return;
+    container.innerHTML = "";
+    const shell = el("div", { class: "wiki-shell panel--span-12" });
+
+    const pages = await _fetchWikiPages();
+    const list = _renderWikiPageList(pages);
+
+    // Top row: Add content + Search side by side
+    const topRow = el("div", { class: "wiki-toprow" });
+    topRow.appendChild(_renderWikiAddContentRow());
+    topRow.appendChild(_renderWikiSearchRow(pages, (q) => {
+      list.filterState.query = q;
+      list.applyFilter();
+    }));
+    shell.appendChild(topRow);
+
+    shell.appendChild(list.node);
+    container.appendChild(shell);
   }
 
   // ---------------------------------------------------------------------

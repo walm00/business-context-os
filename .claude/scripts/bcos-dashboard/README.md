@@ -19,6 +19,7 @@ interactions so the front page never piles up.
 | Per-job drawer | dot click | Slide-in side drawer (bottom sheet on mobile). Schedule, last/next run, today's digest body, last 5 runs, change-frequency presets, technical-details footer. |
 | Run history | `/settings/runs` | Last 20 diary entries with filter chips (job / verdict / trigger). |
 | File health | `/settings/files` | Frontmatter / xref / stale findings with one-click fixes for whitelisted IDs. |
+| Context Atlas | `/atlas` | Context structure lenses plus shared ranked context search over `context-index.json`. |
 | Schedules | `/settings/schedules` | Bulk per-job preset editor + auto-fix whitelist toggles. Saves directly to `schedule-config.json`. |
 | Technical | `/settings/technical` | Snapshot-freshness canary (verbose), MCP refresh hint with copy-to-clipboard, raw `schedule-config.json` viewer, debug info. |
 
@@ -104,6 +105,7 @@ from [`local-dashboard-builder`](https://github.com/walm00/local-dashboard-build
 | `file_health.py` | Frontmatter / xref / stale findings + auto-fix execution |
 | `run.py` | Entry point — declares the cockpit panel + hidden settings panels + POST/GET routes |
 | `dashboard.html/css/js` | Static shell + client-side rendering, routing, and drawer controller |
+| `../context_search_service.py` | Shared `/api/context-search` request parsing, index filtering, and result enrichment |
 
 Each collector is a zero-arg callable returning a dict matching the
 framework's panel-kind contract. `_snapshot()` caches the heavy reads

@@ -4,6 +4,8 @@ atlas_collectors.py - Dashboard collectors for Context Atlas views.
 
 from __future__ import annotations
 
+import fnmatch
+import json
 import re
 import sys
 from datetime import datetime, timezone
@@ -16,6 +18,80 @@ if str(_HERE) not in sys.path:
 from atlas_ingest import build_atlas, parse_frontmatter  # noqa: E402
 from atlas_layout import squarify  # noqa: E402
 from single_repo import REPO_ROOT  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Atlas health-check opt-outs.
+#
+# Atlas naively flags every doc/artifact missing metadata, frontmatter,
+# relationships, or referrers. That's noisy for files that exist outside the
+# normal context graph: derived artifacts (document-index.md), framework-
+# shipped helpers, dashboard-internal scripts, test scaffolding, READMEs.
+# Read the user-editable ignore list once per process — the dashboard reloads
+# at startup whenever the templates change anyway.
+# ---------------------------------------------------------------------------
+_ATLAS_IGNORE_PATH = REPO_ROOT / ".claude" / "quality" / "atlas-ignore.json"
+
+
+def _load_atlas_ignore() -> dict:
+    try:
+        text = _ATLAS_IGNORE_PATH.read_text(encoding="utf-8")
+        data = json.loads(text)
+    except Exception:  # noqa: BLE001 — missing file is fine, never crash
+        return {
+            "doc_paths": set(),
+            "ecosystem_paths": set(),
+            "ecosystem_path_patterns": (),
+            "ecosystem_extensions_skipped": set(),
+        }
+    return {
+        "doc_paths": set(data.get("doc_paths") or []),
+        "ecosystem_paths": set(data.get("ecosystem_paths") or []),
+        "ecosystem_path_patterns": tuple(data.get("ecosystem_path_patterns") or ()),
+        "ecosystem_extensions_skipped": {
+            ext.lower() for ext in (data.get("ecosystem_extensions_skipped") or [])
+        },
+    }
+
+
+_ATLAS_IGNORE = _load_atlas_ignore()
+
+
+def _doc_is_atlas_ignored(doc: dict) -> bool:
+    """True if the doc should be skipped from health-signal computation.
+
+    Three opt-out channels:
+      - explicit path match in atlas-ignore.json
+      - frontmatter ``atlas-skip: true``
+      - frontmatter tags include ``generated`` or ``derived``
+    """
+    path = doc.get("path") or ""
+    if path in _ATLAS_IGNORE["doc_paths"]:
+        return True
+    fm = doc.get("frontmatter") or {}
+    if fm.get("atlas-skip") is True:
+        return True
+    tags = fm.get("tags") or []
+    if isinstance(tags, list):
+        lowered = {str(t).lower() for t in tags}
+        if "generated" in lowered or "derived" in lowered:
+            return True
+    return False
+
+
+def _artifact_is_atlas_ignored(path: str, extension: str = "") -> bool:
+    """True if an ecosystem artifact should be skipped entirely."""
+    if not path:
+        return False
+    if path in _ATLAS_IGNORE["ecosystem_paths"]:
+        return True
+    if extension and extension.lower() in _ATLAS_IGNORE["ecosystem_extensions_skipped"]:
+        return True
+    posix = path.replace("\\", "/")
+    for pattern in _ATLAS_IGNORE["ecosystem_path_patterns"]:
+        if fnmatch.fnmatch(posix, pattern):
+            return True
+    return False
 
 
 SCOPES = [
@@ -588,6 +664,9 @@ def _file_artifacts(root: Path, kind: str) -> list[dict]:
         rel_parts = path.relative_to(root).parts
         if "__pycache__" in rel_parts or path.suffix == ".pyc":
             continue
+        rel_repo = path.relative_to(REPO_ROOT).as_posix()
+        if _artifact_is_atlas_ignored(rel_repo, path.suffix):
+            continue
         artifacts.append(_artifact_from_path(path, kind))
     return artifacts
 
@@ -644,8 +723,14 @@ def _ecosystem_references(artifacts: list[dict]) -> list[dict]:
                     continue
                 terms = [target_path]
                 basename = Path(target_path).name
+                stem = Path(target_path).stem
                 if basename not in {"SKILL.md", "AGENT.md", "__init__.py"}:
                     terms.append(basename)
+                # Stem (no extension) catches Python imports like
+                # `from atlas_layout import …` — these are real references
+                # that exact-basename match would miss.
+                if stem and stem not in {"__init__", "SKILL", "AGENT"}:
+                    terms.append(stem)
                 folder = artifact.get("folder") or artifact.get("name")
                 if artifact.get("kind") in {"skill", "agent"} and folder:
                     terms.append(str(folder))
@@ -822,6 +907,11 @@ def _doc_signals(doc: dict, related_paths: set[str] | None = None,
     signals: list[dict] = []
     bucket = doc.get("bucket")
     if bucket not in {"active", "_inbox", "_planned"}:
+        return signals
+    # User-curated opt-outs (atlas-ignore.json + frontmatter atlas-skip).
+    # Generated/derived docs intentionally sit outside the metadata graph —
+    # flagging them as "no metadata" or "isolated" is noise.
+    if _doc_is_atlas_ignored(doc):
         return signals
     if _metadata_required(doc) and not doc.get("has_frontmatter"):
         signals.append({

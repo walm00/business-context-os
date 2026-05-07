@@ -1,0 +1,46 @@
+{
+  "_about": "Atlas health-check opt-outs. Files that match any of these glob patterns are excluded from atlas signal computation (No metadata, Isolated, Unreferenced, Missing description, etc.). Add a path here when a file is intentionally outside the relationship/metadata graph: generated artifacts, test scaffolding, internal helpers, framework-shipped derived files. Editable by hand or via the Atlas UI 'Ignore' button.",
+  "version": "1.0",
+  "doc_paths": [
+    "docs/.onboarding-checklist.md",
+    "docs/.session-diary.md",
+    "docs/.wake-up-context.md",
+    "docs/_wiki/index.md",
+    "docs/_wiki/log.md",
+    "docs/_wiki/overview.md",
+    "docs/_wiki/queue.md",
+    "docs/bcos-control-map.md",
+    "docs/document-index.md"
+  ],
+  "ecosystem_paths": [
+    ".claude/scripts/bcos-dashboard/atlas_layout.py",
+    ".claude/scripts/bcos_profile.py",
+    ".claude/agents/find_agents/find_agents.sh"
+  ],
+  "ecosystem_path_patterns": [
+    "**/test_*.py",
+    "**/tests/**",
+    "**/fixtures/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/README.md",
+    "**/ARCHITECTURE.md",
+    "**/BACKEND.md",
+    "**/ROADMAP.md",
+    "**/TDD_GUIDELINES.md",
+    "**/VISUAL_SYSTEM.md",
+    "**/CHANGELOG.md"
+  ],
+  "ecosystem_extensions_skipped": [
+    ".md",
+    ".html",
+    ".css",
+    ".svg",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".pyc"
+  ]
+}

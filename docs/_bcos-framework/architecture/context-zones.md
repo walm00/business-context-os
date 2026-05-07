@@ -137,9 +137,9 @@ This mirrors the per-repo override pattern already used by [`_wiki.schema.yml.tm
 
 ### Cross-zone search entry-point
 
-`/context search` (cross-zone) and `/wiki search` (zone-scoped sugar) both ride this registry. The mechanical engine at [`context_search.py`](../../../.claude/scripts/context_search.py) reads the registry to apply per-zone ranking boosts (canonical 1.5×, derived 1.2×, evidence 1.1×, future 0.9×, historical 0.7×, opted-out 0.5×) and to populate `zones-skipped-not-present` when an `optional: true` zone has no docs yet. **D-10 strict:** mechanical default; LLM-touching paths require explicit `--semantic` opt-in. No auto-trigger.
+`/context search` (cross-zone) and `/wiki search` (zone-scoped sugar) both ride this registry. The mechanical engine at [`context_search.py`](../../../.claude/scripts/context_search.py) reads the registry to apply per-zone ranking boosts (canonical 1.5×, derived 1.2×, evidence 1.1×, future 0.9×, historical 0.7×, opted-out 0.5×) and to populate `zones-skipped-not-present` when an `optional: true` zone has no docs yet. The ranker is field-aware: title/name and filename/path/entity coverage decide match tier before raw score, while freshness only breaks close relevance ties. **D-10 strict:** mechanical default; LLM-touching paths require explicit `--semantic` opt-in. No auto-trigger.
 
-Citation IDs returned by search are `zone:slug` — the same `id` field declared in this registry concatenated with the doc's filename stem. Stable across whitespace edits; reusable across the whole context base.
+Citation IDs returned by search are `zone:path-without-extension`. Top-level docs keep the short form (`active:pricing`); nested docs include their parent path (`planned:wiki-missing-layers/README`). Stable across whitespace edits; reusable across the whole context base.
 
 ---
 

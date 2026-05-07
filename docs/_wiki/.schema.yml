@@ -1,0 +1,398 @@
+# =============================================================================
+# Wiki Zone — Vocabulary Registry
+# =============================================================================
+# Lives at: docs/_wiki/.schema.yml
+#
+# This file is the SINGLE SOURCE OF TRUTH for the wiki zone's vocabulary:
+# what page-types exist, what fields they require, what statuses are allowed,
+# what lint checks run, and what auto-fixes scheduled jobs may apply.
+#
+# Hand-edit this file (or use `/wiki schema add|rename|retire ...` for guided
+# edits with migration). The PostToolUse frontmatter hook + `wiki-manage` skill
+# both read this file at runtime — there is no separate code change needed
+# when you add a page-type or lint check.
+#
+# THE GROWTH PRINCIPLE
+#   Add real page-types as you discover real categories you keep wanting.
+#   Don't predict — observe. The `wiki-coverage-audit` quarterly job will
+#   surface candidates from your actual usage.
+#
+# See: docs/_bcos-framework/architecture/wiki-zone.md (Schema and Governance)
+# =============================================================================
+
+schema-version: 1.2
+last-updated: 2026-05-06                # set by `/wiki schema validate` and migrations
+
+# Migration history (informational; the executable recipes live in wiki_schema.py):
+#   1.0 -> 1.1: source-summary gains optional `etag`, `last-modified`, `content-hash`
+#               fields used by the wiki-source-refresh quick-check tier
+#               (see _wiki_http.py + .claude/scripts/wiki_schema.py).
+#   1.1 -> 1.2: every page gains `authority` (mechanically defaulted from path +
+#               page-type + provenance.kind); source-summary gains optional
+#               `source-published`, `supersedes`, `superseded-by` for temporal
+#               awareness and the 4-class ingest triage. Migration is
+#               non-clobbering — explicit values declared by the user are preserved.
+
+# -----------------------------------------------------------------------------
+# Page types
+# -----------------------------------------------------------------------------
+# Each page in docs/_wiki/ declares one of these via `page-type:` frontmatter.
+# Lint enforces:
+#   - The value is registered here
+#   - All `required-fields` are present in the page's frontmatter
+#   - The page lives in the correct folder (see `folder` below)
+#
+# To add a new page-type: `/wiki schema add page-type <name>`
+# To rename:              `/wiki schema rename page-type <old> <new>`
+# To retire:              `/wiki schema retire page-type <name>` (soft; existing
+#                         pages stay valid but get a migration hint on lint)
+#
+# DEFAULTS — start small. Three page-types are active out of the box.
+# The rest are commented out. Uncomment as your real usage demands them.
+# -----------------------------------------------------------------------------
+
+page-types:
+
+  how-to:
+    description: "Procedural — steps for accomplishing a task"
+    required-fields: [builds-on]
+    folder: pages                        # docs/_wiki/pages/
+    review-cadence-days: 180
+    auto-archive-after-days: null
+
+  glossary:
+    description: "Term definitions — bridges newcomers to canonical vocabulary"
+    required-fields: []
+    folder: pages
+    review-cadence-days: 365
+    auto-archive-after-days: null
+
+  source-summary:
+    description: "External capture — pin-llm-wiki-style website / GitHub / YouTube ingest"
+    required-fields: [source-url, last-fetched, detail-level, provenance]
+    optional-fields: [etag, last-modified, content-hash, source-published, supersedes, superseded-by]
+    # `etag`, `last-modified`, `content-hash`         — added in 1.1 (HTTP signals)
+    # `source-published`, `supersedes`, `superseded-by` — added in 1.2 (temporal awareness)
+    folder: source-summary               # docs/_wiki/source-summary/
+    review-cadence-days: 90
+    auto-archive-after-days: null
+    structural-shapes:                   # source-summary is the only page-type with shapes
+      - standalone
+      - unified                          # web + companion github
+      - umbrella                         # multi-product hub
+      - sub                              # multi-product child
+    # Quick-check tier (D-05 two-tier refresh; implemented in 1.1):
+    #   - Compare stored `etag` / `last-modified` / `content-hash` to fresh HEAD response.
+    #   - Unchanged → bump `last-fetched` and skip full refresh.
+    #   - Changed or missing validators → escalate to refresh-must-rediscover.
+    # See `.claude/scripts/_wiki_http.py` for the helpers that consume these fields.
+
+  # ---------------------------------------------------------------------------
+  # Add page-types below as real categories emerge from usage. Don't speculate.
+  # The quarterly `wiki-coverage-audit` job will surface candidates.
+  #
+  # Common candidates (uncomment when you actually want them):
+  # ---------------------------------------------------------------------------
+
+  # runbook:
+  #   description: "Operational response — what to do when X happens"
+  #   required-fields: [builds-on]
+  #   folder: pages
+  #   review-cadence-days: 90
+  #   auto-archive-after-days: null
+
+  # post-mortem:
+  #   description: "Incident retrospective — narrative of what happened, why, what we learned"
+  #   required-fields: [created]                # `created` is the incident date
+  #   folder: pages
+  #   review-cadence-days: null                 # post-mortems don't get re-reviewed
+  #   auto-archive-after-days: 90               # archived 90 days after incident
+
+  # decision-log:
+  #   description: "Decision narrative — the why behind a choice (ADR-shaped)"
+  #   required-fields: [created]                # `created` is the decision date
+  #   folder: pages
+  #   review-cadence-days: null
+  #   auto-archive-after-days: null
+  #   immutable-after-days: 30                  # frontmatter locked after 30 days
+
+  # faq:
+  #   description: "Reformatted-for-skimming derivative of one or more data points"
+  #   required-fields: [builds-on]
+  #   folder: pages
+  #   review-cadence-days: 180
+  #   auto-archive-after-days: null
+
+  # playbook:
+  #   description: "End-to-end recipe — combines multiple how-tos into a workflow"
+  #   required-fields: [builds-on]
+  #   folder: pages
+  #   review-cadence-days: 180
+  #   auto-archive-after-days: null
+
+# -----------------------------------------------------------------------------
+# Statuses
+# -----------------------------------------------------------------------------
+# Allowed values for the `status:` frontmatter field. BCOS-standard set.
+# Customize only if you have a strong reason — these align with the rest of
+# BCOS (data points use the same enum).
+# -----------------------------------------------------------------------------
+
+statuses:
+  - draft
+  - active
+  - under-review
+  - archived
+
+# -----------------------------------------------------------------------------
+# Detail levels (for source-summary only)
+# -----------------------------------------------------------------------------
+# Cost knob for Path A (URL ingest). Don't add levels casually — each level
+# has implicit token + dollar expectations baked into the fetch protocols.
+# -----------------------------------------------------------------------------
+
+detail-levels:
+  - brief                                # ~5–15k tokens, <$0.05
+  - standard                             # ~30–80k tokens, $0.10–0.30
+  - deep                                 # ~100–500k+ tokens, $0.50–3.00
+
+# -----------------------------------------------------------------------------
+# Provenance kinds
+# -----------------------------------------------------------------------------
+# Allowed values for `provenance.kind:` — distinguishes how a wiki page was
+# originally captured. Drives refresh behavior (Path A vs. Path B).
+# -----------------------------------------------------------------------------
+
+provenance-kinds:
+  - url-fetch                            # Path A — the wiki page was created from a URL via queue.md
+  - inbox-promotion                      # Path B — promoted from docs/_inbox/
+  - local-document                       # Path B — created from a user-provided local file or paste
+
+# -----------------------------------------------------------------------------
+# Authority values (schema 1.2 — see wiki-zone.md "Authority semantics")
+# -----------------------------------------------------------------------------
+# Every wiki page declares an `authority:` value (or has one mechanically
+# derived by the 1.1 -> 1.2 migration). Authority answers ONE question:
+# *how much trust does this page deserve when its claims conflict with
+# canonical `docs/*.md` or with another wiki page?*
+#
+# Mechanical default mapping (see wiki_schema.py::_derive_authority_default):
+#   pages/  + how-to | runbook | decision-log | post-mortem  -> canonical-process
+#   pages/  + glossary | faq                                  -> internal-reference
+#   source-summary/  any provenance.kind                       -> external-reference
+#   external-evidence is NEVER auto-assigned — must be declared explicitly
+#   (rare: regulatory filings, signed contracts treated verbatim).
+# -----------------------------------------------------------------------------
+
+authority-values:
+  - canonical-process                    # internal SOP/runbook/decision we live by; high trust
+  - internal-reference                   # user-curated glossary/synthesis; high trust but derivative
+  - external-reference                   # captured external source; informational, not authoritative
+  - external-evidence                    # verbatim immutable extract; rare; explicit-only
+
+# -----------------------------------------------------------------------------
+# Cluster vocabulary
+# -----------------------------------------------------------------------------
+# Where the canonical cluster list lives. Wiki pages' `cluster:` values are
+# checked against this source by the `cluster-mismatch` lint.
+#
+# `allow-cluster-not-in-source: true` (v1 default) means wiki pages MAY use
+# clusters not yet present in document-index.md — drift surfaces as INFO via
+# the quarterly `wiki-coverage-audit` job, not as a hook ERROR. Tighten to
+# `false` only after BCOS adds an explicit cluster-registry mint operation
+# (tracked as FU_006). See pre-flight-decisions.md D-03 for rationale.
+# -----------------------------------------------------------------------------
+
+clusters:
+  source: docs/document-index.md
+  allow-cluster-not-in-source: true   # v1: permissive; quarterly audit surfaces drift
+
+# -----------------------------------------------------------------------------
+# Lint checks
+# -----------------------------------------------------------------------------
+# Wiki-specific lint check IDs. Each check has a severity and a scope.
+# `wiki-manage` reads this catalog at runtime; adding a new check is one
+# registration here, not a code edit.
+#
+# To add: `/wiki schema add lint-check <id>`
+# -----------------------------------------------------------------------------
+
+lint-checks:
+
+  # --- Kept-or-extended from pin-llm-wiki ---
+  citation-coverage:
+    severity: ERROR
+    scope: all-pages
+    description: "Page must have a banner citation; derivative pages must cite their builds-on data points"
+
+  orphan-pages:
+    severity: WARN
+    scope: all-pages
+    description: "Page with zero inbound [[wikilinks]] and no edits in 12 months → archive candidate"
+
+  missing-wikilinks:
+    severity: WARN
+    scope: all-pages
+    description: "Page mentions a known data-point or wiki page name without linking it"
+
+  citation-path-format:
+    severity: ERROR
+    scope: all-pages
+    description: "Relative paths must resolve from the current page location"
+
+  inbox-consistency:
+    severity: WARN
+    scope: queue-and-inbox
+    description: "Queue lines marked complete but still under Pending; orphaned _inbox/ items after Path B"
+
+  parent-child-consistency:
+    severity: ERROR
+    scope: source-summary
+    description: "Umbrella ↔ sub frontmatter must be consistent"
+
+  frontmatter-shape:
+    severity: ERROR
+    scope: source-summary
+    description: "Source-summary pages: exactly one of standalone/unified/umbrella/sub"
+
+  # --- Replaced from pin-llm-wiki (BCOS-flavored) ---
+  stale-propagation:
+    severity: INFO
+    scope: all-pages
+    description: "builds-on.last-updated > self.last-reviewed → page may need review"
+
+  # --- New BCOS-specific ---
+  duplication-vs-data-point:
+    severity: WARN
+    scope: all-pages
+    description: "Wiki page restates content from a builds-on data point → suggest replacing with a link"
+
+  coverage-gap:
+    severity: INFO
+    scope: cross-zone
+    description: "Active data point with no wiki explainer + frequent _inbox/ mentions → suggest a how-to"
+
+  source-summary-upstream-changed:
+    severity: INFO
+    scope: source-summary
+    description: "source-summary with last-fetched > stale_threshold AND HEAD check confirms upstream changed"
+
+  cluster-mismatch:
+    severity: WARN
+    scope: all-pages
+    description: "Page's cluster doesn't match its builds-on data points' cluster"
+
+  forbidden-builds-on-target:
+    severity: ERROR
+    scope: all-pages
+    description: "Wiki page builds-on a path under one of the forbid-builds-on-paths roots (default: _planned/, _inbox/, _archive/) — wiki only builds on canonical reality"
+    config:
+      forbid-builds-on-paths:
+        - _planned/
+        - _inbox/
+        - _archive/
+
+  provenance-required:
+    severity: ERROR
+    scope: all-pages
+    description: "Wiki page is missing a provenance: block (Path B pages must declare origin)"
+
+  provenance-source-missing:
+    severity: INFO
+    scope: all-pages
+    description: "Path B kind: local-document page references a source-path that no longer exists on disk"
+
+  reference-format-mismatch:
+    severity: ERROR
+    scope: all-pages
+    description: "Frontmatter reference uses wrong format (intra-zone refs must be bare slugs; cross-zone refs must be relative paths with .md). See wiki-zone.md Reference format rule."
+
+  schema-violation:
+    severity: ERROR
+    scope: all-pages
+    description: "page-type is unregistered, or a page-type-specific required field is missing"
+
+  # --- Authority + temporal (schema 1.2) ---
+  authority-default-questionable:
+    severity: INFO
+    scope: all-pages
+    description: "Declared authority value disagrees with the path/page-type/provenance mechanical default; ask whether the override is intentional"
+
+  orphan-supersession:
+    severity: WARN
+    scope: all-pages
+    description: "supersedes: or superseded-by: target slug doesn't exist in the wiki"
+
+  supersession-cycle:
+    severity: ERROR
+    scope: all-pages
+    description: "supersedes / superseded-by chain forms a cycle (A -> B -> A)"
+
+  both-supersedes-and-superseded-by:
+    severity: ERROR
+    scope: all-pages
+    description: "A page declares BOTH supersedes and superseded-by — it can be a chain head or tail, not both"
+
+# -----------------------------------------------------------------------------
+# Auto-fixes
+# -----------------------------------------------------------------------------
+# Whitelist of auto-fix IDs that scheduled jobs may apply non-destructively.
+# Anything not in this list requires explicit human confirmation.
+#
+# To add: `/wiki schema add auto-fix <id>`
+# -----------------------------------------------------------------------------
+
+auto-fixes:
+
+  wiki-index-refresh:
+    description: "Run refresh_wiki_index.py to regenerate _wiki/index.md from page frontmatter (replaces the obsolete 'insert overview-link' fix — the regenerator always emits the overview/log links). index.md is a derived artifact; lesson L-INIT-20260404-009."
+
+  wiki-mark-queue-ingested:
+    description: "Append <!-- ingested YYYY-MM-DD --> to queue lines after successful Path A run"
+
+  wiki-archive-expired-post-mortem:
+    description: "Set status: archived on post-mortems older than the page-type's auto-archive-after-days"
+
+  wiki-rewrite-citations-on-rename:
+    description: "Rewrite citation paths when data points are renamed (when a redirect map is provided)"
+
+  # --- Schema 1.2 triage auto-fixes (Class A and Class B; see wiki-zone.md "Triage classes") ---
+  wiki-supersession-link-add:
+    description: "Class B: same-cluster pages share source-url with different source-published — auto-write supersedes/superseded-by link (bidirectional). Reversible by removing the two fields."
+
+  wiki-authority-annotation-add:
+    description: "Class A: external-reference page contains a fact contradicting its builds-on canonical target — auto-append a 'Note: our value differs' annotation pointing to the canonical doc. Wiki-side only; never edits canonical."
+
+# -----------------------------------------------------------------------------
+# Thresholds (runtime tunables)
+# -----------------------------------------------------------------------------
+# Per-repo cadence/threshold values. Adjust to your project's pace.
+# -----------------------------------------------------------------------------
+
+thresholds:
+  stale-threshold-days: 30               # source-summary: last-fetched older than this → eligible for refresh
+  graveyard-days: 365                    # last-reviewed older than this → wiki-graveyard surfaces it
+  orphan-grace-days: 365                 # no inbound links + no edits for this long → archive candidate
+  fetch-token-guard: 200000              # halt any single fetch that would exceed this many tokens
+
+# -----------------------------------------------------------------------------
+# Migration history
+# -----------------------------------------------------------------------------
+# Append-only record of schema changes. The `/wiki schema migrate` command
+# writes here automatically. Hand-editing is discouraged — let the tool track it.
+# -----------------------------------------------------------------------------
+
+migrations: []
+# Example entry written by `/wiki schema rename page-type how-to procedure`:
+#
+#   - schema-version: 1
+#     applied: 2026-06-15
+#     operation: rename-page-type
+#     from: how-to
+#     to: procedure
+#     pages-migrated: 12
+#     reversible-via: rename-page-type procedure how-to
+
+# -----------------------------------------------------------------------------
+# End of registry
+# -----------------------------------------------------------------------------

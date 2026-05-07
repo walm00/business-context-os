@@ -34,6 +34,7 @@ Panels:
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -41,6 +42,9 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
+_SCRIPTS_DIR = _HERE.parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from server import Panel, serve  # noqa: E402
 from freshness import collect_snapshot_freshness  # noqa: E402
@@ -375,6 +379,62 @@ def _post_atlas_open(body: dict, ctx: dict) -> dict:
     }
 
 
+def _post_atlas_ignore(body: dict, ctx: dict) -> dict:
+    """Append a path to .claude/quality/atlas-ignore.json.
+
+    The user clicks "Ignore" on an atlas signal row when the row is a known
+    false positive (generated artifact, framework helper, test fixture).
+    The path is added to either the doc list or the ecosystem list based on
+    `kind`. We don't dedupe-on-write: json.load already returns lists, and
+    a duplicate entry doesn't break anything.
+    """
+    rel_path = (body or {}).get("path")
+    kind = str((body or {}).get("kind") or "doc").lower()
+    if not isinstance(rel_path, str) or not rel_path.strip():
+        return {"ok": False, "error": "path required"}
+    rel_path = rel_path.replace("\\", "/").strip()
+
+    cfg_path = REPO_ROOT / ".claude" / "quality" / "atlas-ignore.json"
+    try:
+        if cfg_path.is_file():
+            data = json.loads(cfg_path.read_text(encoding="utf-8"))
+        else:
+            data = {}
+        if not isinstance(data, dict):
+            data = {}
+        # Doc artifacts live under docs/; everything else (skill/agent/script/
+        # hook/registry/template) is an ecosystem artifact. Anything not under
+        # docs/ goes to the ecosystem list regardless of declared kind.
+        target_key = "doc_paths" if rel_path.startswith("docs/") else "ecosystem_paths"
+        existing = list(data.get(target_key) or [])
+        if rel_path not in existing:
+            existing.append(rel_path)
+            existing.sort()
+            data[target_key] = existing
+        cfg_path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+    # The atlas_collectors module caches the ignore set at module load, so a
+    # bare invalidate of the panels won't help — reach in and reload.
+    try:
+        import atlas_collectors  # type: ignore[import-not-found]
+        atlas_collectors._ATLAS_IGNORE = atlas_collectors._load_atlas_ignore()
+    except Exception:  # noqa: BLE001
+        pass
+
+    for panel_id in ("atlas_lifecycle", "atlas_ownership", "atlas_relationships", "atlas_ecosystem"):
+        try:
+            ctx["invalidate_panel"](panel_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+    return {"ok": True, "path": rel_path, "list": target_key}
+
+
 def _get_job_detail(suffix: str, params: dict) -> dict:
     """GET /api/job/<id> — drawer payload for one job."""
     job_id = (suffix or "").strip("/").strip()
@@ -468,6 +528,15 @@ def _get_atlas(suffix: str, params: dict) -> dict:
     return {"ok": True, "atlas": atlas}
 
 
+def _get_context_search(suffix: str, params: dict) -> dict:
+    """GET /api/context-search — shared mechanical/semantic context search."""
+    import context_search_service
+
+    result, status = context_search_service.search_context(REPO_ROOT, params)
+    result["_status"] = status
+    return result
+
+
 def _get_profile(suffix: str, params: dict) -> dict:
     """GET /api/profile — current repo profile + available options."""
     from bcos_profile import collect_profile
@@ -546,6 +615,7 @@ GET_ROUTES = {
     "/api/profile": _get_profile,
     "/api/bcos/run/": _get_bcos_run,
     "/api/atlas": _get_atlas,
+    "/api/context-search": _get_context_search,
     "/api/commands": _get_commands,
     "/api/wiki/pages": _get_wiki_pages,
 }
@@ -831,6 +901,7 @@ POST_ROUTES = {
     "/api/file-health/fix":    _post_file_fix,
     "/api/atlas/move":         _post_atlas_move,
     "/api/atlas/open":         _post_atlas_open,
+    "/api/atlas/ignore":       _post_atlas_ignore,
     "/api/bcos/sync":          _post_bcos_sync,
     "/api/bcos/refresh":       _post_bcos_refresh,
 }
@@ -839,10 +910,16 @@ POST_ROUTES = {
 def main() -> None:
     print(f"[bcos-dashboard] repo root: {REPO_ROOT}")
     print(f"[bcos-dashboard] port: {DEFAULT_PORT} (source: {_PORT_SOURCE})")
+    repo_name = REPO_ROOT.name
     serve(
         panels(),
-        title="BCOS Dashboard",
-        subtitle=f"Context maintenance — {REPO_ROOT.name}",
+        # The h1 IS the title — repo name only, so 6 open dashboards across
+        # browser tabs stay distinguishable. Subtitle is a small descriptor
+        # (not the repo again — that would be redundant). Browser tab adds
+        # "— context dashboard" suffix to make the purpose obvious from the
+        # OS task switcher / tab list.
+        title=repo_name,
+        subtitle="context dashboard",
         port=DEFAULT_PORT,
         host="127.0.0.1",
         refresh_ms=30000,

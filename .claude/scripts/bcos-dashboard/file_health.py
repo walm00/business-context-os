@@ -113,6 +113,28 @@ def _days_since(iso_date: str, now: datetime | None = None) -> int | None:
     return (now - dt.astimezone(timezone.utc)).days
 
 
+# Wiki zone has internal mechanical files that legitimately lack frontmatter
+# (queue.md is a queue file, index.md is auto-generated, raw/ holds source
+# binaries, etc.). These are managed by bcos-wiki, not user content. Mirror
+# the wiki-internal classification from context_index.py rather than
+# importing it (avoids cyclic imports across the dashboard surface).
+_WIKI_INTERNAL_FILES = (
+    "docs/_wiki/queue.md",
+    "docs/_wiki/index.md",
+    "docs/_wiki/log.md",
+    "docs/_wiki/overview.md",
+)
+_WIKI_INTERNAL_DIRS = (
+    "docs/_wiki/raw/",
+)
+
+
+def _is_wiki_internal(rel: str) -> bool:
+    if rel in _WIKI_INTERNAL_FILES:
+        return True
+    return any(rel.startswith(d) for d in _WIKI_INTERNAL_DIRS)
+
+
 def scan_frontmatter() -> list[Finding]:
     out: list[Finding] = []
     for p in _iter_docs():
@@ -125,6 +147,15 @@ def scan_frontmatter() -> list[Finding]:
         # legitimately lack frontmatter. Skip any file explicitly marked as such.
         if rel.endswith("/document-index.md") or rel == "docs/document-index.md":
             continue
+        # Wiki-internal mechanical files (queue, index, log, raw/) are managed
+        # by bcos-wiki and don't carry data-point frontmatter. Wiki PAGES under
+        # docs/_wiki/pages/ and docs/_wiki/source-summary/ DO carry frontmatter
+        # but with a wiki-specific schema enforced by _wiki_lint.py — skip them
+        # here so the generic linter doesn't flag the wiki-shaped fields.
+        if _is_wiki_internal(rel):
+            continue
+        if rel.startswith("docs/_wiki/"):
+            continue  # let _wiki_lint.py handle wiki-page validation
         meta = _parse_frontmatter(text)
         if meta is None:
             out.append(Finding(rel, "missing_frontmatter", "no YAML frontmatter block", None))

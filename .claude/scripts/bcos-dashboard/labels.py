@@ -50,7 +50,11 @@ JOB_LABELS: dict[str, tuple[str, str]] = {
     ),
     "wiki-coverage-audit": (
         "Wiki coverage audit",
-        "Quarterly scan for gaps where active data points lack a wiki explainer.",
+        "Quarterly cross-zone scan — surfaces active data points that don't yet have a wiki explainer, so coverage gaps are visible.",
+    ),
+    "wiki-canonical-drift": (
+        "Wiki canonical drift",
+        "Daily check — flags wiki captures whose numbers / facts diverge from canonical docs that haven't been updated in 6+ months.",
     ),
     "auto-fix-audit": (
         "Self-learning audit",
