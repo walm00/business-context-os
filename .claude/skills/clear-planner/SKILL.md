@@ -66,6 +66,8 @@ Parse the user's request:
   planning-manifest.json   <- Track planner's own workflow state
 ```
 
+**Use the relative path verbatim** when invoking `mkdir` — do NOT expand `.claude/quality/sessions/...` into an absolute path (e.g. `C:/Users/.../repo/.claude/...` or `$CLAUDE_PROJECT_DIR/.claude/...`). The shipped allowlist scopes mkdir to the relative form `.claude/quality/sessions/...`; expanding to an absolute path bypasses the rule and triggers a permission prompt that stalls scheduled / unattended runs.
+
 **If unclear:** Ask clarifying questions before proceeding.
 
 ---

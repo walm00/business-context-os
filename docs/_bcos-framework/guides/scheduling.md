@@ -208,6 +208,37 @@ Valid `schedule` values: `"daily"`, `"mon"..."sun"`, `"weekdays"`, `"weekends"`,
 
 ---
 
+## Why scheduled tasks sometimes get stuck
+
+Scheduled dispatcher runs spawn fresh Claude Code sessions with no human at the keyboard. If a permission prompt fires in one of those sessions, the task hangs until a human notices. The fix is to ship the right permissions by default.
+
+BCOS ships a comprehensive `.claude/settings.json` allowlist covering every script, write path, sibling skill, and git command the dispatcher needs. The full catalog lives at [permissions-catalog.md](../architecture/permissions-catalog.md) — it's the SoT.
+
+If you installed BCOS before v1.5, your `.claude/settings.json` may be missing entries that newer dispatcher jobs added. Run:
+
+```bash
+python .claude/scripts/update.py
+```
+
+The update script's `merge_settings_json` is additive — it adds missing entries from the shipped settings.json without touching your customizations. After running it, ask Claude to "run today's maintenance now" and confirm a digest appears with no permission prompts.
+
+There is one permission BCOS cannot ship by default: `mcp__scheduled-tasks__create_scheduled_task`, used during onboarding to create the cron task itself. When Claude prompts for it the first time, pick **"Always allow"** so future scheduled runs don't get stuck on it.
+
+### Cross-repo workflows
+
+Project-level `.claude/settings.json` only applies inside the project that owns it. If your scheduled jobs read or write **across repos** — umbrella reading sub-repos, a workflow in repo A drafting a `_planned/` doc into repo B, sibling-repo updates — those cross-repo writes will still prompt and stall the unattended session.
+
+The fix is to mirror the BCOS allowlist into `~/.claude/settings.json` (user-level, applies in every project on the machine):
+
+```bash
+python .claude/scripts/install_global_permissions.py --dry-run   # preview
+python .claude/scripts/install_global_permissions.py             # apply
+```
+
+The merge is additive — existing user-level rules are preserved. Re-running it is a no-op. Trust-model details and revocation guidance live in [permissions-catalog.md](../architecture/permissions-catalog.md#cross-repo-workflows--mirroring-perms-to-user-level-settings).
+
+---
+
 ## Multi-Repo Users
 
 Scheduled tasks live in `~/.claude/scheduled-tasks/` — **user-global, not per-repo**. If you run BCOS on multiple repos, each one needs its own dispatcher task with a unique ID.

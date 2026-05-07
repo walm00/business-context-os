@@ -266,6 +266,13 @@ List every piece of content you found. For each item:
 | **Map** | External bulk collections too large to copy (call transcripts, invoices, reports in Drive/Notion) | Create a reference data point describing where and how to find them | N/A — nothing is copied locally |
 | **Wiki** | Explainers, how-tos, source summaries, decision narratives, post-mortems, or material the user asks to make into a wiki page | Route through `bcos-wiki` (`/wiki create`, `/wiki promote`, `/wiki queue add`) so schema, index, queue, and log stay aligned | Yes for source captures; page body is derivative explanation |
 
+**Stable-vs-volatile rule (applies to synthesize and wrap modes):** A data point is for *durable* truth. When deciding what to bake into a synthesized data point:
+
+- **Extract:** stable concepts (mission, positioning, audience definition, pricing model, decision frameworks, methodology, glossary), critical rules (brand guidelines, policies), and historical facts that won't change (founding date, signed agreements, past pivots).
+- **Don't extract — reference instead:** volatile numbers (current MRR, headcount, this-quarter KPIs), time-series data (monthly metrics, invoice ledgers), and operational state with its own system of record (CRM pipeline, accounting books). For these, create a `reference` data point in **map** mode pointing at the source, or note where the live number lives — don't copy a snapshot that will rot.
+
+**Rule of thumb:** if a fact will be wrong within 90 days, point at the source. If it reflects a decision or definition, extract it. A good data point should still read as true a year from now even when every number in the business has moved.
+
 **CRITICAL for wrap and catalog modes:** Never rewrite, shorten, rephrase, or "improve" the original content. SOPs and processes especially — changing a step could break a real workflow. Add CLEAR structure (frontmatter, ownership spec) AROUND the content but leave the content itself untouched. Flag contradictions or outdated items for the user to decide, but don't fix them yourself.
 
 **Wiki mode boundary:** Do not use wiki pages as canonical reality. Wiki pages
@@ -559,6 +566,56 @@ If the file already exists, don't overwrite. Skip to 6b.
 
 The diary lives at `.claude/hook_state/schedule-diary.jsonl` (gitignored). Ensure the `.claude/hook_state/` directory exists (it usually does from install.sh — check and create if missing). Don't create the JSONL file itself; the dispatcher will create it on first run.
 
+### 6b-pre. Permissions preflight (CRITICAL — prevents stuck dispatcher runs)
+
+Scheduled dispatcher runs spawn fresh Claude Code sessions with no human watching. Every permission prompt that fires in those sessions becomes a stuck task — Laura's experience: "almost none of the scheduled tasks did fire, just one and it stuck." This step prevents that.
+
+**Read `.claude/settings.json` and verify these markers exist** (the install.sh ships them; this verification is for repos that installed before v1.5 or had a custom settings.json):
+
+Required entries (from the comprehensive shipped allowlist):
+
+- `Bash(python .claude/scripts/:*)` — catch-all for every dispatcher script
+- `Bash(python3 .claude/scripts/:*)` — same, for python3 alias
+- `Bash(git status --porcelain)` and `Bash(git commit -m bcos:*)` — auto-commit step
+- `Edit(.claude/quality/**)` and `Write(.claude/quality/**)` — derived state files
+- `Edit(docs/_wiki/index.md)` — wiki refresh
+- `Edit(docs/_archive/**)` — archive moves from headless actions
+- `Skill(bcos-wiki:*)`, `Skill(context-ingest:*)`, `Skill(schedule-tune:*)` — sibling skills the dispatcher delegates to
+
+If the local `.claude/settings.json` is missing any of the above, **stop and run `python .claude/scripts/update.py`** before continuing — the update script's `merge_settings_json` will additively add every missing entry from the shipped settings.json without touching user customizations. Then re-read settings.json to confirm.
+
+If the user has a non-default `.claude/settings.local.json` that REJECTS any of these (via a `deny` rule or stale allowlist), surface the conflict and ask the user to resolve before proceeding — do not silently work around it.
+
+The full SoT of required entries lives in `docs/_bcos-framework/architecture/permissions-catalog.md`. If anything in that catalog is missing from settings.json, the dispatcher will hit a permission prompt sooner or later.
+
+### 6b-cross. Cross-repo workflow check
+
+**Ask whether scheduled workflows will span multiple repos** (umbrella + sub-repos, portfolio mode, sibling-repo writes). If yes, recommend mirroring the project allowlist to user-level settings so cross-repo writes don't prompt:
+
+Use `AskUserQuestion`:
+
+- Question: "Will scheduled workflows touch other repos on this machine (umbrella → sub-repos, sibling repos, portfolio mode)?"
+- Options:
+  - **No, single repo only** — project-level perms are enough; skip mirroring
+  - **Yes, multi-repo** — mirror the allowlist to `~/.claude/settings.json` so cross-repo runs don't stall
+  - **Not sure** — explain trade-offs and let the user decide
+
+If the answer is "Yes, multi-repo" (or the user confirms after explanation), run:
+
+```bash
+python .claude/scripts/install_global_permissions.py
+```
+
+Confirm output shows entries merged. The script is idempotent and additive — it never removes or reorders existing user-level rules. Trust-model notes live in `docs/_bcos-framework/architecture/permissions-catalog.md` under "Cross-repo workflows".
+
+### 6b-mcp. MCP scheduled-tasks permission (one-time prompt — encourage "Always allow")
+
+The next step (6d) calls `mcp__scheduled-tasks__create_scheduled_task` to create the OS-level cron task. On first invocation, Claude Code will prompt the user to approve the MCP tool. **Tell the user this is coming, and that "Always allow" is the right choice:**
+
+> I'm about to create the daily dispatcher task. Claude Code will prompt you to allow the `mcp__scheduled-tasks__create_scheduled_task` tool — pick **"Always allow"** so future scheduled runs don't get stuck on permission prompts. (You can revoke it later in `~/.claude/settings.json` if needed.)
+
+This is the only MCP permission BCOS needs the user to grant interactively. Everything else is shipped in the project-level allowlist.
+
 ### 6c. Ask about the dispatcher time
 
 Default is 09:00 local. Use `AskUserQuestion`:
@@ -657,7 +714,9 @@ When ALL items are checked:
 
 ## Tips
 
-- **Capture everything, don't limit arbitrarily.** Create as many data points as the content demands. Better to have proper coverage than to lose information.
+- **Capture everything, don't limit arbitrarily.** Create as many data points as the content demands. Better to have proper coverage than to lose information. A complex business with a deep doc pile may legitimately need 15-25+ data points across all main domains — that's the right answer, not a problem to minimize.
+- **Cover all main domains before refining any one of them.** A complete-but-rough architecture beats a polished-but-partial one. Gaps stay invisible until something breaks; rough boundaries can be sharpened later.
+- **Stable in, volatile out.** Bake stable concepts and historical facts into data points. For numbers that change often (revenue, headcount, KPIs, pipeline, books), use map mode and point at the source — don't snapshot a number that will be wrong next month.
 - **Draft real content, not placeholders.** If you can't fill a section, cut it — don't leave it empty.
 - **Ask focused questions, not questionnaires.** 2-3 max.
 - **Keep it conversational.** This is their first experience. Helpful, not bureaucratic.

@@ -41,7 +41,7 @@ Most organizations should start at Tier 1 and stay there until they genuinely ne
 | Activity | Time | Frequency |
 |---|---|---|
 | Read the CLEAR principles | 30 min | Once |
-| Define 3-5 data points | 1-2 hours | Once (then add over time) |
+| Define data points (cover every main domain — typically 3-5 for a simple business, 10-20+ for a complex one) | 1-4 hours | Once (then add over time) |
 | Create architecture canvas | 30 min | Once |
 | Weekly quick scan | 5 min | Weekly |
 | Monthly cluster audit | 30 min | Monthly |
@@ -58,7 +58,7 @@ Follow the [getting-started.md](./getting-started.md) guide. It walks you throug
 ### When you are ready for Tier 2
 
 You will know it is time when:
-- You have 5+ data points and maintaining them manually feels like overhead
+- Maintaining your data points manually feels like overhead (this kicks in around 5+ for simple businesses, sooner for complex ones)
 - You want Claude to proactively check your context for problems
 - You are making changes that affect multiple data points and want help tracing the impact
 - You find yourself forgetting the weekly scan or rushing through the monthly audit
