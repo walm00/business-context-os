@@ -694,6 +694,31 @@ def run_sweep(
 ) -> dict:
     """Walk active+inbox+planned zones, classify each doc, return aggregated result."""
     r = root or repo_root()
+    config_path = r / ROUTING_CONFIG_REL
+    if not config_path.is_file():
+        msg = (
+            f"Routing config missing at {ROUTING_CONFIG_REL}. "
+            "Seed it from docs/_bcos-framework/architecture/lifecycle-routing.md "
+            "or set lifecycle-sweep.enabled=false in .claude/quality/schedule-config.json."
+        )
+        finding = {
+            "number": 1,
+            "finding_type": "lifecycle-config-missing",
+            "verdict": "amber",
+            "emitted_by": JOB_ID,
+            "finding_attrs": {"file": ROUTING_CONFIG_REL},
+            "suggested_actions": ["seed-config", "disable-job"],
+        }
+        return {
+            "verdict": "amber",
+            "findings_count": 1,
+            "auto_fixed": [],
+            "actions_needed": [msg],
+            "notes": "Skipped sweep: routing config missing.",
+            "findings": [finding],
+            "routed": [],
+            "surface_only": True,
+        }
     config = load_routing_config(r)
     if only_rule:
         config.rules = [rule for rule in config.rules if rule.get("id") == only_rule]

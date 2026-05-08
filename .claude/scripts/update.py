@@ -55,6 +55,7 @@ FRAMEWORK_DIRS = [
 # reasons but are owned by the framework.
 FRAMEWORK_FILES = [
     ".claude/quality/schedule-config.template.json",
+    ".claude/quality/lifecycle-routing.yml",
     ".claude/quality/ecosystem/config.json",
     ".claude/quality/ecosystem/lessons-schema.md",
     ".claude/ECOSYSTEM-MAP.md",
