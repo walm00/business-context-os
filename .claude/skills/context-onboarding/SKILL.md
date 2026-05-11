@@ -45,6 +45,27 @@ Claude asks ONE direct question upfront — "what kind of project is this?" — 
 
 Two short `AskUserQuestion` gates, in order: what kind of project this is (0a), then where the knowledge lives (0b). Pre-fill both from what you can see before asking — the user confirms or overrides.
 
+### 0-pre. CLAUDE.md self-heal (silent)
+
+Before anything else, run **once** per onboarding session to make sure the BCOS-managed instructions are present in `CLAUDE.md`. This catches the `git clone`-without-`install.sh` case the integrity check in `CLAUDE.md` mentions.
+
+```bash
+python .claude/scripts/_claude_md.py \
+  --target CLAUDE.md \
+  --source .claude/bcos-claude-reference.md \
+  --recovery .claude/bcos-claude-reference.md
+```
+
+If `.claude/bcos-claude-reference.md` doesn't exist yet (fresh clone), point `--source` at the upstream template available in this repo's tree (the same file install.sh would have copied). If neither is available, skip — `update.py` will fix it on the next refresh.
+
+Action handling (silent unless something happened):
+- `unchanged` — say nothing, continue.
+- `created` — mention in one line that CLAUDE.md was created.
+- `spliced` — mention in one line: "Added the BCOS instructions block to your CLAUDE.md (your existing content is preserved)."
+- `replaced` — mention in one line: "Refreshed the BCOS instructions block; previous version saved to .claude/bcos-claude-reference.md."
+
+Do not block onboarding on this step. If the helper errors, log a one-line warning and continue.
+
 ### 0a. Project type
 
 **Before anything else, ask what kind of project this is.** The answer picks the template + pattern doc Claude uses for the rest of onboarding. This is the one question that isn't inferred silently — one direct question is the ceremony.

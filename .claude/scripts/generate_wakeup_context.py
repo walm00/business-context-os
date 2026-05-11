@@ -5,11 +5,17 @@ generate_wakeup_context.py - Generate compressed wake-up context (~200 tokens).
 Reads table-of-context.md, current-state.md, and .session-diary.md to produce
 a concise docs/.wake-up-context.md for instant session orientation.
 
+Also surfaces a 1-line inventory from .claude/quality/context-index.json and
+emits *task-driven drill-down pointers* — short hints that tell the LLM
+WHEN to read the heavier orientation docs (document-index.md,
+current-state.md, table-of-context.md) instead of relying on grep.
+
 Usage:
     python .claude/scripts/generate_wakeup_context.py
     python .claude/scripts/generate_wakeup_context.py --dry-run
 """
 
+import json
 import re
 import sys
 import argparse
@@ -146,6 +152,73 @@ def wiki_top_clusters(docs: Path, top_n: int = 5) -> list[str]:
     return [name for name, _count in ranked[:top_n]]
 
 
+def context_inventory(project_root: Path) -> str:
+    """Return a 1-line inventory from context-index.json, or empty string."""
+    idx_path = project_root / ".claude" / "quality" / "context-index.json"
+    if not idx_path.is_file():
+        return ""
+    try:
+        idx = json.loads(idx_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    zones = (idx.get("summaries") or {}).get("zones") or {}
+    active = zones.get("active", 0)
+    inbox = zones.get("inbox", 0)
+    planned = zones.get("planned", 0)
+    archive = zones.get("archive", 0)
+    wiki_pages = zones.get("wiki-pages", 0)
+    wiki_src = zones.get("wiki-source-summary", 0)
+    parts = [f"{active} active"]
+    if inbox:
+        parts.append(f"{inbox} inbox")
+    if planned:
+        parts.append(f"{planned} planned")
+    if archive:
+        parts.append(f"{archive} archive")
+    wiki_total = wiki_pages + wiki_src
+    if wiki_total:
+        parts.append(f"{wiki_total} wiki")
+    counts = idx.get("counts") or {}
+    issues = []
+    if counts.get("missing_required"):
+        issues.append(f"{counts['missing_required']} missing required fields")
+    if counts.get("warnings"):
+        issues.append(f"{counts['warnings']} warnings")
+    line = "**Inventory:** " + ", ".join(parts)
+    if issues:
+        line += " · " + ", ".join(issues)
+    return line
+
+
+def drill_down_pointers(docs: Path) -> list[str]:
+    """Task-driven hints: when to drill into the heavier orientation docs.
+
+    Each pointer appears only if its target file exists, so a fresh repo
+    (no document-index.md yet) doesn't get nagged with broken pointers.
+    """
+    pointers: list[str] = []
+    if (docs / "document-index.md").is_file():
+        pointers.append(
+            "- **Answering a business question, or adding / editing a data "
+            "point?** Read `docs/document-index.md` first — it owns the "
+            "topic-to-file map. Identify the topic → find the owning data "
+            "point → read it → THEN answer or edit. Don't answer business "
+            "questions cold."
+        )
+    if (docs / "current-state.md").is_file():
+        pointers.append(
+            "- **Strategy / \"what's true right now\"?** Read "
+            "`docs/current-state.md` — that's the canonical source for "
+            "active priorities, decisions, and recent changes."
+        )
+    if (docs / "table-of-context.md").is_file():
+        pointers.append(
+            "- **Architecture-level navigation / where does X live?** Read "
+            "`docs/table-of-context.md` — domain map of the whole context."
+        )
+    return pointers
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate compressed wake-up context.")
     parser.add_argument("--dry-run", action="store_true", help="Print to stdout instead of writing file")
@@ -252,7 +325,28 @@ def main():
             lines.append(f"**Wiki topics:** {', '.join(clusters)}")
         lines.append("")
 
-    if not (business_name or priorities or decisions or diary_entries or wiki_status):
+    inventory_line = context_inventory(project_root)
+    if inventory_line:
+        lines.append(inventory_line)
+        lines.append("")
+
+    pointers = drill_down_pointers(docs)
+    if pointers:
+        lines.append("**Drill into when relevant:**")
+        lines.extend(pointers)
+        lines.append(
+            "- **Searching across zones?** Use `/context search <query>` — "
+            "BM25 over the canonical index, no grep."
+        )
+        lines.append(
+            "- **Full task→retrieval map:** see `CLAUDE.md` → "
+            "**Retrieval Playbook** (the structured way to find context "
+            "for any task — leverages frontmatter, authority tiers, "
+            "`builds-on:`, and the wiki / collections structure)."
+        )
+        lines.append("")
+
+    if not (business_name or priorities or decisions or diary_entries or wiki_status or inventory_line):
         lines.append("*No context sources found yet. Create table-of-context.md and current-state.md to populate this file.*")
         lines.append("")
 

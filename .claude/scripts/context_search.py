@@ -47,6 +47,15 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from load_zone_registry import load_zone_registry  # noqa: E402
+from cross_repo_fetch import (  # noqa: E402
+    fetch_sibling_corpora,
+    is_local_insufficient,
+    load_umbrella_config,
+    peek_envelope,
+    peek_sibling_corpora,
+    peek_strength,
+    status_envelope,
+)
 
 DEFAULT_TOP_K = 10
 DEFAULT_TOKEN_BUDGET = 8000
@@ -354,6 +363,9 @@ def _hit_from_doc(
     score: float,
     summary_chars: int,
     explanation: dict[str, Any] | None = None,
+    *,
+    tier: int | None = None,
+    coverage: float | None = None,
 ) -> dict[str, Any]:
     summary, truncated = _summary(doc, summary_chars)
     builds_on = list((doc.get("meta") or {}).get("builds-on") or [])[:3]
@@ -369,6 +381,11 @@ def _hit_from_doc(
         "score": round(score, 4),
         "citation-id": _citation_id(doc),
         "truncated": truncated,
+        # Always emit tier + coverage so cross-repo gate logic can read them
+        # without requiring --explain. These are cheap; full breakdown stays
+        # behind --explain to avoid polluting normal output.
+        "match-tier": f"T{tier}" if tier is not None else None,
+        "coverage": coverage,
     }
     if explanation is not None:
         hit["score-breakdown"] = explanation
@@ -386,8 +403,21 @@ def search(
     explain: bool = False,
     index: dict[str, Any] | None = None,
     index_path: Path | None = None,
+    cross_repo: bool | None = None,
+    repo_root: Path | None = None,
+    _disable_cross_repo_recursion: bool = False,
 ) -> dict[str, Any]:
-    """Run a mechanical search and return the structured result envelope."""
+    """Run a mechanical search and return the structured result envelope.
+
+    `cross_repo`:
+      - None  → use `.bcos-umbrella.json.retrieval.auto_fallthrough` (default: off)
+      - True  → force on (`--cross-repo`)
+      - False → force off (`--no-cross-repo`)
+
+    See `docs/_bcos-framework/architecture/cross-repo-retrieval.md` for the
+    full opt-in / fallthrough contract. D-10 strict: never fires implicitly in
+    repos without `.bcos-umbrella.json.retrieval.auto_fallthrough: true`.
+    """
 
     if semantic and not dry_run:
         raise SemanticNotImplementedError(
@@ -434,7 +464,8 @@ def search(
     per_doc_tokens, df = _doc_token_counts(docs)
     n = len(docs)
 
-    scored: list[tuple[int, float, str, dict[str, Any], dict[str, Any] | None]] = []
+    scored: list[tuple[int, float, str, dict[str, Any], dict[str, Any] | None, float]] = []
+    query_set_size = max(len(set(query_tokens)), 1)
     for doc, fields in zip(docs, per_doc_tokens):
         tokens = _flatten_tokens(fields)
         if not tokens:
@@ -445,6 +476,7 @@ def search(
         tier = _match_tier(query_tokens, fields, matched_terms)
         if tier <= 0:
             continue
+        coverage = round(len(matched_terms) / query_set_size, 4)
         role = role_map.get(doc.get("zone") or "", "system")
         role_boost = ROLE_BOOSTS.get(role, 1.0)
         relation_boost = 0.0
@@ -464,24 +496,201 @@ def search(
                 freshness_boost=recency,
                 final=final,
             )
-        scored.append((tier, final, _citation_id(doc), doc, explanation))
+        scored.append((tier, final, _citation_id(doc), doc, explanation, coverage))
 
     scored.sort(key=lambda pair: (-pair[0], -pair[1], pair[2]))
     scored = scored[:top_k]
 
     summary_chars_per_hit = max(40, token_budget * 4 // max(len(scored), 1)) if scored else 200
     hits = [
-        _hit_from_doc(doc, score, summary_chars_per_hit, explanation)
-        for _tier, score, _citation, doc, explanation in scored
+        _hit_from_doc(doc, score, summary_chars_per_hit, explanation, tier=tier, coverage=coverage)
+        for tier, score, _citation, doc, explanation, coverage in scored
     ]
 
-    return {
+    local_result: dict[str, Any] = {
         "query": query,
         "zones-searched": searched_zones,
         "zones-skipped-not-present": zones_skipped_not_present,
         "hits": hits,
         "escalation": escalation,
     }
+
+    if _disable_cross_repo_recursion:
+        return local_result
+
+    return _maybe_extend_with_cross_repo(
+        local_result,
+        query=query,
+        zone=zone,
+        top_k=top_k,
+        token_budget=token_budget,
+        explain=explain,
+        cross_repo=cross_repo,
+        repo_root=repo_root or REPO_ROOT,
+        local_tiers_scores=[(tier, score) for tier, score, *_ in scored],
+    )
+
+
+def _maybe_extend_with_cross_repo(
+    local_result: dict[str, Any],
+    *,
+    query: str,
+    zone: str | None,
+    top_k: int,
+    token_budget: int,
+    explain: bool,
+    cross_repo: bool | None,
+    repo_root: Path,
+    local_tiers_scores: list[tuple[int, float]],
+) -> dict[str, Any]:
+    """Three-stage filter for cross-repo retrieval. D-10 strict (mechanical only).
+
+    Hierarchy: local search across all zones in THIS repo always wins.
+    Cross-repo is consulted only as last resort.
+
+    Decision tree:
+      1. explicit --no-cross-repo            → skip, emit not-attempted
+      2. no .bcos-umbrella.json              → skip, no envelope changes
+      3. explicit --cross-repo               → bypass peek gate → deep-fetch
+      4. not opted-in (no retrieval block)   → skip, emit not-attempted (if present)
+      5. local is sufficient                 → skip peek, emit local-sufficient
+      6. local insufficient → run peek:
+         - peek strong  → deep-fetch (one sibling clearly owns the topic)
+         - peek marginal/none → emit cross-repo-suggestions, NO deep-fetch
+                                (calling agent decides whether to surface to user)
+    """
+    cfg = load_umbrella_config(repo_root)
+
+    # Gate 1: explicit --no-cross-repo
+    if cross_repo is False:
+        if cfg.present:
+            local_result["cross-repo-status"] = status_envelope(
+                attempted=False, trigger="explicit-no", fetch_result=None,
+            )
+        return local_result
+
+    # Gate 2: no umbrella file → behave exactly like single-repo
+    if not cfg.present:
+        return local_result
+
+    # Gate 3: explicit --cross-repo → bypass peek, deep-fetch directly
+    if cross_repo is True:
+        return _deep_fetch_and_merge(
+            local_result, cfg=cfg, trigger="explicit-flag",
+            query=query, zone=zone, top_k=top_k, token_budget=token_budget,
+            explain=explain, local_tiers_scores=local_tiers_scores,
+        )
+
+    # Gate 4: not opted-in (no retrieval block or auto_fallthrough=false)
+    if not cfg.retrieval_block_present or not cfg.auto_fallthrough:
+        local_result["cross-repo-status"] = status_envelope(
+            attempted=False, trigger="not-opted-in", fetch_result=None,
+        )
+        return local_result
+
+    # Gate 5: local-sufficient → no peek, no deep-fetch
+    insufficient, signal = is_local_insufficient(local_result, cfg.miss_signals)
+    if not insufficient:
+        local_result["cross-repo-status"] = status_envelope(
+            attempted=False, trigger="local-sufficient", fetch_result=None,
+        )
+        return local_result
+
+    # Gate 6: peek → strong/marginal/none
+    query_tokens = list(dict.fromkeys(_tokenize(query)))
+    peek_result = peek_sibling_corpora(cfg, query_tokens)
+    strength, _winner = peek_strength(peek_result, cfg)
+
+    if strength == "strong":
+        return _deep_fetch_and_merge(
+            local_result, cfg=cfg, trigger="auto-fallthrough",
+            query=query, zone=zone, top_k=top_k, token_budget=token_budget,
+            explain=explain, local_tiers_scores=local_tiers_scores,
+            insufficient_signal=signal,
+        )
+
+    # Marginal or none: surface suggestions (if any) but do NOT deep-fetch.
+    trigger = "peek-empty" if strength == "none" else "peek-marginal"
+    local_result["cross-repo-status"] = status_envelope(
+        attempted=False, trigger=trigger, fetch_result=None,
+    )
+    local_result["cross-repo-status"]["umbrella-id"] = cfg.umbrella_id
+    local_result["cross-repo-status"]["local-insufficient-signal"] = signal
+    if strength == "marginal":
+        local_result["cross-repo-suggestions"] = peek_envelope(peek_result, strength)
+    if peek_result.fatal:
+        local_result["cross-repo-status"]["fatal"] = peek_result.fatal
+    if peek_result.skipped:
+        local_result["cross-repo-status"]["siblings-skipped"] = [
+            {"id": s.id, "reason": s.reason, **({"detail": s.detail} if s.detail else {})}
+            for s in peek_result.skipped
+        ]
+    return local_result
+
+
+def _deep_fetch_and_merge(
+    local_result: dict[str, Any],
+    *,
+    cfg,
+    trigger: str,
+    query: str,
+    zone: str | None,
+    top_k: int,
+    token_budget: int,
+    explain: bool,
+    local_tiers_scores: list[tuple[int, float]],
+    insufficient_signal: str | None = None,
+) -> dict[str, Any]:
+    """Run the full BM25 ranker against each sibling, merge with local hits."""
+    fetch_result = fetch_sibling_corpora(cfg)
+
+    extra_hits: list[tuple[int, float, str, dict[str, Any]]] = []
+    for sibling in fetch_result.siblings:
+        sibling_result = search(
+            query, zone=zone, top_k=top_k, token_budget=token_budget,
+            semantic=False, dry_run=False, explain=explain,
+            index={"docs": sibling.docs}, cross_repo=False,
+            _disable_cross_repo_recursion=True,
+        )
+        for hit in sibling_result.get("hits") or []:
+            original_citation = hit.get("citation-id") or ""
+            hit["citation-id"] = f"{sibling.id}:{original_citation}"
+            hit["sibling-id"] = sibling.id
+            score = hit.get("score") or 0.0
+            tier = _tier_from_breakdown(hit) or 1
+            extra_hits.append((tier, float(score), hit["citation-id"], hit))
+
+    if extra_hits:
+        local_with_tiers: list[tuple[int, float, str, dict[str, Any]]] = []
+        for hit, (tier, score) in zip(local_result["hits"], local_tiers_scores):
+            local_with_tiers.append((tier, score, hit.get("citation-id") or "", hit))
+        combined = local_with_tiers + extra_hits
+        combined.sort(key=lambda t: (-t[0], -t[1], t[2]))
+        local_result["hits"] = [hit for _t, _s, _c, hit in combined[:top_k]]
+
+    local_result["cross-repo-status"] = status_envelope(
+        attempted=True, trigger=trigger, fetch_result=fetch_result,
+    )
+    if insufficient_signal:
+        local_result["cross-repo-status"]["local-insufficient-signal"] = insufficient_signal
+    return local_result
+
+
+def _tier_from_breakdown(hit: dict[str, Any]) -> int | None:
+    """Extract tier number from a hit. Prefers the always-present `match-tier`
+    field; falls back to the `score-breakdown.match-tier` (only set under
+    `--explain`) for compatibility.
+    """
+    tier_str = hit.get("match-tier")
+    if not tier_str:
+        breakdown = hit.get("score-breakdown") or {}
+        tier_str = breakdown.get("match-tier")
+    if not tier_str:
+        return None
+    try:
+        return int(str(tier_str).lstrip("T"))
+    except ValueError:
+        return None
 
 
 class SemanticNotImplementedError(NotImplementedError):
@@ -547,6 +756,26 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     p.add_argument("--explain", action="store_true", help="Include score breakdowns per hit")
     p.add_argument("--json", action="store_true", help="Emit JSON to stdout")
+    cross = p.add_mutually_exclusive_group()
+    cross.add_argument(
+        "--cross-repo",
+        dest="cross_repo",
+        action="store_const",
+        const=True,
+        default=None,
+        help=(
+            "Force cross-repo fallthrough on for this call. Reads .bcos-umbrella.json "
+            "to find sibling repos. Without this flag, fallthrough fires only when "
+            ".bcos-umbrella.json.retrieval.auto_fallthrough is true."
+        ),
+    )
+    cross.add_argument(
+        "--no-cross-repo",
+        dest="cross_repo",
+        action="store_const",
+        const=False,
+        help="Force cross-repo fallthrough off for this call.",
+    )
     return p.parse_args(argv)
 
 
@@ -560,10 +789,24 @@ def _print_human(result: dict[str, Any]) -> None:
         print(f"zones-skipped-not-present: {', '.join(skipped)}")
     if result.get("escalation"):
         print(f"escalation: {result['escalation']}")
+    cross = result.get("cross-repo-status")
+    if cross:
+        attempted = cross.get("attempted")
+        trigger = cross.get("trigger", "?")
+        if attempted:
+            queried = cross.get("siblings-queried") or []
+            skipped_siblings = cross.get("siblings-skipped") or []
+            fatal = cross.get("fatal")
+            print(
+                f"cross-repo: {trigger} — queried {len(queried)}, skipped {len(skipped_siblings)}"
+                + (f", fatal: {fatal}" if fatal else "")
+            )
+        else:
+            print(f"cross-repo: not-attempted ({trigger})")
     print(f"hits: {len(result['hits'])}")
     for hit in result["hits"]:
         print(
-            f"  [{hit['score']:.2f}] {hit['citation-id']:30}  {hit['summary']}"
+            f"  [{hit['score']:.2f}] {hit['citation-id']:40}  {hit['summary']}"
         )
 
 
@@ -579,6 +822,7 @@ def main(argv: list[str] | None = None) -> int:
             dry_run=args.dry_run,
             explain=args.explain,
             index_path=args.index,
+            cross_repo=args.cross_repo,
         )
     except SemanticNotImplementedError as exc:
         print(f"error: {exc}", file=sys.stderr)

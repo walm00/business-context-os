@@ -229,9 +229,14 @@ If the content made it to Step 2, the user chose "integrate." But double-check t
 
 ### Step 3: Find the Owner
 
+**Pre-read (cheap, do this first):** if `docs/document-index.md` exists, read it before scanning individual files. It is the canonical inventory — one file lists every active data point, its DOMAIN, EXCLUSIVELY_OWNS, and cluster. Use it to narrow candidates to 1-3 likely owners; only then open those files. This avoids the grep-every-file failure mode and is dramatically cheaper than discovering ownership one file at a time.
+
+If `document-index.md` does not exist yet (early-stage repo), use `/context search <topic>` to rank candidate owners via the canonical index. Fall through to per-file reading only if both are unavailable.
+
 For each piece of knowledge:
 
 1. **Check existing data points** — does one already OWN this topic?
+   - Use the document-index / `/context search` shortlist from the pre-read
    - Read the EXCLUSIVELY_OWNS section of candidate data points
    - If a clear owner exists → route there
 

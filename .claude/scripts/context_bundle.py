@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,15 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from load_task_profiles import load_task_profiles  # noqa: E402
+from cross_repo_fetch import (  # noqa: E402
+    fetch_sibling_corpora,
+    is_local_insufficient,
+    load_umbrella_config,
+    peek_envelope,
+    peek_sibling_corpora,
+    peek_strength,
+    status_envelope,
+)
 
 HIT_FIELDS = (
     "path",
@@ -99,8 +109,22 @@ def resolve_bundle(
     verify_coverage: bool = False,
     dry_run: bool = False,
     now: datetime.datetime | None = None,
+    cross_repo: bool | None = None,
+    repo_root: Path | None = None,
+    _disable_cross_repo_recursion: bool = False,
 ) -> dict[str, Any]:
-    """Resolve the bundle envelope for `profile_id`."""
+    """Resolve the bundle envelope for `profile_id`.
+
+    `cross_repo`:
+      - None  → use `.bcos-umbrella.json.retrieval.auto_fallthrough`
+      - True  → force on (`--cross-repo`)
+      - False → force off (`--no-cross-repo`)
+
+    See `docs/_bcos-framework/architecture/cross-repo-retrieval.md` for the
+    contract. Sibling bundles are NEVER merged into `by-zone` / `by-family` —
+    they appear in a separate top-level `cross-repo-hits` block, so local
+    authority is preserved and the caller decides whether to consult them.
+    """
     if profiles is None:
         profiles = load_task_profiles(profiles_path)
     profile = _find_profile(profile_id, profiles)
@@ -158,7 +182,7 @@ def resolve_bundle(
     # 8. Unsatisfied required zones.
     unsatisfied = _unsatisfied_zones(profile, docs)
 
-    return {
+    local_bundle: dict[str, Any] = {
         "profile-id": profile_id,
         "generated-at": _now_iso(now),
         "by-zone": by_zone,
@@ -170,6 +194,227 @@ def resolve_bundle(
         "unsatisfied-zone-requirements": unsatisfied,
         "escalations": escalations,
     }
+
+    if _disable_cross_repo_recursion:
+        return local_bundle
+
+    return _maybe_extend_with_cross_repo(
+        local_bundle,
+        profile_id=profile_id,
+        profiles=profiles,
+        profiles_path=profiles_path,
+        resolve_conflicts=resolve_conflicts,
+        verify_coverage=verify_coverage,
+        dry_run=dry_run,
+        now=now,
+        cross_repo=cross_repo,
+        repo_root=repo_root or REPO_ROOT,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cross-repo extension
+# ---------------------------------------------------------------------------
+
+
+def _maybe_extend_with_cross_repo(
+    local_bundle: dict[str, Any],
+    *,
+    profile_id: str,
+    profiles: list[dict[str, Any]] | None,
+    profiles_path: Path | None,
+    resolve_conflicts: bool,
+    verify_coverage: bool,
+    dry_run: bool,
+    now: datetime.datetime | None,
+    cross_repo: bool | None,
+    repo_root: Path,
+) -> dict[str, Any]:
+    """Three-stage filter for cross-repo bundle resolution. D-10 strict.
+
+    Mirrors context_search.py._maybe_extend_with_cross_repo. Sibling bundle
+    data lives in a separate `cross-repo-hits` block on the peek-strong path,
+    never folded into local `by-zone` / `by-family`. On the peek-marginal
+    path, no deep-fetch runs; instead a `cross-repo-suggestions` block carries
+    per-sibling metadata-only signals for the calling agent to act on.
+    """
+    cfg = load_umbrella_config(repo_root)
+
+    # Gate 1: explicit --no-cross-repo
+    if cross_repo is False:
+        if cfg.present:
+            local_bundle["cross-repo-status"] = status_envelope(
+                attempted=False, trigger="explicit-no", fetch_result=None,
+            )
+        return local_bundle
+
+    # Gate 2: no umbrella file → single-repo behavior
+    if not cfg.present:
+        return local_bundle
+
+    # Gate 3: explicit --cross-repo → bypass peek, deep-fetch directly
+    if cross_repo is True:
+        return _bundle_deep_fetch(
+            local_bundle, cfg=cfg, trigger="explicit-flag",
+            profile_id=profile_id, profiles=profiles, profiles_path=profiles_path,
+            resolve_conflicts=resolve_conflicts, verify_coverage=verify_coverage,
+            dry_run=dry_run, now=now,
+        )
+
+    # Gate 4: not opted-in
+    if not cfg.retrieval_block_present or not cfg.auto_fallthrough:
+        local_bundle["cross-repo-status"] = status_envelope(
+            attempted=False, trigger="not-opted-in", fetch_result=None,
+        )
+        return local_bundle
+
+    # Gate 5: local-sufficient. Bundle's "local view" for miss-signal eval is
+    # the flat list of all hits across by-family + the unsatisfied-zone list.
+    fake_local_result = {
+        "hits": _flatten_family_hits(local_bundle.get("by-family") or {}),
+        "unsatisfied-zone-requirements": local_bundle.get("unsatisfied-zone-requirements") or [],
+    }
+    insufficient, signal = is_local_insufficient(fake_local_result, cfg.miss_signals)
+    if not insufficient:
+        local_bundle["cross-repo-status"] = status_envelope(
+            attempted=False, trigger="local-sufficient", fetch_result=None,
+        )
+        return local_bundle
+
+    # Gate 6: peek. Bundle uses the profile's families' patterns as the query
+    # surface (translated to tokens). Falls back to profile-id keywords when
+    # families are empty.
+    query_tokens = _bundle_query_tokens(profile_id, profiles, profiles_path)
+    peek_result = peek_sibling_corpora(cfg, query_tokens)
+    strength, _winner = peek_strength(peek_result, cfg)
+
+    if strength == "strong":
+        return _bundle_deep_fetch(
+            local_bundle, cfg=cfg, trigger="auto-fallthrough",
+            profile_id=profile_id, profiles=profiles, profiles_path=profiles_path,
+            resolve_conflicts=resolve_conflicts, verify_coverage=verify_coverage,
+            dry_run=dry_run, now=now,
+            insufficient_signal=signal,
+        )
+
+    # Marginal or none: surface suggestions, no deep-fetch.
+    trigger = "peek-empty" if strength == "none" else "peek-marginal"
+    local_bundle["cross-repo-status"] = status_envelope(
+        attempted=False, trigger=trigger, fetch_result=None,
+    )
+    local_bundle["cross-repo-status"]["umbrella-id"] = cfg.umbrella_id
+    local_bundle["cross-repo-status"]["local-insufficient-signal"] = signal
+    if strength == "marginal":
+        local_bundle["cross-repo-suggestions"] = peek_envelope(peek_result, strength)
+    if peek_result.fatal:
+        local_bundle["cross-repo-status"]["fatal"] = peek_result.fatal
+    if peek_result.skipped:
+        local_bundle["cross-repo-status"]["siblings-skipped"] = [
+            {"id": s.id, "reason": s.reason, **({"detail": s.detail} if s.detail else {})}
+            for s in peek_result.skipped
+        ]
+    return local_bundle
+
+
+def _bundle_deep_fetch(
+    local_bundle: dict[str, Any],
+    *,
+    cfg,
+    trigger: str,
+    profile_id: str,
+    profiles: list[dict[str, Any]] | None,
+    profiles_path: Path | None,
+    resolve_conflicts: bool,
+    verify_coverage: bool,
+    dry_run: bool,
+    now: datetime.datetime | None,
+    insufficient_signal: str | None = None,
+) -> dict[str, Any]:
+    """Pull full sibling bundles, tag with source-repo, attach as cross-repo-hits."""
+    fetch_result = fetch_sibling_corpora(cfg)
+    sibling_bundles: dict[str, dict[str, Any]] = {}
+    for sibling in fetch_result.siblings:
+        sibling_bundle = resolve_bundle(
+            profile_id, profiles=profiles, profiles_path=profiles_path,
+            index={"docs": sibling.docs, "edges": []},
+            resolve_conflicts=resolve_conflicts, verify_coverage=verify_coverage,
+            dry_run=dry_run, now=now, cross_repo=False,
+            _disable_cross_repo_recursion=True,
+        )
+        for hits_in_zone in (sibling_bundle.get("by-zone") or {}).values():
+            for hit in hits_in_zone:
+                hit["source-repo"] = sibling.id
+        for hits_in_family in (sibling_bundle.get("by-family") or {}).values():
+            for hit in hits_in_family:
+                hit["source-repo"] = sibling.id
+        sibling_bundles[sibling.id] = {
+            "by-zone": sibling_bundle.get("by-zone") or {},
+            "by-family": sibling_bundle.get("by-family") or {},
+            "unsatisfied-zone-requirements": sibling_bundle.get("unsatisfied-zone-requirements") or [],
+        }
+
+    if sibling_bundles:
+        local_bundle["cross-repo-hits"] = sibling_bundles
+
+    local_bundle["cross-repo-status"] = status_envelope(
+        attempted=True, trigger=trigger, fetch_result=fetch_result,
+    )
+    if insufficient_signal:
+        local_bundle["cross-repo-status"]["local-insufficient-signal"] = insufficient_signal
+    return local_bundle
+
+
+def _bundle_query_tokens(
+    profile_id: str,
+    profiles: list[dict[str, Any]] | None,
+    profiles_path: Path | None,
+) -> list[str]:
+    """Build query tokens for the peek from a profile's families.
+
+    Pulls tag/cluster/page-type values out of family patterns
+    (`cluster=Strategy`, `tag=incident`, etc.) and treats them as a token set.
+    Falls back to splitting the profile-id on non-alphanumerics so an unknown
+    profile still produces something.
+    """
+    out: set[str] = set()
+    try:
+        if profiles is None:
+            profiles = load_task_profiles(profiles_path)
+        profile = _find_profile(profile_id, profiles or [])
+    except Exception:
+        profile = None
+    if profile:
+        for family in profile.get("content-families") or []:
+            pattern = (family.get("pattern") or "").strip()
+            if "=" in pattern:
+                _, _, value = pattern.partition("=")
+                value = value.strip()
+                for tok in re.findall(r"[a-zA-Z0-9]+", value):
+                    if len(tok) >= 2:
+                        out.add(tok.lower())
+            name = (family.get("name") or "").strip()
+            for tok in re.findall(r"[a-zA-Z0-9]+", name):
+                if len(tok) >= 2:
+                    out.add(tok.lower())
+    if not out:
+        for tok in re.findall(r"[a-zA-Z0-9]+", profile_id):
+            if len(tok) >= 2:
+                out.add(tok.lower())
+    return sorted(out)
+
+
+def _flatten_family_hits(by_family: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """Flatten by-family map into a single hits list for miss-signal checks."""
+    flat: list[dict[str, Any]] = []
+    seen_paths: set[str] = set()
+    for hits in by_family.values():
+        for hit in hits:
+            path = hit.get("path") or ""
+            if path in seen_paths:
+                continue
+            seen_paths.add(path)
+            flat.append(hit)
+    return flat
 
 
 # ---------------------------------------------------------------------------
@@ -494,6 +739,26 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--verify-coverage", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--json", action="store_true", help="Emit JSON to stdout")
+    cross = p.add_mutually_exclusive_group()
+    cross.add_argument(
+        "--cross-repo",
+        dest="cross_repo",
+        action="store_const",
+        const=True,
+        default=None,
+        help=(
+            "Force cross-repo fallthrough on. Reads .bcos-umbrella.json. Sibling "
+            "bundles appear in a separate `cross-repo-hits` block — never merged "
+            "into by-zone / by-family. Local authority preserved."
+        ),
+    )
+    cross.add_argument(
+        "--no-cross-repo",
+        dest="cross_repo",
+        action="store_const",
+        const=False,
+        help="Force cross-repo fallthrough off.",
+    )
     return p.parse_args(argv)
 
 
@@ -517,6 +782,7 @@ def main(argv: list[str] | None = None) -> int:
             resolve_conflicts=args.resolve_conflicts,
             verify_coverage=args.verify_coverage,
             dry_run=args.dry_run,
+            cross_repo=args.cross_repo,
         )
     except LLMEscalationNotImplementedError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -543,6 +809,23 @@ def _print_human(bundle: dict[str, Any]) -> None:
         print(f"unsatisfied:   {bundle['unsatisfied-zone-requirements']}")
     if bundle["escalations"]:
         print(f"escalations:   {bundle['escalations']}")
+    cross = bundle.get("cross-repo-status")
+    if cross:
+        attempted = cross.get("attempted")
+        trigger = cross.get("trigger", "?")
+        if attempted:
+            queried = cross.get("siblings-queried") or []
+            skipped_siblings = cross.get("siblings-skipped") or []
+            fatal = cross.get("fatal")
+            print(
+                f"cross-repo:    {trigger} — queried {len(queried)}, skipped {len(skipped_siblings)}"
+                + (f", fatal: {fatal}" if fatal else "")
+            )
+            crh = bundle.get("cross-repo-hits") or {}
+            if crh:
+                print(f"               siblings-with-hits: {', '.join(sorted(crh.keys()))}")
+        else:
+            print(f"cross-repo:    not-attempted ({trigger})")
 
 
 __all__ = ["resolve_bundle", "LLMEscalationNotImplementedError"]

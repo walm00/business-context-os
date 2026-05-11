@@ -45,6 +45,8 @@ allowed-tools: Read, Glob, Grep, Bash
 
 ### Step 1: Define Audit Scope
 
+**Pre-read (cheap, do this first):** if `docs/document-index.md` exists, read it before asking the scope question. It gives you the canonical inventory of active data points by cluster, ownership, and last-updated date — enough to suggest a smart default scope (e.g., "you have 14 data points across 3 clusters; 4 haven't been touched in 90+ days — audit those?") instead of asking blind. If absent, fall back to the question below directly.
+
 **If not specified, use the `AskUserQuestion` tool:**
 
 - Question: "What should I audit?"

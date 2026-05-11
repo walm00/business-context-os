@@ -1,14 +1,24 @@
 # CLAUDE.md - AI Assistant Guide for CLEAR Context OS
 
+<!--
+Anything outside the BCOS:CORE markers below is yours — repo identity,
+project notes, plugin instructions, team conventions. Add it above or below
+the CORE block. BCOS only manages what's between the CORE markers.
+-->
+
+<!-- BCOS:CORE:START v1.9.0 -->
+
 ---
 
 ## How to Work
 
-**Match your response to the task. Keep it simple.**
+**Never answer cold. Every non-trivial answer leans on context — use the structure to find it cheaply.**
 
-- **Questions, commands, small fixes** — answer directly, no ceremony
-- **Small changes (1-3 files)** — think briefly, execute
-- **Significant changes** — use `clear-planner` skill
+- **Trivial: math, syntax, "list files", obvious one-liners, framework / skill / CLI questions** — answer directly.
+- **Anything else** (questions, edits, plans, decisions — about the business, the docs, processes, decisions, anything BCOS knows) — **load context first via the [Retrieval Playbook](#retrieval-playbook) below.** Don't grep when there's an index. Don't paraphrase a data point you haven't read. Don't restate from training when the canonical answer is one read away.
+- **Small changes (1-3 files)** — think briefly, execute.
+- **Significant changes** — use `clear-planner` skill.
+- **New content arriving** — use `context-ingest` to route it.
 - **When in doubt** — ask: "Should I just do this, or plan it out first?"
 
 ---
@@ -21,9 +31,67 @@ Read these files at the start of any context-related work:
 1. **`docs/.onboarding-checklist.md`** — Onboarding progress. Mention the next unchecked item once (don't nag). When all items are checked, delete this file and remove this line from CLAUDE.md.
 2. **`docs/.session-diary.md`** — Recent session notes for continuity. Append an entry at session end.
 
-Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/document-index.md` only when you need detail.
+Drill into the heavier orientation docs **when the task calls for it** — the wake-up snapshot lists task-driven pointers in its "Drill into when relevant" block. Quick reference:
+
+- `docs/document-index.md` — read **before** adding or editing a data point (find the owner, avoid duplication)
+- `docs/current-state.md` — read for strategy / "what's true right now" questions
+- `docs/table-of-context.md` — read for architecture-level navigation
+
+For cross-zone search, prefer `/context search <query>` over grep — it ranks against the canonical index.
 
 **Framework update check:** If `.claude/bcos-claude-reference.md` exists, compare it against this CLAUDE.md once per session. Briefly mention any critical missing instructions. Don't nag.
+
+**BCOS section integrity check:** If this file lacks `<!-- BCOS:CORE:START -->` / `<!-- BCOS:CORE:END -->` markers, the framework section is missing or unstructured (likely a `git clone` without `install.sh`). On the next onboarding session, `context-onboarding` will splice them in.
+
+---
+
+## Retrieval Playbook
+
+BCOS is a structured knowledge system, not a markdown dump. Every doc has YAML frontmatter (`status`, `version`, `last-updated`, `authority`, `tags`, `builds-on`, `supersedes`, owning DOMAIN). Use the structure — match the task to the cheapest first read:
+
+| Task | First read | Why this path |
+|------|------------|---------------|
+| Question about a specific topic / data point | `docs/document-index.md` → owning data point | Index maps topic → file in one read; no grep |
+| Fuzzy or cross-zone lookup ("anything about X") | `/context search <query>` | BM25 over canonical + wiki, ranked by relevance + freshness |
+| Strategy / "what's true right now" | `docs/current-state.md` | Canonical for active priorities, decisions, recent changes |
+| "How do we do X" (process, runbook, SOP) | `_wiki/pages/` filtered by `authority: canonical-process` + topic tag | Operational truth — built on canonical via `builds-on:` |
+| "What does X mean" (glossary, FAQ, definition) | `_wiki/pages/` filtered by `authority: internal-reference` | Authored explainers; cheaper than reading the full data point |
+| External claim, article, web source | `_wiki/source-summary/` (banner citation links to original) | Reference-only; canonical wins on conflict |
+| Source artifact (contract, invoice, transcript, brand kit) | `_collections/<type>/_manifest.md` → artifact | Verbatim evidence — outranks canonical when claims conflict |
+| Architecture / "where does X live" | `docs/table-of-context.md` | Domain map of the whole context |
+| Curated bundle for a complex multi-source task | `/context bundle <task>` | Task-aware, freshness-flagged, conflict-resolved package |
+| Local-miss in a portfolio context (sibling repos may have it) | `/context search --cross-repo <query>` *(opt-in)* | Consults sibling BCOS repos via `.bcos-umbrella.json`. Off by default; flip `retrieval.auto_fallthrough: true` for automatic per-portfolio fallthrough. See `_bcos-framework/architecture/cross-repo-retrieval.md` |
+| Recent session work / continuity | `docs/.session-diary.md` | Last few sessions' decisions and open threads |
+
+**Retrieval principles:**
+
+1. **Index > grep.** `document-index.md` (canonical inventory) and `/context search` (BM25 over `context-index.json`) are dramatically cheaper than scanning files. Reach for them first.
+2. **Use frontmatter to filter, not full-text scan.** `tags`, `status`, `authority`, `last-updated` are signal — narrow the candidate set by metadata before reading bodies.
+3. **Authority hierarchy on conflict:** `_collections/` evidence > `docs/*.md` canonical > `_wiki/pages/` `canonical-process` > `internal-reference` > `_wiki/source-summary/` `external-reference`. Evidence outranks canonical because the artifact IS the truth; the doc is a summary.
+4. **Follow `builds-on:` for derivatives.** A wiki page built on a data point inherits its truth — read the canonical source if you need to verify a claim, the wiki page if you need the operationalized form.
+5. **Check `last-updated` and `supersedes`.** Stale or superseded data points should be flagged in the answer, not silently used. A reference to a live source > a stale snapshot.
+6. **One read is usually enough.** Open the owner; follow `builds-on:` once if you need a derivative; stop. Don't open every file in a cluster.
+
+When the right path isn't obvious, default to `/context search <query>` — it returns a ranked shortlist across all zones and tells you which zone a hit lives in.
+
+---
+
+## New Content Routing
+
+**`context-ingest` is the single entry point for new material.** Don't guess where things go — invoke the skill and let it route.
+
+| User intent | Destination | Notes |
+|-------------|-------------|-------|
+| "save this for later" / brain dump | `docs/_inbox/` | Raw, awaiting triage |
+| "park this idea" / future state | `docs/_planned/` | Polished idea, not yet real |
+| "integrate this" / "update X" | active `docs/*.md` | Find owner, edit, bump version |
+| "explain this" / "make a runbook" | `docs/_wiki/pages/` | Derivative — links to canonical via `builds-on:` |
+| Verbatim artifacts (invoices, transcripts, brand kits) | `docs/_collections/<type>/` | Never paraphrase the artifact |
+| Web URLs / external documents | `docs/_wiki/source-summary/` via `bcos-wiki` | External reference, can go stale |
+
+**Wiki vs. canonical:** Canonical data points (`docs/*.md`) own *what is true*. Wiki pages explain or operationalize that truth (how-to, runbook, decision-log, glossary). If you're defining truth → canonical. If you're explaining how to use it → wiki.
+
+When unsure, run `context-ingest` and let it propose the route. See `.claude/skills/context-ingest/SKILL.md` for the full triage decision tree.
 
 ---
 
@@ -50,6 +118,47 @@ For the full convention (when to use `_<custom>/` vs `.private/`, what scanners 
 
 ---
 
+## Document Lifecycle
+
+Content moves through zones. Don't treat the destination as the starting state.
+
+```
+captured  → docs/_inbox/      (raw, low-trust, awaiting triage)
+   ↓
+triaged   → docs/*.md         (owned, canonical truth, versioned)
+   ↓
+explained → docs/_wiki/       (derivative how-tos, summaries, runbooks)
+   ↓
+superseded → docs/_archive/   (historical — do not act on as current)
+```
+
+**Stable in, volatile out.** Bake stable concepts (mission, definitions, decision frameworks) into data points. For numbers that change monthly (MRR, headcount, pipeline, KPIs), *don't snapshot* — create a reference data point that points at the live source. A stale number is worse than a missing one.
+
+**Editing a data point:** read first → edit → bump `version` (patch for fixes, minor for additions, major for restructure) → update `last-updated` (today) → never touch `created` → consider whether a related data point should also update (compounding).
+
+**Output destinations.** Audit findings, generated reports, and one-shot artifacts go to `docs/_inbox/` for triage unless the producing skill specifies otherwise. Long-lived derivatives belong in `docs/_wiki/pages/` with `builds-on:` to their canonical source.
+
+---
+
+## Skill Map (intent → skill)
+
+| Intent | Skill | Trigger |
+|--------|-------|---------|
+| New content arriving (any kind) | `context-ingest` | "save / integrate / park this" |
+| Plan a non-trivial change | `clear-planner` | Multi-file or architectural work |
+| Search across all zones | `context-routing` | `/context search` |
+| Curate a task-specific bundle | `context-routing` | `/context bundle` |
+| Create / refresh a wiki page | `bcos-wiki` | `/wiki create | refresh | promote` |
+| Audit for drift, duplication, boundary violations | `context-audit` | Periodic; before adding new data points |
+| Tune scheduled maintenance | `schedule-tune` | "run audit weekly" / "skip daydream" |
+| Onboard a fresh repo | `context-onboarding` | First session in a new repo |
+| Step back / strategic reflection | `daydream` | Identify gaps, envision improvements |
+| Manage learned rules | `learning` | List / forget / regenerate |
+
+Reach for the matching skill before improvising. If none fits, do the work directly — and consider whether a skill is missing.
+
+---
+
 ## Critical Rules
 
 These apply when editing any file in `docs/`:
@@ -59,6 +168,7 @@ These apply when editing any file in `docs/`:
 - Ownership Specification: DOMAIN + EXCLUSIVELY_OWNS at minimum
 - Explicit relationships — link, don't duplicate
 - **Compounding rule:** After significant work, offer to update the relevant data point. Every task produces two outputs: the answer + context updates.
+- **Post-work handoffs:** After integrating new content, offer to (a) rebuild the document index, (b) update related data points, (c) run an audit if architecture shifted. Don't wait to be asked.
 - **Decision-point UX:** At any decision point that offers the user choices, use the `AskUserQuestion` tool — not a prose "should I do X?" question. Applies across ALL skills, workflows, and ad-hoc interactions — onboarding, ingest, audit, tune, migrate, dispatcher output, update confirmations, archival decisions, etc. The default is: **structured choice over prose**. Skip only when a decision is trivially acknowledge-only and AskUserQuestion would add friction. See `.claude/skills/core-discipline/references/askuserquestion-pattern.md` for option-wording rules and examples.
 
 **NEVER:**
@@ -67,10 +177,13 @@ These apply when editing any file in `docs/`:
 - Change a document without updating `last-updated` and bumping `version`
 - Touch the `created` date — it's immutable
 - Add content without checking which document OWNS that topic
+- Edit anything between `<!-- BCOS:CORE:START -->` and `<!-- BCOS:CORE:END -->` markers manually — that block is framework-managed and gets overwritten on update. Add your content outside the markers, or open a PR against the framework
 
 For full standards: `docs/_bcos-framework/methodology/document-standards.md`. For wiki-zone documents, `docs/_bcos-framework/architecture/wiki-zone.md` is authoritative.
 
 ---
 
-**Version**: 1.5.0
-**Last Updated**: 2026-05-04
+**Version**: 1.9.0
+**Last Updated**: 2026-05-09
+
+<!-- BCOS:CORE:END -->

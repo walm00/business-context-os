@@ -140,6 +140,23 @@ Wiki jobs are first-class job references and use the same dispatcher contract:
 
 ---
 
+## Step 4b: Completion Checklist — every scheduled job MUST produce a verdict
+
+After Step 4 completes (last job returned), verify that **every job listed in Step 2's run-list produced exactly one diary entry in this dispatcher tick**. This is the silent-skip guard: a job whose reference file is missing, whose runner threw before the `try/except` could catch it, or that was implicitly forgotten by Claude during execution must NOT disappear unnoticed.
+
+1. Build `expected_jobs` = the ordered list from Step 2 (jobs marked due today + on-demand overrides).
+2. Read back the diary entries appended during this tick (use the dispatcher's in-memory record, or the tail of `.claude/hook_state/schedule-diary.jsonl` filtered to the current run's `ts` prefix if you're running on-demand).
+3. For each job in `expected_jobs`, confirm a diary entry exists. If any job is missing:
+   - Append a `verdict: "error"` diary entry for it with `"notes": "job skipped silently — no completion record produced"`.
+   - Add a `dispatcher-silent-skip` action item to the digest: `"⚠️ {job_id} was scheduled but produced no completion record. Investigate the job reference / runner before next dispatcher tick."`
+   - Set the overall dispatcher verdict to `red` (silent skips are critical — they mean the safety surface lied).
+
+Do NOT proceed to Step 5 (auto-fixes) until the checklist passes. A silent skip on a destructive job (lifecycle-sweep auto-routing, wiki-archive-expired-post-mortem, etc.) would let policy violations land unannounced; better to halt and surface.
+
+**Rationale.** This was added after the 2026-05-05 incident in `theo-portfolio` where `command-center-schedules-snapshot` silently dropped out of a tick, leaving the downstream dashboard 24h stale with no error trail. Dispatcher behavior is now: "every scheduled job either completes with a verdict or surfaces as a `red` error — no third path."
+
+---
+
 ## Step 5: Apply Auto-Fixes
 
 The job references declare which fixes they're *allowed* to apply automatically. The dispatcher enforces policy:
@@ -242,8 +259,10 @@ If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), co
    - `docs/.session-diary.md`
    - `docs/.onboarding-checklist.md`
    - `docs/_inbox/daily-digest.md`
+   - `docs/_inbox/daily-digest.json`
    - `.claude/hook_state/schedule-diary.jsonl`
    - `.claude/quality/ecosystem/state.json` (if touched by ecosystem jobs)
+   - `.claude/quality/context-index.json` (regenerated in Step 2.5; ignore if `.gitignore` excludes it on this install — the path appears in `git status` only when it's tracked from before the ignore rule landed)
 3. If **every** changed path is in `ALLOWED` → proceed to commit.
    Otherwise → **skip** the commit entirely. Do not stage, do not branch. Record `auto_commit: skipped (tree not clean outside generated artifacts)` in the digest. The user will see the dirty state next session and decide manually.
 4. On commit:
