@@ -34,6 +34,8 @@ python .claude/scripts/context_bundle.py --profile <profile-id> \
 | `--verify-coverage` | **Explicit opt-in** to LLM coverage verification (D-10). Requires `--dry-run` until the LLM client wiring lands. |
 | `--dry-run` | With either `--resolve-conflicts` or `--verify-coverage`, record the opt-in (`escalations: [...-dry-run]`) without firing the LLM. |
 | `--json` | Emit JSON to stdout (otherwise human-readable). |
+| `--cross-repo` | Force cross-repo fallthrough on. Sibling bundles appear in a separate `cross-repo-hits` block — never merged into `by-zone` / `by-family`. See "Cross-repo retrieval" below. |
+| `--no-cross-repo` | Force cross-repo fallthrough off. |
 
 ## Output envelope
 
@@ -89,6 +91,61 @@ For each candidate doc in declared profile zones:
 7. **Unsatisfied zones** — required zones absent from the corpus surface in `unsatisfied-zone-requirements`.
 
 Same fixture index → byte-identical bundle (modulo `generated-at`). Latency target: <1s for typical bundles on a 200-doc corpus.
+
+## Cross-repo retrieval — three-stage filter
+
+Same three-stage filter as `/context search` (see [`search.md`](search.md#cross-repo-retrieval--three-stage-filter) for the canonical write-up). Local first across all zones; peek only if local insufficient; deep-fetch only on peek-strong.
+
+**Local-insufficient for bundles** — bundle's "hits" view for the gate evaluator is the flat list of all hits across `by-family` plus `unsatisfied-zone-requirements`. Default `miss_signals` (`["zero-hit", "low-coverage"]`) effectively reduces to "all families are empty" for bundles, since the hits don't carry the `coverage` field. To trigger on missing required zones too, add `"unsatisfied-zone-requirements"` to the portfolio's `miss_signals`.
+
+**Peek query tokens** — derived from the profile's families (pattern values + family names). Falls back to splitting the profile-id on non-alphanumerics for unknown profiles. The peek looks for these tokens in sibling metadata fields.
+
+**Deep-fetch result shape — same as before** (peek-strong path):
+
+```jsonc
+{
+  "profile-id": "incident-response:write",
+  "by-zone": { ... },         // local hits only
+  "by-family": { ... },       // local hits only
+  "cross-repo-hits": {        // only present on peek-strong → deep-fetch
+    "executions-os": {
+      "by-zone": {"wiki": [{"path": "...", "source-repo": "executions-os", ...}]},
+      "by-family": { ... },
+      "unsatisfied-zone-requirements": []
+    }
+  },
+  "cross-repo-status": {
+    "attempted": true,
+    "trigger": "auto-fallthrough",
+    "umbrella-id": "theo-portfolio",
+    "local-insufficient-signal": "zero-hit",
+    "siblings-queried": [{"id": "executions-os", "hits": 1, "took-ms": 14}],
+    "siblings-skipped": []
+  }
+}
+```
+
+**Peek-marginal shape** (no deep-fetch, suggestions only):
+
+```jsonc
+{
+  "by-zone": { ... },
+  "by-family": { ... },
+  "cross-repo-status": {"attempted": false, "trigger": "peek-marginal", ...},
+  "cross-repo-suggestions": {
+    "peek-strength": "marginal",
+    "suggestions": [
+      {"sibling-id": "executions-os", "match-count": 2, "authoritative-match-count": 1,
+       "top-citations": ["executions-os:wiki:incident-response"],
+       "reasons": ["tags-match"]}
+    ]
+  }
+}
+```
+
+**Why sibling bundles never merge into local `by-zone` / `by-family`**: bundles drive downstream decisions like source-of-truth conflict resolution. Auto-merging a sibling's `pricing-data` hits would let a sibling implicitly override local authority. Conservative separation lets the calling agent opt into cross-repo data deliberately.
+
+**Framework default**: in a repo without `.bcos-umbrella.json`, no cross-repo I/O fires. See [`docs/_bcos-framework/architecture/cross-repo-retrieval.md`](../../../docs/_bcos-framework/architecture/cross-repo-retrieval.md) for the full contract.
 
 ## D-10 strict — no auto-trigger
 

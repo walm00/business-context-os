@@ -822,22 +822,39 @@ def main():
             except Exception:
                 print(f"  Wake-up context: could not regenerate (non-critical).")
 
-        # ---------------------------------------------------- CLAUDE.md reference
-        # CLAUDE.md is NEVER auto-edited. The script saves the upstream version
-        # as a reference file. Claude reads both at session start and suggests
-        # what critical framework instructions the user's CLAUDE.md is missing.
-        for rel, upstream_path, local_path, status in review_files:
-            ref_path = str(local_root / ".claude" / "bcos-claude-reference.md")
-            os.makedirs(os.path.dirname(ref_path), exist_ok=True)
-            shutil.copy2(upstream_path, ref_path)
+        # ---------------------------------------------------- CLAUDE.md (boundary-aware)
+        # The shipped CLAUDE.md wraps the framework-managed portion in
+        # <!-- BCOS:CORE:START vX.Y.Z --> ... <!-- BCOS:CORE:END --> markers.
+        # ensure_bcos_core_block refreshes ONLY that block; everything outside
+        # the markers (user identity, plugin notes, team conventions) is
+        # untouched. If the previous CORE differed from the new one, it is
+        # saved to .claude/bcos-claude-reference.md so the user can recover
+        # any unintended hand-edits.
+        if review_files:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from _claude_md import ensure_bcos_core_block
 
-            print()
-            print(f"  CLAUDE.md has upstream changes.")
-            print(f"  Your CLAUDE.md was NOT modified (safe).")
-            print(f"  Saved latest framework version to: .claude/bcos-claude-reference.md")
-            print()
-            print(f"  Next session, Claude will compare the two and suggest any")
-            print(f"  critical framework instructions your CLAUDE.md may be missing.")
+            for rel, upstream_path, local_path, status in review_files:
+                ref_path = local_root / ".claude" / "bcos-claude-reference.md"
+                ref_path.parent.mkdir(parents=True, exist_ok=True)
+                result = ensure_bcos_core_block(
+                    target_claude_md=Path(local_path),
+                    source_claude_md=Path(upstream_path),
+                    recovery_path=ref_path,
+                )
+                print()
+                action = result["action"]
+                if action == "created":
+                    print(f"  CLAUDE.md created from shipped template.")
+                elif action == "spliced":
+                    print(f"  CLAUDE.md: BCOS:CORE block appended at end of file.")
+                    print(f"  Your existing content was preserved.")
+                elif action == "replaced":
+                    print(f"  CLAUDE.md: BCOS:CORE block refreshed.")
+                    print(f"  Previous CORE saved to .claude/bcos-claude-reference.md")
+                    print(f"  (recover any intentional edits from there).")
+                elif action == "unchanged":
+                    print(f"  CLAUDE.md: BCOS:CORE already current.")
 
         # -------------------------------------------------------------- done
         print()

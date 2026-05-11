@@ -407,18 +407,52 @@ fi
 echo -e "${BLUE}CLAUDE.md...${NC}"
 echo ""
 
-if [ -f "$TARGET_DIR/CLAUDE.md" ]; then
-    echo -e "  ${YELLOW}SKIP${NC}  CLAUDE.md (already exists)"
+# Boundary-aware: ensure the BCOS:CORE block is present and current.
+# Same logic used by update.py and the context-onboarding self-heal step.
+#   missing file       → write shipped template
+#   has CORE markers   → replace block contents (saves prior CORE to
+#                        .claude/bcos-claude-reference.md if it differed)
+#   no CORE markers    → splice the CORE block at the end of the file
+mkdir -p "$TARGET_DIR/.claude"
+CLAUDE_MD_RESULT=$(python3 "$SCRIPT_DIR/.claude/scripts/_claude_md.py" \
+    --target "$TARGET_DIR/CLAUDE.md" \
+    --source "$SCRIPT_DIR/CLAUDE.md" \
+    --recovery "$TARGET_DIR/.claude/bcos-claude-reference.md" 2>&1) || {
+        echo -e "  ${YELLOW}WARN${NC}  CLAUDE.md helper failed: $CLAUDE_MD_RESULT"
+        SKIPPED=$((SKIPPED + 1))
+}
+CLAUDE_MD_ACTION=$(echo "$CLAUDE_MD_RESULT" | grep '^action=' | cut -d= -f2)
+case "$CLAUDE_MD_ACTION" in
+    created)
+        echo -e "  ${GREEN}OK${NC}    CLAUDE.md (created from template)"
+        ;;
+    spliced)
+        echo -e "  ${GREEN}OK${NC}    CLAUDE.md (BCOS:CORE block appended; your existing content preserved)"
+        ;;
+    replaced)
+        echo -e "  ${GREEN}OK${NC}    CLAUDE.md (BCOS:CORE block refreshed)"
+        echo "        Previous CORE saved to .claude/bcos-claude-reference.md"
+        ;;
+    unchanged)
+        echo -e "  ${YELLOW}SKIP${NC}  CLAUDE.md (already current)"
+        SKIPPED=$((SKIPPED + 1))
+        ;;
+esac
+echo ""
+
+# ─── README.md handling ─────────────────────────────────────────────
+
+echo -e "${BLUE}README.md...${NC}"
+echo ""
+
+if [ -f "$TARGET_DIR/README.md" ]; then
+    echo -e "  ${YELLOW}SKIP${NC}  README.md (existing repo — not touched)"
     echo ""
-    echo -e "  ${YELLOW}NOTE:${NC} You already have a CLAUDE.md. To add BCOS instructions,"
-    echo "        see the BCOS CLAUDE.md for sections to merge into yours:"
-    echo "        $SCRIPT_DIR/CLAUDE.md"
-    echo ""
-    # Copy as reference for manual merge
-    copy_if_missing "$SCRIPT_DIR/CLAUDE.md" ".claude/bcos-claude-reference.md"
-    SKIPPED=$((SKIPPED + 1))
 else
-    copy_if_missing "$SCRIPT_DIR/CLAUDE.md" "CLAUDE.md"
+    echo -e "  ${YELLOW}NOTE${NC}  No README.md found."
+    echo "        Once your context is established, ask Claude to generate one:"
+    echo "        \"Create a README for this repository based on my context.\""
+    echo ""
 fi
 
 # ─── README.md handling ─────────────────────────────────────────────

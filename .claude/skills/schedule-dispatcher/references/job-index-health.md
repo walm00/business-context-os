@@ -115,13 +115,6 @@ Also skip these **generated / convention files** (no frontmatter by design — f
 
 Note on `owner` field: `owner` is **not** a required frontmatter field (see `docs/_bcos-framework/methodology/document-standards.md`). Do not flag it as `missing-required-field`. The required list is exactly: `name, type, cluster, version, status, created, last-updated`.
 
-Also skip these **generated / convention files** (no frontmatter by design — flagging them is a false positive that recurs every run):
-
-- `docs/document-index.md` — auto-generated index
-- Any dot-prefixed basename (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`, and any other `docs/.*.md`)
-
-Note on `owner` field: `owner` is **not** a required frontmatter field (see `docs/_bcos-framework/methodology/document-standards.md`). Do not flag it as `missing-required-field`. The required list is exactly: `name, type, cluster, version, status, created, last-updated`.
-
 For each remaining file, check:
 
 | Issue ID                      | What to look for                                                     |
@@ -130,10 +123,23 @@ For each remaining file, check:
 | `missing-required-field`      | Required field missing: name, type, cluster, version, status, created, last-updated |
 | `missing-last-updated`        | `last-updated` field absent (but other frontmatter present)          |
 | `frontmatter-field-order`     | All required fields present, but not in canonical order              |
-| `broken-xref`                 | Markdown link pointing to a non-existent file                        |
+| `broken-xref`                 | Markdown link pointing to a non-existent **local** file (see scheme-exclusion note below) |
 | `broken-xref-single-candidate`| broken-xref where exactly one file with matching basename exists     |
 | `trailing-whitespace`         | Lines ending in spaces/tabs                                          |
 | `eof-newline`                 | File does not end in exactly one newline                             |
+
+**Non-local link schemes — do NOT flag as broken-xref.** A markdown link is only checkable against the local filesystem if its `href` is a relative path or starts with `/` (repo-absolute). Links whose href starts with a URI scheme are external by design and out of scope for `broken-xref`. Skip these schemes (case-insensitive):
+
+- `http://`, `https://` — web
+- `mailto:`, `tel:`, `sms:` — contact
+- `file://` — absolute local URI (different validation surface)
+- `computer://` — Claude cross-repo absolute reference (intentional pointer to a sibling repo path; not a local file)
+- `obsidian://`, `vscode://`, `cursor://` — editor deep links
+- Any other `^[a-z][a-z0-9+.-]*:` scheme prefix
+
+Also skip pure fragments (`#anchor-only`) — they reference within the same doc.
+
+Apply the scheme filter **before** the broken-xref check; the `^[a-z][a-z0-9+.-]*:` regex is the conservative way to detect any URI scheme without enumerating every protocol. If a link is excluded by this rule, it does not contribute to `broken-xref` or `broken-xref-single-candidate` findings.
 
 Use `build_document_index.py`'s output as the source of truth for "which files exist" — do not re-glob.
 

@@ -38,23 +38,23 @@
     },
     "wiki-source-refresh": {
       "enabled": true,
-      "schedule": "daily",
-      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'mon') — two-tier source-summary refresh: HEAD-only quick checks at stale_threshold_days/4, full refresh-must-rediscover at stale_threshold_days."
+      "schedule": "mon",
+      "_about": "Default: weekly on Monday — two-tier source-summary refresh (HEAD-only quick checks at stale_threshold_days/4, full refresh-must-rediscover at stale_threshold_days). Weekly is the max interval; bump to daily during heavy ingest weeks via schedule-tune."
     },
     "wiki-graveyard": {
       "enabled": true,
-      "schedule": "daily",
-      "_about": "Run cadence: starts daily, tune down once stable. Steady state monthly (e.g. '1st') — archive-candidate scan for stale/orphaned/expired wiki pages. Only whitelisted post-mortem expiry is auto-fixable."
+      "schedule": "fri",
+      "_about": "Default: weekly on Friday — archive-candidate scan for stale/orphaned/expired wiki pages. Only whitelisted post-mortem expiry is auto-fixable. Weekly is the max interval — once the wiki has volume, archive hygiene matters every week, not once a month."
     },
     "wiki-coverage-audit": {
       "enabled": true,
-      "schedule": "daily",
-      "_about": "Run cadence: starts daily, tune down once stable. Steady state quarterly ('0 0 1 */3 *') — cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters missing from document-index as INFO."
+      "schedule": "wed",
+      "_about": "Default: weekly on Wednesday — cross-zone coverage scan. Surfaces active data points without wiki explainers and wiki clusters missing from document-index as INFO. Weekly because most adopters fill the wiki within their first week of active use — quarterly hides the gaps too long."
     },
     "auto-fix-audit": {
       "enabled": true,
-      "schedule": "daily",
-      "_about": "Run cadence: starts daily, tune down once stable. Steady state ~weekly (e.g. 'fri') — safety brake on the self-learning ladder. Surfaces amber cards when a learned rule reversal rate crosses 5% in 7 days. Recommend-only at v0.1."
+      "schedule": "sun",
+      "_about": "Default: weekly on Sunday — safety brake on the self-learning ladder. Surfaces amber cards when a learned rule reversal rate crosses 5% in 7 days. Recommend-only at v0.1. Vacuously green until resolutions.jsonl has entries."
     },
     "lifecycle-sweep": {
       "enabled": true,

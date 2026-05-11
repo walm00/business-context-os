@@ -193,8 +193,9 @@ The shipped `.claude/settings.json` is **project-local**: it applies only when C
 | Workflow mines transcripts in repo A → drafts a `_planned/` doc in umbrella repo | works (cross-repo read + scoped write to umbrella's `_planned/**`) | works ONLY if umbrella has the same shipped allowlist |
 | Workflow in umbrella writes back to a sub-repo's `_inbox/` | n/a | needs `Edit(docs/_inbox/**)` to be honored when session is rooted in the SUB-repo too |
 | Multiple BCOS-installed repos all running their own dispatchers nightly | each read/write is local to its own repo | works today, no cross-repo perms needed |
+| `/context search --cross-repo` or per-portfolio `auto_fallthrough` reading sibling repos' `context-index.json` | `Read(**)` unrestricted — works today, no permission setup needed | n/a (cross-repo retrieval is read-only) |
 
-The first three scenarios are why we ship a mirror script.
+The first three scenarios are why we ship a mirror script. Cross-repo retrieval (`/context search --cross-repo`, `/context bundle --cross-repo`) is read-only and falls under existing `Read(**)` coverage — no new perms needed. Contract in [`cross-repo-retrieval.md`](cross-repo-retrieval.md).
 
 **The fix: mirror this allowlist into `~/.claude/settings.json` (user-level, applies everywhere)**
 

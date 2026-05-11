@@ -2,11 +2,12 @@
 name: context-routing
 description: "Cross-zone retrieval and task-driven bundle resolution for BCOS. /context search ranks docs across every zone in one shared schema; /context bundle (P5) returns a curated, freshness-flagged, source-of-truth-aware context bundle for a declared task. Mechanical-first; LLM is opt-in via --semantic / --resolve-conflicts / --verify-coverage flags only. Invoke with /context."
 trigger: "/context"
-version: "0.1.0"
-last_updated: "2026-05-04"
+version: "0.3.0"
+last_updated: "2026-05-11"
 authority-docs:
   - docs/_bcos-framework/architecture/context-zones.md
   - docs/_bcos-framework/architecture/system-design.md
+  - docs/_bcos-framework/architecture/cross-repo-retrieval.md
   - docs/_planned/wiki-missing-layers/pre-flight-decisions.md
   - docs/_planned/wiki-missing-layers/implementation-plan.md
 ---
@@ -78,6 +79,29 @@ When a declared zone is absent from the current repo (e.g., `_wiki/` not initial
 ### Citation IDs are stable
 
 Every hit carries a `citation-id` of the form `zone:slug` (for example, `wiki:linkedin-tone`, `planned:wiki-missing-layers`). The ID is path-derived and survives whitespace edits. Other agents reference back via this ID.
+
+Sibling-repo hits (when cross-repo retrieval is engaged — see next section) get an additional prefix: `<sibling-id>:<zone>:<slug>`. Local hits keep the original two-segment form.
+
+### Cross-repo retrieval — opt-in, three-stage filter
+
+`/context search` and `/context bundle` consult sibling BCOS repos registered with the same umbrella (`.bcos-umbrella.json`) **only when explicitly opted in**, and even then only through a three-stage filter:
+
+1. **Local search** across all zones in this repo (existing behavior).
+2. **Peek** — if local is insufficient, scan sibling metadata (titles, tags, exclusively_owns, headings) for the query. Cheap. No BM25. No body scan. No LLM.
+3. **Deep-fetch** — only when the peek points to a clear sibling winner. Marginal peeks emit a `cross-repo-suggestions` envelope field but do NOT pull data; the calling agent decides whether to surface to the user.
+
+Flags + config:
+- `--cross-repo` → bypass peek gate, deep-fetch directly (manual override).
+- `--no-cross-repo` → skip cross-repo entirely for this call.
+- Default → consult `.bcos-umbrella.json.retrieval.auto_fallthrough` (ships off; user flips per portfolio).
+
+**Hierarchy locked**: this-repo first across all zones; cross-repo is last resort. A T5+full-coverage local hit always skips peek entirely — the calling agent doesn't even see a `cross-repo-suggestions` field.
+
+Framework-default behavior is unchanged: in a repo with no `.bcos-umbrella.json` or no `retrieval` block, no cross-repo I/O ever fires. D-10 strict invariant preserved at framework level; per-portfolio opt-in lets a user turn it on for a portfolio of related repos.
+
+Contract: see [`docs/_bcos-framework/architecture/cross-repo-retrieval.md`](../../../docs/_bcos-framework/architecture/cross-repo-retrieval.md). The framework consumes a minimum schema from the umbrella's `projects.json` (`id`, `path`, `exposes`); the umbrella's onboarding skill owns the full write-side schema and writes `retrieval.auto_fallthrough: true` into each registered sibling by default.
+
+Sibling failures are graceful — `cross-repo-status.siblings-skipped[]` records each per-sibling problem (timeout, unreachable, malformed-index) without raising. Local result is always returned.
 
 ## Architectural placement
 
