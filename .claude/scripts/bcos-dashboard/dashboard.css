@@ -1639,6 +1639,56 @@ summary:focus-visible {
   text-align: center;
 }
 
+/* 1.1.0 — bcos-framework category and stuck-finding treatments. The
+   framework variant uses a cooler border + a small "Reported to BCOS"
+   footer to signal "this is acknowledge-only, not your problem to fix
+   locally." The stuck variant uses a warmer left-border accent so a
+   user scanning the list immediately spots the recurring items.
+*/
+.actions-inbox__item--framework {
+  border-left: 3px solid var(--color-severity-info, #2b5a8a);
+  background: linear-gradient(to right, rgba(43, 90, 138, 0.04), transparent 40%);
+}
+.actions-inbox__item--stuck {
+  border-left: 3px solid var(--color-severity-warn, #b8741f);
+  background: linear-gradient(to right, rgba(184, 116, 31, 0.06), transparent 40%);
+}
+.actions-inbox__item--framework.actions-inbox__item--stuck {
+  /* Stuck framework finding — the most-load-bearing case (a framework bug
+     that has been emitting for 3+ runs without a fix shipping). Show both
+     accents stacked: warm left border + cool background. */
+  border-left: 3px solid var(--color-severity-warn, #b8741f);
+  background: linear-gradient(to right, rgba(43, 90, 138, 0.06), transparent 50%);
+}
+.actions-inbox__framework-footer {
+  margin-top: 6px;
+  padding: 4px 8px;
+  font: 11px/1.4 var(--font-ui);
+  color: var(--color-severity-info, #2b5a8a);
+  font-style: italic;
+  background: rgba(43, 90, 138, 0.05);
+  border-radius: 3px;
+}
+.chip--stuck {
+  background: var(--color-severity-warn-bg, rgba(184, 116, 31, 0.10));
+  color: var(--color-severity-warn, #b8741f);
+  font-weight: 600;
+}
+.chip--framework {
+  background: var(--color-severity-info-bg, rgba(43, 90, 138, 0.10));
+  color: var(--color-severity-info, #2b5a8a);
+  font-weight: 600;
+}
+.mark-done-btn--framework {
+  /* Slightly cooler tone matches the framework category palette and
+     reinforces "this is acknowledge only, not a real fix." */
+  border-color: var(--color-severity-info, #2b5a8a);
+  color: var(--color-severity-info, #2b5a8a);
+}
+.mark-done-btn--framework:hover:not(:disabled) {
+  background: var(--color-severity-info-bg, rgba(43, 90, 138, 0.10));
+}
+
 /* ------------------------------- Schedule presets (inside job cards) */
 .schedule-presets {
   margin-top: 10px;

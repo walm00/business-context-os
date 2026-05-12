@@ -4,7 +4,7 @@ How the dispatcher's daily digest emits **structured events** alongside the huma
 
 For the bigger picture of how this fits the autonomy + UX + self-learning surface, see [`docs/_planned/autonomy-ux-self-learning/implementation-plan.md`](../../_planned/autonomy-ux-self-learning/implementation-plan.md). This doc is the **contract**; that plan is the **rollout**.
 
-> **Status: schema 1.0.0 (P1 closed).** The `finding_type` enum is harvested from the 9 `job-*.md` reference docs (P1_001) and pinned below. Per-type `finding_attrs` shapes are the canonical contract (P1_002). Sidecars conforming to this doc declare `schema_version: "1.0.0"`; the P0 fixtures still carry `0.1.0-provisional` until they're regenerated against the formal enum at P1_006.
+> **Status: schema 1.1.0 (additive).** The `finding_type` enum is harvested from the 9 `job-*.md` reference docs (P1_001) and pinned below. Per-type `finding_attrs` shapes are the canonical contract (P1_002). Sidecars conforming to this doc declare `schema_version: "1.1.0"`; sidecars on `"1.0.0"` continue to work — the three new fields (`category`, `first_seen`, `consecutive_runs`) and 7 new `bcos-framework` finding_types are additive. The dashboard defaults `category` to `repo-context` when absent so old sidecars render bit-for-bit identical to the 1.0.0 path.
 
 ---
 
@@ -49,10 +49,13 @@ A `Finding`:
 |---|---|---|
 | `number` | int | 1-based; matches the prose `### N.` heading. |
 | `finding_type` | enum | One of the IDs pinned in P1_001 (e.g. `inbox-aged`, `broken-xref`, `stale-propagation`, `source-summary-refresh-due`, `graveyard-stale`, `orphan-page`, `coverage-gap`). |
+| `category` | enum | **Added in 1.1.0.** `"repo-context"` (default if absent) \| `"bcos-framework"`. Repo-context findings get Fix buttons; framework findings get Acknowledge only. Classifier in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md). |
 | `verdict` | enum | `"green" \| "amber" \| "red"` for *this finding*; rolls up into `overall_verdict`. |
 | `emitted_by` | string | The job ID that emitted this finding (`audit-inbox`, `index-health`, `wiki-source-refresh`, …). Used by the auditor to scope reversal-rate by rule. |
+| `first_seen` | string \| null | **Added in 1.1.0.** ISO date `YYYY-MM-DD` of the first dispatcher tick this exact finding (same `(finding_type, primary_attr, emitted_by)` tuple) appeared. `null` if dispatcher cannot compute (e.g. diary truncated). |
+| `consecutive_runs` | int | **Added in 1.1.0.** Number of consecutive dispatcher ticks this same finding has appeared. `1` on first emission. `≥3` triggers stuck-badge rendering in the cockpit. |
 | `finding_attrs` | object | Typed attributes per `finding_type`; shape pinned in P1_002. Fixture-tier shapes are illustrative, not authoritative. |
-| `suggested_actions` | string[] | Action IDs from `headless-actions.md` (P3) the cockpit should surface as primary/secondary buttons. |
+| `suggested_actions` | string[] | Action IDs from `headless-actions.md` (P3) the cockpit should surface as primary/secondary buttons. For `category: bcos-framework`, always `["acknowledge"]`. |
 
 An `AutoFix`:
 
@@ -74,7 +77,7 @@ A `JobSummary`:
 
 ## `finding_type` enum (canonical)
 
-Harvested from the 9 `job-*.md` reference docs in `.claude/skills/schedule-dispatcher/references/`. **39 distinct IDs** across 9 jobs. Two IDs are dual-emitted (`missing-frontmatter` + `broken-xref` come from both `audit-inbox` and `index-health` — that overlap is intentional: daily lint vs. weekly deep). The enum value is the same in both cases; the emitter is disambiguated by the `emitted_by` field on the `Finding`.
+Harvested from the `job-*.md` reference docs in `.claude/skills/schedule-dispatcher/references/` plus dispatcher-emitted meta and framework events. **56 distinct IDs** as of 1.1.0 (49 `repo-context` from 12 emitter groups + 7 `bcos-framework` added in 1.1.0). Two IDs are dual-emitted (`missing-frontmatter` + `broken-xref` come from both `audit-inbox` and `index-health` — that overlap is intentional: daily lint vs. weekly deep). The enum value is the same in both cases; the emitter is disambiguated by the `emitted_by` field on the `Finding`. The full mechanical classifier mapping every ID to its category lives in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md).
 
 ### audit-inbox (8)
 
@@ -192,6 +195,20 @@ Emitted by ingest-time triage (`_wiki_triage.classify()` called from `bcos-wiki/
 |---|---|
 | `frequency-suggestion` | Job autonomy / cadence tuning suggestion (📈 / 📉). |
 
+### Dispatcher framework (7) — added in 1.1.0
+
+Emitted by the dispatcher itself when the framework's own state is broken (not by client content). All entries are `category: bcos-framework` per the classifier in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md). Always render as acknowledge-only cards in the dashboard — never get a Fix button — because the LLM patching them in a client repo would be overwritten by the next `update.py` run.
+
+| `finding_type` | One-line meaning |
+|---|---|
+| `dispatcher-silent-skip` | A scheduled job produced no diary completion record this tick. Step 4b safety guard fired. |
+| `job-reference-missing` | A scheduled job has no `job-{name}.md` reference file at the expected path. |
+| `schema-validation-failed` | A typed-event Finding the dispatcher emitted fails contract validation against this doc's shapes. |
+| `auto-fix-handler-threw` | A whitelisted `fix_id`'s handler raised an exception during Step 5. |
+| `installer-seed-missing` | A file expected to be installed by `update.py` is absent at runtime. |
+| `data-corruption-detected` | A JSONL loader's `_LAST_LOAD_REPORT.dropped > 0` — silent data drop in a framework-managed file. |
+| `framework-config-malformed` | `schedule-config.json` or another framework-managed JSON failed JSON parse or missed required fields. |
+
 ### auto-fix-audit (2)
 
 | `finding_type` | One-line meaning |
@@ -258,6 +275,13 @@ Every `Finding` carries a typed `finding_attrs` object. Shapes below are the con
 | `frequency-suggestion` | `{job: str, direction: str, current_schedule: str, suggested_schedule: str, reason: str}` |
 | `rule-reversal-spike` | `{rule_id: str, underlying_finding_type: str, underlying_action_taken: str, n_applied: int, n_reverted: int, reversal_rate: float, window_days: int, threshold_percent: int}` |
 | `rule-downstream-error` | `{rule_id: str, underlying_finding_type: str, underlying_action_taken: str, downstream_job: str, verdict_before: str, verdict_after: str, batch_size: int, window_hours: int}` |
+| `dispatcher-silent-skip` | `{job: str, expected_after: str, last_diary_ts: str \| null, missing_artifact: str \| null}` |
+| `job-reference-missing` | `{job: str, expected_path: str}` |
+| `schema-validation-failed` | `{offending_finding_type: str, validation_error: str, run_at: str}` |
+| `auto-fix-handler-threw` | `{fix_id: str, target: str, exception_class: str, exception_message: str}` |
+| `installer-seed-missing` | `{expected_path: str, framework_files_entry: str, owning_job: str \| null}` |
+| `data-corruption-detected` | `{file: str, dropped_line_count: int, total_lines: int, first_error: str}` |
+| `framework-config-malformed` | `{file: str, parse_error: str \| null, missing_fields: str[] \| null}` |
 
 `str | null` means the field is required to be present (key exists) but the value MAY be null when the emitter cannot determine it. Skipping the key is a contract violation; emit `null` instead.
 
@@ -272,6 +296,16 @@ When a finding_attrs uses these names, they always mean the same thing:
 | `*_days` | Integer count of days, ≥0. |
 | `lesson_id` / `lesson_ids` | Stable IDs from `lessons.json` (e.g. `L-DASHBOARD-20260425-010`). |
 | `*_count` | Non-negative integer. |
+| `expected_path` / `expected_after` | Where the framework expected to find a file / a timestamp by which an event should have occurred. Used by framework finding_types only. |
+| `framework_files_entry` | Verbatim entry from `update.py`'s `FRAMEWORK_FILES` list. Used by `installer-seed-missing`. |
+
+The Finding-level `category`, `first_seen`, and `consecutive_runs` fields share semantics across all finding_types:
+
+| Field | Meaning |
+|---|---|
+| `category` | Routing flag: `repo-context` (default; LLM/user-actionable; Fix button) vs `bcos-framework` (acknowledge-only; never patched in client repo). |
+| `first_seen` | ISO date of first dispatcher emission. Computed by the dispatcher from diary history (last 30 entries). `null` only when diary insufficient. |
+| `consecutive_runs` | Count of consecutive dispatcher ticks this same `(finding_type, primary_attr, emitted_by)` tuple appeared. Starts at 1. Triggers stuck-badge at ≥3. Reset when the finding doesn't appear for one full tick. |
 
 ---
 
@@ -292,11 +326,12 @@ This is the load-bearing reason every `finding_type` and every `finding_attrs` s
 
 ## Test surface
 
-Three tests guard this contract:
+Four tests guard this contract:
 
-- `.claude/scripts/test_digest_typed_events.py` (P0_002) — fixtures round-trip through `digest_parser` *and* `digest_sidecar.parse_sidecar` once that ships at P1_004.
+- `.claude/scripts/test_digest_typed_events.py` (P0_002) — fixtures round-trip through `digest_parser` *and* `digest_sidecar.parse_sidecar` once that ships at P1_004. **Added in 1.1.0:** asserts every `finding_type` in this doc's enum has a `category` mapping in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md).
 - `.claude/scripts/test_resolutions_jsonl_schema.py` (P0_003) — the 14-field row contract.
 - `.claude/scripts/test_card_coverage.py` (P2_010) — every `finding_type` renders for at least one fixture.
+- `.claude/scripts/test_finding_type_coverage.py` — every `finding_type` in this doc's enum has a label in `bcos-dashboard/labels.py` `FINDING_TYPE_LABELS`. (See the comment in that file.)
 
 The first two are RED at P0 (intentionally; they're the TDD scaffold). They turn GREEN at P1 and P4 respectively.
 
@@ -307,5 +342,8 @@ The first two are RED at P0 (intentionally; they're the TDD scaffold). They turn
 - [system-design.md](./system-design.md) — the three-layer architecture this contract operates within.
 - [maintenance-lifecycle.md](./maintenance-lifecycle.md) — where the dispatcher's daily-digest emission fits in the daily/weekly/monthly cadence.
 - [`.claude/skills/schedule-dispatcher/SKILL.md`](../../../.claude/skills/schedule-dispatcher/SKILL.md) — Step 7 of the dispatcher (digest emission). Updated in P1_008 to cite this contract.
+- [`.claude/skills/schedule-dispatcher/references/finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md) — **added in 1.1.0.** Classifier mapping every `finding_type` to `repo-context` or `bcos-framework`, plus the finding-identity tuples used to compute `consecutive_runs`.
+- [`portfolio-framework-issues-feed.md`](./portfolio-framework-issues-feed.md) — **added in 1.1.0.** Producer-consumer contract between BCOS (each sibling writes `.claude/hook_state/bcos-framework-issues.jsonl`) and `bcos-umbrella` (Command Center walker aggregates across registered siblings, opt-in via `.bcos-umbrella.json.framework_issues.aggregate`).
 - [`.claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md`](../../../.claude/skills/schedule-dispatcher/references/auto-fix-whitelist.md) — silent-tier fix IDs; this contract's `auto_fixed[]` array references those IDs.
-- [`.claude/quality/fixtures/digests/`](../../../.claude/quality/fixtures/digests/) — green / amber / red fixture pairs (`.md` + `.json`) the test suite reads.
+- [`.claude/skills/schedule-dispatcher/references/headless-actions.md`](../../../.claude/skills/schedule-dispatcher/references/headless-actions.md) — one-click action catalog. The `acknowledge` action (added in 1.1.0) is the only action applicable to `category: bcos-framework` findings.
+- [`.claude/quality/fixtures/digests/`](../../../.claude/quality/fixtures/digests/) — green / amber / red fixture pairs (`.md` + `.json`) the test suite reads. **Added in 1.1.0:** `framework-issues/` subdirectory with one fixture per `bcos-framework` finding_type.

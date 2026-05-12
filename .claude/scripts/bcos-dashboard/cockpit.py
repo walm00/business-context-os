@@ -54,6 +54,12 @@ class Card:
     actions: dict[str, Any] = field(default_factory=dict)  # primary/secondary/tertiary/dismiss
     finding_attrs: dict[str, Any] = field(default_factory=dict)
     suggested_action: str | None = None  # P5_005: action_id with "✨ suggested" badge
+    # Added in 1.1.0 — drives category-aware rendering + stuck-badge UX.
+    category: str = "repo-context"           # repo-context | bcos-framework
+    consecutive_runs: int = 1                # for stuck-badge display
+    stuck: bool = False                      # True when consecutive_runs >= 3 OR severity_override == "stuck"
+    first_seen: str | None = None            # ISO YYYY-MM-DD; shown on stuck cards
+    footer_note: str | None = None           # acknowledge-only banner text for framework cards
 
 
 @dataclass
@@ -65,6 +71,10 @@ class CockpitView:
     auto_commit_blocked: bool = False
     auto_commit_reason: str | None = None
     per_job_notes_echoed: bool = False  # always False — we hide them
+    # Added in 1.1.0 — split counts for verdict-bar rendering.
+    repo_findings_count: int = 0
+    framework_findings_count: int = 0
+    stuck_findings_count: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +179,62 @@ def _r_generic(a):
     return title, _truncate(body, 80), ["open-for-edit", "dismiss"]
 
 
+# ---------------------------------------------------------------------------
+# Framework renderers (1.1.0 — category=bcos-framework, acknowledge-only)
+# ---------------------------------------------------------------------------
+#
+# These render the 7 bcos-framework finding_types. They MUST return
+# ["acknowledge"] as the only suggested action — the dashboard never gives
+# the user a Fix button for framework findings (patching them in a client
+# repo would be overwritten by the next `update.py` run). Body prose names
+# the offending artifact so the framework owner has enough context to fix
+# upstream without opening the sidecar.
+
+def _r_dispatcher_silent_skip(a):
+    title = "Job silent-skip detected"
+    body = f"{a.get('job', '?')} — no diary entry since {a.get('last_diary_ts') or 'never'}"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_job_reference_missing(a):
+    title = "Job reference file missing"
+    body = f"{a.get('job', '?')} → {_path_only(a.get('expected_path', '?'))}"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_schema_validation_failed(a):
+    title = "Typed-event contract violated"
+    body = f"{a.get('offending_finding_type', '?')} — {a.get('validation_error', 'shape mismatch')}"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_auto_fix_handler_threw(a):
+    title = "Auto-fix handler crashed"
+    body = f"{a.get('fix_id', '?')} on {_path_only(a.get('target'))} — {a.get('exception_class', 'Exception')}"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_installer_seed_missing(a):
+    title = "Framework file not installed"
+    body = f"{_path_only(a.get('expected_path', '?'))} — run update.py to re-seed"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_data_corruption_detected(a):
+    title = "JSONL silent data drop"
+    body = f"{_path_only(a.get('file'))} — {a.get('dropped_line_count', '?')}/{a.get('total_lines', '?')} lines unreadable"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
+def _r_framework_config_malformed(a):
+    title = "Framework config malformed"
+    err = a.get("parse_error") or (
+        "missing: " + ", ".join(a.get("missing_fields") or []) if a.get("missing_fields") else "shape error"
+    )
+    body = f"{_path_only(a.get('file', '?'))} — {err}"
+    return title, _truncate(body, 80), ["acknowledge"]
+
+
 _RENDERERS: dict[str, _Renderer] = {
     "inbox-aged": _r_inbox_aged,
     "refresh-due": _r_refresh_due,
@@ -184,32 +250,77 @@ _RENDERERS: dict[str, _Renderer] = {
     "frequency-suggestion": _r_frequency_suggestion,
     "rule-reversal-spike": _r_rule_reversal_spike,
     "rule-downstream-error": _r_rule_downstream_error,
+    # 1.1.0 — framework category (acknowledge-only)
+    "dispatcher-silent-skip": _r_dispatcher_silent_skip,
+    "job-reference-missing": _r_job_reference_missing,
+    "schema-validation-failed": _r_schema_validation_failed,
+    "auto-fix-handler-threw": _r_auto_fix_handler_threw,
+    "installer-seed-missing": _r_installer_seed_missing,
+    "data-corruption-detected": _r_data_corruption_detected,
+    "framework-config-malformed": _r_framework_config_malformed,
 }
 
 
+# Standard footer note shown on every framework card. Inline here so the
+# wording is consistent across all 7 finding_types — the L-DASHBOARD-
+# 20260425-010 single-translation-map principle applied to card footers.
+_FRAMEWORK_FOOTER = "Reported to BCOS — will be fixed in next release."
+
+
 def _render_finding_to_card(finding) -> Card:
-    """Convert a typed-event Finding into a Card."""
+    """Convert a typed-event Finding into a Card.
+
+    1.1.0 — branches on `finding.category`:
+    - `repo-context` (default): existing Fix/Snooze/Dismiss action slots
+    - `bcos-framework`: acknowledge-only card with the standard framework
+      footer; Fix slot is forcibly absent. Patching framework state in a
+      client repo would be overwritten by the next `update.py`.
+    """
     attrs = dict(finding.finding_attrs or {})
+    # Category may be absent on a 1.0.0 sidecar — Finding's dataclass
+    # default ("repo-context") covers that path.
+    category = getattr(finding, "category", "repo-context")
     renderer = _RENDERERS.get(finding.finding_type, _r_generic)
     title, body, suggested = renderer(attrs)
 
-    primary = suggested[0] if suggested else None
-    secondary = suggested[1] if len(suggested) > 1 else None
-    tertiary = suggested[2] if len(suggested) > 2 else None
+    if category == "bcos-framework":
+        # Force the action set to acknowledge-only regardless of what the
+        # renderer proposed. _h_acknowledge is the only handler permitted.
+        actions = {
+            "primary": "acknowledge",
+            "secondary": None,
+            "tertiary": None,
+            "dismiss": "dismiss",
+        }
+        suggested_action = None  # no learned-default for framework cards
+        footer_note: str | None = _FRAMEWORK_FOOTER
+    else:
+        primary = suggested[0] if suggested else None
+        secondary = suggested[1] if len(suggested) > 1 else None
+        tertiary = suggested[2] if len(suggested) > 2 else None
 
-    # P5_005: stamp the "✨ suggested" badge when the user has consistently
-    # picked an action for this finding_type (preselect tier, learned-rules.json).
-    # We probe each suggested action in priority order; the first one that
-    # carries a learned default wins. Renders as a small badge in the UI but
-    # also pre-fills which action is the cockpit's default keystroke target.
-    suggested_action = None
-    for candidate in suggested:
-        try:
-            if _is_suggested(finding.finding_type, candidate):
-                suggested_action = candidate
-                break
-        except Exception:  # noqa: BLE001
-            break  # treat lookup failure as "no learned default"
+        # P5_005: stamp the "✨ suggested" badge when the user has consistently
+        # picked an action for this finding_type (preselect tier, learned-rules.json).
+        suggested_action = None
+        for candidate in suggested:
+            try:
+                if _is_suggested(finding.finding_type, candidate):
+                    suggested_action = candidate
+                    break
+            except Exception:  # noqa: BLE001
+                break  # treat lookup failure as "no learned default"
+
+        actions = {
+            "primary": primary,
+            "secondary": secondary,
+            "tertiary": tertiary,
+            "dismiss": "dismiss",
+        }
+        footer_note = None
+
+    consecutive_runs = int(getattr(finding, "consecutive_runs", 1) or 1)
+    severity_override = getattr(finding, "severity_override", None)
+    stuck = severity_override == "stuck" or consecutive_runs >= 3
 
     return Card(
         finding_type=finding.finding_type,
@@ -218,13 +329,13 @@ def _render_finding_to_card(finding) -> Card:
         verdict=finding.verdict,
         emitted_by=finding.emitted_by,
         finding_attrs=attrs,
-        actions={
-            "primary": primary,
-            "secondary": secondary,
-            "tertiary": tertiary,
-            "dismiss": "dismiss",  # always available
-        },
+        actions=actions,
         suggested_action=suggested_action,
+        category=category,
+        consecutive_runs=consecutive_runs,
+        stuck=stuck,
+        first_seen=getattr(finding, "first_seen", None),
+        footer_note=footer_note,
     )
 
 
@@ -238,31 +349,74 @@ def should_block_auto_commit(verdict: str, block_on_red: bool) -> bool:
     return bool(verdict == "red" and block_on_red)
 
 
+def _card_sort_key(card: Card) -> tuple[int, int, int]:
+    """Pinning order for the cockpit card list:
+    1) framework category first (acknowledge-only, but high-trust signal — Guntis owns these)
+    2) stuck cards above non-stuck within the same category
+    3) red > amber > green within each (stuck, category) bucket
+    """
+    cat_rank = 0 if card.category == "bcos-framework" else 1
+    stuck_rank = 0 if card.stuck else 1
+    verdict_rank = {"red": 0, "amber": 1, "green": 2}.get(card.verdict, 3)
+    return (cat_rank, stuck_rank, verdict_rank)
+
+
 def render_cockpit(sidecar, *, block_on_red: bool = True) -> CockpitView:
     """Render a ParsedSidecar into the cockpit-shape the dashboard consumes.
 
     `sidecar` is a `digest_sidecar.ParsedSidecar`. `block_on_red` mirrors
     the schedule-config flag; defaults to true to match the template
     default (see schedule-config.template.json).
+
+    1.1.0 — split count fields (`repo_findings_count`, `framework_findings_count`,
+    `stuck_findings_count`) drive the verdict-bar's "N repo · M framework"
+    split rendering in the front-end. Sidecar's pre-computed `headline` is
+    preferred over the cockpit's fallback synthesis when present.
     """
     if sidecar is None:
         return CockpitView(verdict="green", headline="No digest available.")
 
     verdict = sidecar.overall_verdict
-    findings_count = len(sidecar.findings)
     auto_fixed_count = len(sidecar.auto_fixed)
     jobs_count = len(sidecar.jobs)
 
-    if verdict == "green":
-        headline = f"All clear — {jobs_count} jobs ran, {auto_fixed_count} auto-fixes."
+    repo_count = sum(
+        1 for f in sidecar.findings
+        if getattr(f, "category", "repo-context") == "repo-context"
+    )
+    framework_count = sum(
+        1 for f in sidecar.findings
+        if getattr(f, "category", "repo-context") == "bcos-framework"
+    )
+    stuck_count = sum(
+        1 for f in sidecar.findings
+        if getattr(f, "severity_override", None) == "stuck"
+        or int(getattr(f, "consecutive_runs", 1) or 1) >= 3
+    )
+    findings_count = repo_count + framework_count
+
+    # Sidecar-supplied headline always wins. Fallback synthesis only when
+    # absent (older 1.0.0 sidecar — pre-Step-4c dispatcher).
+    sidecar_headline = getattr(sidecar, "headline", None)
+
+    if verdict == "green" and findings_count == 0:
+        headline = sidecar_headline or (
+            f"All clear — {jobs_count} jobs ran, {auto_fixed_count} auto-fixes."
+        )
         return CockpitView(
             verdict="green",
             headline=headline,
             cards=[],
             per_job_notes_echoed=False,
+            repo_findings_count=0,
+            framework_findings_count=0,
+            stuck_findings_count=0,
         )
 
-    cards = [_render_finding_to_card(f) for f in sidecar.findings]
+    cards = sorted(
+        (_render_finding_to_card(f) for f in sidecar.findings),
+        key=_card_sort_key,
+    )
     blocked = should_block_auto_commit(verdict, block_on_red)
     reason = (
         f"Auto-commit paused — {findings_count} critical finding"
@@ -272,18 +426,29 @@ def render_cockpit(sidecar, *, block_on_red: bool = True) -> CockpitView:
     )
 
     if verdict == "red":
-        headline = f"{findings_count} critical findings need attention"
+        fallback = f"{findings_count} critical findings need attention"
         return CockpitView(
             verdict="red",
-            headline=headline,
+            headline=sidecar_headline or fallback,
             takeover=True,
             cards=cards,
             auto_commit_blocked=blocked,
             auto_commit_reason=reason,
+            repo_findings_count=repo_count,
+            framework_findings_count=framework_count,
+            stuck_findings_count=stuck_count,
         )
 
-    # amber
-    headline = f"{findings_count} item{'s' if findings_count != 1 else ''} need attention"
+    # amber. Headline preference: sidecar > stuck-aware > generic.
+    if sidecar_headline:
+        headline = sidecar_headline
+    elif stuck_count > 0:
+        headline = (
+            f"{stuck_count} stuck — won't resolve on its own."
+        )
+    else:
+        headline = f"{findings_count} item{'s' if findings_count != 1 else ''} need attention"
+
     return CockpitView(
         verdict="amber",
         headline=headline,
@@ -291,6 +456,9 @@ def render_cockpit(sidecar, *, block_on_red: bool = True) -> CockpitView:
         cards=cards,
         auto_commit_blocked=blocked,
         auto_commit_reason=reason,
+        repo_findings_count=repo_count,
+        framework_findings_count=framework_count,
+        stuck_findings_count=stuck_count,
     )
 
 

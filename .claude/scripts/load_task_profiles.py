@@ -3,9 +3,16 @@
 Load the BCOS task-profile catalog (P5).
 
 Resolution order:
-  1. docs/.context.task-profiles.yml          (per-repo override; optional)
-  2. docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl
-                                              (framework default)
+  1. docs/_bcos-framework/templates/_context.task-profiles.yml.tmpl
+                                              (framework default; baseline)
+  2. docs/.context.task-profiles.yml          (per-repo override; merged on top)
+
+When both files exist, the override is layered on top of the template:
+  - Profile IDs unique to override -> added.
+  - Profile IDs in both           -> override replaces the template entry.
+  - Profile IDs only in template  -> kept as-is.
+
+Plugins no longer need to copy framework profiles verbatim to add their own.
 
 Returns a list of normalized profile dicts. Each profile:
   {
@@ -51,21 +58,76 @@ class TaskProfilesError(Exception):
 
 
 def resolve_profiles_path() -> Path:
+    """Return the highest-precedence single file present.
+
+    Kept for backward compatibility and CLI diagnostics. Callers that need
+    the merged catalog should use `load_task_profiles()` directly — it
+    composes template + override automatically.
+    """
     if OVERRIDE_PATH.is_file():
         return OVERRIDE_PATH
     if TEMPLATE_PATH.is_file():
         return TEMPLATE_PATH
     raise TaskProfilesError(
-        f"No task-profile catalog found. Looked at: {OVERRIDE_PATH}, then {TEMPLATE_PATH}"
+        f"No task-profile catalog found. Looked at: {TEMPLATE_PATH}, then {OVERRIDE_PATH}"
     )
 
 
-def load_task_profiles(path: Path | None = None) -> list[dict[str, Any]]:
-    """Parse the catalog and return the list of normalized profile entries."""
-    target = path or resolve_profiles_path()
+def _load_profiles_file(target: Path) -> list[dict[str, Any]]:
     text = target.read_text(encoding="utf-8")
     raw_profiles = _parse_catalog(text)
     return [_normalize_profile(p) for p in raw_profiles]
+
+
+def _merge_profiles(
+    template: list[dict[str, Any]],
+    override: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Layer override on top of template; override wins on id collision.
+
+    Preserves template order for non-overridden profiles, then appends
+    override-only profiles in their declared order. Override profiles
+    that collide replace the template entry in-place (no order change).
+    """
+    by_id = {p["id"]: i for i, p in enumerate(template)}
+    out: list[dict[str, Any]] = list(template)
+    for p in override:
+        pid = p["id"]
+        if pid in by_id:
+            out[by_id[pid]] = p
+        else:
+            by_id[pid] = len(out)
+            out.append(p)
+    return out
+
+
+def load_task_profiles(path: Path | None = None) -> list[dict[str, Any]]:
+    """Parse the catalog and return the list of normalized profile entries.
+
+    When `path` is given, that single file is loaded verbatim (no merge).
+    Otherwise:
+      - if both template and override exist, returns the merged catalog;
+      - if only one exists, returns its profiles directly;
+      - if neither exists, raises TaskProfilesError.
+    """
+    if path is not None:
+        return _load_profiles_file(path)
+
+    template_present = TEMPLATE_PATH.is_file()
+    override_present = OVERRIDE_PATH.is_file()
+
+    if not template_present and not override_present:
+        raise TaskProfilesError(
+            f"No task-profile catalog found. Looked at: {TEMPLATE_PATH}, then {OVERRIDE_PATH}"
+        )
+
+    template_profiles = _load_profiles_file(TEMPLATE_PATH) if template_present else []
+    if not override_present:
+        return template_profiles
+    override_profiles = _load_profiles_file(OVERRIDE_PATH)
+    if not template_present:
+        return override_profiles
+    return _merge_profiles(template_profiles, override_profiles)
 
 
 # ---------------------------------------------------------------------------
@@ -383,7 +445,15 @@ def main() -> int:
     except TaskProfilesError as exc:
         print(f"error: {exc}")
         return 1
-    print(f"loaded {len(profiles)} profile(s) from {resolve_profiles_path()}")
+    template_present = TEMPLATE_PATH.is_file()
+    override_present = OVERRIDE_PATH.is_file()
+    if template_present and override_present:
+        source = f"merged: {TEMPLATE_PATH.name} + {OVERRIDE_PATH.name}"
+    elif override_present:
+        source = str(OVERRIDE_PATH)
+    else:
+        source = str(TEMPLATE_PATH)
+    print(f"loaded {len(profiles)} profile(s) from {source}")
     for p in profiles:
         zones = ", ".join(z["id"] for z in p["required-zones"])
         families = ", ".join(f["name"] for f in p["content-families"])

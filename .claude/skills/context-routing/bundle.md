@@ -74,9 +74,21 @@ python .claude/scripts/context_bundle.py --profile <profile-id> \
     { "from": "docs/_wiki/pages/stripe-integration.md", "edge": "builds-on", "to": "docs/pricing.md", "depth": 1 }
   ],
   "unsatisfied-zone-requirements": [],
+  "stale-claims-by-doc": {
+    "docs/cost-structure.md": [
+      {
+        "section": "Cost taxonomy",
+        "last-confirmed": "2025-10-15",
+        "see-evidence": "docs/_collections/reports/audit-2025-02-to-2026-04/theo_financial_report.meta.md",
+        "note": "October 2025 baseline; Q1-Q2 2026 actuals captured in audit run, not yet folded back."
+      }
+    ]
+  },
   "escalations": []
 }
 ```
+
+`stale-claims-by-doc` is a separate top-level block (per lesson L-019: extend with new blocks, never fold). It is populated only for pool docs that declare `stale-claims:` in their frontmatter. Consumers that don't care about per-claim staleness ignore the block; the core envelope shape is unchanged. See [document-standards.md "Stale Claims"](../../../docs/_bcos-framework/methodology/document-standards.md) for the frontmatter shape.
 
 ## Resolution semantics (mechanical, deterministic)
 

@@ -40,9 +40,12 @@ try:
     SCHEMA_VERSION = REGISTRY["digest-sidecar"].current
     _USE_REGISTRY = True
 except ImportError:
-    SCHEMA_VERSION = "1.0.0"
+    SCHEMA_VERSION = "1.1.0"
     _USE_REGISTRY = False
-_TOLERATED_VERSIONS = {SCHEMA_VERSION, "0.1.0-provisional"}
+# 1.1.0 is additive over 1.0.0 (new optional Finding fields + new top-level
+# headline). Sidecars from siblings still on 1.0.0 parse fine — the new
+# fields default sensibly. See typed-events.md schema-version section.
+_TOLERATED_VERSIONS = {SCHEMA_VERSION, "1.0.0", "0.1.0-provisional"}
 
 
 @dataclass
@@ -53,6 +56,12 @@ class Finding:
     emitted_by: str
     finding_attrs: dict[str, Any]
     suggested_actions: list[str] = field(default_factory=list)
+    # 1.1.0 additive fields. All optional with backward-compatible defaults
+    # so a 1.0.0 sidecar parses identically to its old self.
+    category: str = "repo-context"   # repo-context | bcos-framework
+    first_seen: str | None = None    # ISO YYYY-MM-DD; None when diary insufficient
+    consecutive_runs: int = 1        # 1 = first emission this tick
+    severity_override: str | None = None  # "stuck" when consecutive_runs >= 3
 
 
 @dataclass
@@ -78,6 +87,7 @@ class ParsedSidecar:
     findings: list[Finding] = field(default_factory=list)
     auto_fixed: list[AutoFix] = field(default_factory=list)
     jobs: list[JobSummary] = field(default_factory=list)
+    headline: str | None = None  # 1.1.0 additive: dispatcher-computed sentence shown atop digest
 
 
 def _require(obj: dict, key: str, ctx: str) -> Any:
@@ -119,6 +129,27 @@ def parse_sidecar(path: Path) -> ParsedSidecar | None:
     findings: list[Finding] = []
     for i, f in enumerate(data.get("findings", [])):
         ctx = f"{path} findings[{i}]"
+        # 1.1.0 fields: optional with backward-compat defaults.
+        category = str(f.get("category", "repo-context"))
+        if category not in ("repo-context", "bcos-framework"):
+            raise ValueError(
+                f"sidecar {ctx}: category {category!r} not in "
+                "{'repo-context', 'bcos-framework'}"
+            )
+        consecutive_runs = int(f.get("consecutive_runs", 1))
+        if consecutive_runs < 1:
+            raise ValueError(
+                f"sidecar {ctx}: consecutive_runs must be >= 1, got {consecutive_runs}"
+            )
+        first_seen = f.get("first_seen")
+        if first_seen is not None and not isinstance(first_seen, str):
+            raise ValueError(f"sidecar {ctx}: first_seen must be str or null")
+        severity_override = f.get("severity_override")
+        if severity_override is not None and severity_override not in ("stuck",):
+            raise ValueError(
+                f"sidecar {ctx}: severity_override {severity_override!r} not in "
+                "{'stuck', null}"
+            )
         findings.append(
             Finding(
                 number=int(_require(f, "number", ctx)),
@@ -127,6 +158,10 @@ def parse_sidecar(path: Path) -> ParsedSidecar | None:
                 emitted_by=str(_require(f, "emitted_by", ctx)),
                 finding_attrs=dict(_require(f, "finding_attrs", ctx)),
                 suggested_actions=list(f.get("suggested_actions", [])),
+                category=category,
+                first_seen=first_seen,
+                consecutive_runs=consecutive_runs,
+                severity_override=severity_override,
             )
         )
 
@@ -152,6 +187,10 @@ def parse_sidecar(path: Path) -> ParsedSidecar | None:
             )
         )
 
+    headline = data.get("headline")
+    if headline is not None and not isinstance(headline, str):
+        raise ValueError(f"sidecar {path}: headline must be str or null")
+
     return ParsedSidecar(
         schema_version=schema_version,
         date=data.get("date"),
@@ -160,6 +199,7 @@ def parse_sidecar(path: Path) -> ParsedSidecar | None:
         findings=findings,
         auto_fixed=auto_fixed,
         jobs=jobs,
+        headline=headline,
     )
 
 
@@ -173,31 +213,41 @@ def write_sidecar(path: Path, sidecar: ParsedSidecar) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
 
+    def _finding_payload(f: Finding) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "number": f.number,
+            "finding_type": f.finding_type,
+            "category": f.category,
+            "verdict": f.verdict,
+            "emitted_by": f.emitted_by,
+            "first_seen": f.first_seen,
+            "consecutive_runs": f.consecutive_runs,
+            "finding_attrs": f.finding_attrs,
+            "suggested_actions": f.suggested_actions,
+        }
+        # severity_override is only present when set; omit otherwise so 1.0.0
+        # consumers parsing the JSON don't see an unexpected null key.
+        if f.severity_override is not None:
+            out["severity_override"] = f.severity_override
+        return out
+
     payload: dict[str, Any] = {
         "schema_version": sidecar.schema_version or SCHEMA_VERSION,
         "date": sidecar.date,
         "overall_verdict": sidecar.overall_verdict,
         "run_at": sidecar.run_at,
-        "findings": [
-            {
-                "number": f.number,
-                "finding_type": f.finding_type,
-                "verdict": f.verdict,
-                "emitted_by": f.emitted_by,
-                "finding_attrs": f.finding_attrs,
-                "suggested_actions": f.suggested_actions,
-            }
-            for f in sidecar.findings
-        ],
-        "auto_fixed": [
-            {"fix_id": x.fix_id, "target": x.target, "detail": x.detail}
-            for x in sidecar.auto_fixed
-        ],
-        "jobs": [
-            {"job": j.job, "verdict": j.verdict, "finding_count": j.finding_count}
-            for j in sidecar.jobs
-        ],
     }
+    if sidecar.headline is not None:
+        payload["headline"] = sidecar.headline
+    payload["findings"] = [_finding_payload(f) for f in sidecar.findings]
+    payload["auto_fixed"] = [
+        {"fix_id": x.fix_id, "target": x.target, "detail": x.detail}
+        for x in sidecar.auto_fixed
+    ]
+    payload["jobs"] = [
+        {"job": j.job, "verdict": j.verdict, "finding_count": j.finding_count}
+        for j in sidecar.jobs
+    ]
 
     p.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n",

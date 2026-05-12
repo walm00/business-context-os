@@ -61,6 +61,85 @@ WIKI_SKIP_PATTERNS = [
 YAML_BLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 YAML_FIELD_RE = re.compile(r'^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.+)$', re.MULTILINE)
 
+# stale-claims: block — top-level YAML list of entries. Each entry is a
+# mapping introduced by `  - ` and continues with `    <key>: <value>` lines.
+# We parse it with a tiny dedicated walker so we can validate per-entry
+# shape (section + last-confirmed mandatory, see-evidence must resolve)
+# without pulling in a real YAML library.
+STALE_CLAIMS_BLOCK_RE = re.compile(
+    r"^stale-claims:\s*\n(?P<body>(?:[ \t]+.*\n?)+)",
+    re.MULTILINE,
+)
+
+
+def _parse_stale_claims_block(block_text):
+    """Parse a `stale-claims:` block into a list of dicts.
+
+    Recognises the shape:
+        stale-claims:
+          - section: "Cost taxonomy"
+            last-confirmed: "2025-10-15"
+            see-evidence: docs/_collections/.../foo.meta.md
+            note: "..."
+          - section: "Another"
+            last-confirmed: "2025-11-01"
+    Returns [] on no entries.
+    """
+    entries = []
+    current = None
+    for raw in block_text.splitlines():
+        if not raw.strip():
+            continue
+        if raw.lstrip().startswith("#"):
+            continue
+        if re.match(r"^\s*-\s+", raw):
+            if current is not None:
+                entries.append(current)
+            current = {}
+            after_dash = re.sub(r"^\s*-\s+", "", raw)
+            key, _, val = after_dash.partition(":")
+            if key:
+                current[key.strip()] = val.strip().strip('"').strip("'")
+            continue
+        if current is not None and re.match(r"^\s+\S", raw):
+            key, _, val = raw.strip().partition(":")
+            if key:
+                current[key.strip()] = val.strip().strip('"').strip("'")
+    if current is not None:
+        entries.append(current)
+    return entries
+
+
+def _validate_stale_claims(raw_content, doc_path):
+    """Validate the stale-claims: list-of-objects block, if present.
+
+    Returns a list of issue strings (empty when valid or absent).
+    """
+    fm_match = YAML_BLOCK_RE.match(raw_content)
+    if not fm_match:
+        return []
+    fm_text = fm_match.group(1)
+    block_match = STALE_CLAIMS_BLOCK_RE.search(fm_text)
+    if not block_match:
+        return []
+    entries = _parse_stale_claims_block(block_match.group("body"))
+    issues = []
+    for i, entry in enumerate(entries):
+        prefix = f"stale-claims[{i}]"
+        if "section" not in entry or not entry["section"]:
+            issues.append(f"{prefix}: missing required field 'section'")
+        if "last-confirmed" not in entry or not entry["last-confirmed"]:
+            issues.append(f"{prefix}: missing required field 'last-confirmed'")
+        evidence = entry.get("see-evidence", "").strip()
+        if evidence:
+            # Repo-relative path must resolve.
+            evidence_path = os.path.join(REPO_ROOT, evidence.replace("/", os.sep))
+            if not os.path.exists(evidence_path):
+                issues.append(
+                    f"{prefix}: see-evidence path does not resolve: {evidence}"
+                )
+    return issues
+
 
 def extract_frontmatter(path):
     try:
@@ -115,6 +194,15 @@ def validate_doc(path):
     doc_type = meta.get("type", "")
     if doc_type and doc_type not in VALID_TYPES:
         issues.append(f"invalid type: '{doc_type}'")
+
+    # Optional stale-claims: block — when present, every entry must have
+    # section + last-confirmed; see-evidence (if given) must resolve.
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw = f.read()
+        issues.extend(_validate_stale_claims(raw, path))
+    except (IOError, UnicodeDecodeError):
+        pass
 
     # Wiki-specific deeper validation — delegate to the hook's logic
     if doc_type == "wiki" and HOOK_AVAILABLE:

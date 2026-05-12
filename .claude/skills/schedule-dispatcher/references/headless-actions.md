@@ -249,6 +249,22 @@ When `natural_language_command` is absent, the recorder writes `null` for that f
 
 ---
 
+### `acknowledge` — added in 1.1.0
+
+- **applies-to:** All 7 `bcos-framework` finding_types: `dispatcher-silent-skip`, `job-reference-missing`, `schema-validation-failed`, `auto-fix-handler-threw`, `installer-seed-missing`, `data-corruption-detected`, `framework-config-malformed`
+- **type:** `state-change`
+- **label:** "Mark read"
+- **reversible-by:** No filesystem mutation occurs — there is nothing to reverse. The resolutions.jsonl row is the only persistence; remove it manually if needed.
+- **telemetry-event:** `framework-issue-acknowledged`
+- **requires-write:** false
+- **default-trigger:** `dashboard-click`
+
+**What it does:** Records the user has seen the framework finding so the cockpit can hide it from the next view. **Does not patch the underlying framework bug** — that work is the framework owner's, via the umbrella's portfolio aggregation of `bcos-framework-issues.jsonl`. This action is the ONLY one the cockpit surfaces for `category: bcos-framework` cards; the Fix-button slot is forcibly absent for them.
+
+**Why no Fix button:** patching framework state (e.g. re-seeding a missing `lifecycle-routing.yml`, hand-editing `schedule-config.json` for missing fields, manually re-creating a job reference file) in a client repo would be overwritten by the next `update.py` run. The owner ships the fix upstream; siblings update; the finding stops emitting. See [`finding-categories.md`](./finding-categories.md) for the load-bearing repo-context vs bcos-framework split.
+
+---
+
 ## Cross-reference: `auto-fix-whitelist.md` (silent tier)
 
 | Concern | Whitelist (silent) | Headless (one-click) |

@@ -80,6 +80,11 @@ __pycache__/
 # Dashboard runtime state (per-machine; the code ships, the runtime doesn't)
 .claude/scripts/bcos-dashboard/__pycache__/
 
+# Recovery staging tree — created by publish.sh / incident-response tooling
+# when stashing dev-only paths during a public publish. Never commit;
+# publish.sh also strips .recovery/ at squash time as a belt-and-braces.
+.recovery/
+
 # === SHARED ONLY ===
 # (BCOS dropped into a multi-tenant or team repo — keep host codebase clean
 # of runtime artifacts AND maintainer-only files. On personal profile, the

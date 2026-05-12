@@ -53,7 +53,7 @@ Profiles describe the **shape** of context needed (patterns, thresholds, ranking
 
 ## The Catalog
 
-Nine profiles ship with the framework template:
+Ten profiles ship with the framework template:
 
 | Profile | When | Notable rule |
 |---|---|---|
@@ -66,8 +66,21 @@ Nine profiles ship with the framework template:
 | `incident:postmortem` | Incident postmortem | Frozen-at-time evidence + decision context |
 | `skill:author` | Authoring or modifying a skill | Framework spec authoritative; ecosystem state load-bearing |
 | `plan:revise` | Revising a planned proposal | Other plans + active data points |
+| `value-lookup:answer` | Answering measurement-shape questions (how much / when / who / top-N / biggest) | **Evidence wins over taxonomy**: collection-sidecar ranked highest, then manifest, then artifact, then active. For when the question shape is measurement, not definition. |
 
 The catalog is loaded by [`load_task_profiles.py`](../../../.claude/scripts/load_task_profiles.py); validated by [`validate_task_profiles.py`](../../../.claude/scripts/validate_task_profiles.py) (wired into FIXED END / doc-lint). Per-repo override at `docs/.context.task-profiles.yml`.
+
+### Catalog merge semantics
+
+When both the framework template and the per-repo override exist, the loader **merges** them — the override no longer replaces the template wholesale:
+
+| Profile ID is… | Result |
+|---|---|
+| In template only | Kept as-is from the framework. |
+| In override only | Added to the catalog after the framework profiles. |
+| In both          | Per-repo override **wins** — its entry replaces the framework's at the same position. |
+
+**Migration note for existing plugins.** If your `docs/.context.task-profiles.yml` exists only because you needed to add a single profile alongside the framework's nine, you can now drop everything except the profile(s) you actually customise. Re-syncing on framework updates is no longer necessary — the merge handles it. (Deep-merging *within* a profile is intentionally not supported: redeclare the whole profile by ID to change it.)
 
 ---
 

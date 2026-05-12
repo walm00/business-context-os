@@ -289,6 +289,14 @@ FINDING_TYPE_LABELS: dict[str, str] = {
     "wiki-true-contradiction":                 "Wiki contradicts canonical source",
     "wiki-authority-asymmetry":                "Wiki claims authority over canonical",
     "wiki-temporal-supersession-candidate":    "Wiki page supersedes canonical version",
+    # Dispatcher framework (7 — added in 1.1.0; category=bcos-framework, acknowledge-only)
+    "dispatcher-silent-skip":                  "Job produced no completion record",
+    "job-reference-missing":                   "Job reference file missing",
+    "schema-validation-failed":                "Typed-event contract violated",
+    "auto-fix-handler-threw":                  "Auto-fix handler crashed",
+    "installer-seed-missing":                  "Framework file not installed",
+    "data-corruption-detected":                "JSONL silent data drop",
+    "framework-config-malformed":              "Framework config malformed",
 }
 
 

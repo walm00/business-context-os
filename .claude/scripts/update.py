@@ -42,6 +42,7 @@ FRAMEWORK_DIRS = [
     ".claude/hooks",
     ".claude/scripts",
     ".claude/skills",
+    ".claude/templates",
     "docs/_bcos-framework/architecture",
     "docs/_bcos-framework/guides",
     "docs/_bcos-framework/methodology",
@@ -75,10 +76,16 @@ FRAMEWORK_FILES = [
 # These survive every BCOS update. The merger that combines base schema +
 # fragments lives at .claude/scripts/_wiki_schema_merge.py.
 
-# .gitignore — merged: new upstream entries are appended, nothing removed
-MERGE_FILES = [
-    ".gitignore",
-]
+# Files that are auto-merged on update.
+#
+# `.gitignore` USED to live here. It now does not: `.gitignore` is a rendered
+# artifact owned by `set_profile.sh` / `bcos_profile.set_profile()`, rendered
+# from `.claude/templates/gitignore.template` (which IS framework-synced via
+# FRAMEWORK_DIRS). After every update we re-render `.gitignore` from the
+# freshly-synced template using the repo's current profile — so personal-
+# profile repos don't get SHARED-only patterns re-introduced on every sync.
+# See `_refresh_gitignore_from_profile()` in this file.
+MERGE_FILES: list[str] = []
 
 # CLAUDE.md — user is shown a diff and chooses what to do
 REVIEW_FILES = [
@@ -204,28 +211,61 @@ def print_diff(upstream_path: str, local_path: str, rel: str, max_lines: int = 6
         print(f"  ... ({len(diff) - max_lines} more lines — save as .upstream to review in full)")
 
 
-def merge_gitignore(upstream_path: str, local_path: str) -> int:
-    """Append upstream .gitignore entries not already present locally. Returns count added."""
-    with open(local_path,   "r", encoding="utf-8") as f:
-        local_lines = [l.rstrip("\n") for l in f.readlines()]
-    with open(upstream_path, "r", encoding="utf-8") as f:
-        up_lines = [l.rstrip("\n") for l in f.readlines()]
+def _refresh_gitignore_from_profile(local_root: Path) -> None:
+    """Re-render `.gitignore` from the freshly-synced template + current profile.
 
-    local_entries = {l.strip() for l in local_lines if l.strip() and not l.strip().startswith("#")}
-    new_entries = [
-        l for l in up_lines
-        if l.strip() and not l.strip().startswith("#") and l.strip() not in local_entries
-    ]
+    The framework owns `.claude/templates/gitignore.template` (synced via
+    FRAMEWORK_DIRS). The repo's profile (`.claude/bcos-profile`, default
+    `shared`) selects which sections of the template land in `.gitignore`.
+    This is the same renderer the dashboard + `set_profile.sh` use — we
+    just invoke it post-update so SHARED-only patterns aren't re-introduced
+    on personal-profile repos every time someone runs `update.py`.
 
-    if not new_entries:
-        return 0
+    Non-fatal: any error logs a hint and returns. Update.py should never
+    abort over a polish step.
+    """
+    # `bcos_profile.py` lives under `.claude/scripts/bcos-dashboard/` and
+    # imports its own `single_repo` from the same folder, so we have to put
+    # that directory on sys.path before importing.
+    dashboard_dir = local_root / ".claude" / "scripts" / "bcos-dashboard"
+    if not (dashboard_dir / "bcos_profile.py").is_file():
+        print(f"  .gitignore: skipped re-render (bcos_profile.py not found — old install?).")
+        return
 
-    with open(local_path, "a", encoding="utf-8") as f:
-        f.write("\n# Added by CLEAR update script\n")
-        for entry in new_entries:
-            f.write(entry + "\n")
+    template_path = local_root / ".claude" / "templates" / "gitignore.template"
+    if not template_path.is_file():
+        print(f"  .gitignore: skipped re-render (template not synced — check FRAMEWORK_DIRS).")
+        return
 
-    return len(new_entries)
+    if str(dashboard_dir) not in sys.path:
+        sys.path.insert(0, str(dashboard_dir))
+
+    try:
+        # Reimport defensively in case an older version was cached earlier
+        # in this same process (the dashboard ships the module; the loader
+        # may have picked up the previous version before sync).
+        import importlib
+        try:
+            import bcos_profile  # type: ignore[import-not-found]
+            importlib.reload(bcos_profile)
+        except Exception:
+            import bcos_profile  # type: ignore[import-not-found]
+
+        current = bcos_profile.read_profile()
+        result = bcos_profile.set_profile(current)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  .gitignore: re-render failed ({type(exc).__name__}: {exc}, non-fatal).")
+        return
+
+    if not result.get("ok"):
+        err = result.get("error", "unknown error")
+        print(f"  .gitignore: re-render failed: {err} (non-fatal).")
+        return
+
+    if result.get("gitignore_changed"):
+        print(f"  .gitignore: re-rendered from template (profile: {current}).")
+    else:
+        print(f"  .gitignore: already current for profile '{current}'.")
 
 
 def merge_reference_index(upstream_path: str, local_path: str) -> int:
@@ -659,7 +699,6 @@ def main():
         print(f"    {len(new_files):3d}  new framework files")
         print(f"    {len(modified_files):3d}  modified framework files")
         print(f"    {len(review_files):3d}  require your review  (CLAUDE.md)")
-        print(f"    {len(merge_files):3d}  auto-merge           (.gitignore)")
         print(f"    {unchanged:3d}  already up to date")
         print()
 
@@ -719,13 +758,13 @@ def main():
             sys.exit(result.returncode)
             # subprocess runs the new version — we exit after it finishes
 
-        # ---------------------------------------------------- merge .gitignore
-        for rel, upstream_path, local_path, _ in merge_files:
-            added = merge_gitignore(upstream_path, local_path)
-            if added:
-                print(f"  .gitignore: merged {added} new entr{'y' if added == 1 else 'ies'} from upstream.")
-            else:
-                print(f"  .gitignore: already contains all upstream entries.")
+        # ----------------------------------- re-render .gitignore from template
+        # Profile-aware. `.gitignore` is not merged from upstream — it is a
+        # rendered output of `.claude/templates/gitignore.template` + the
+        # repo's current profile (`shared` / `personal`). The template was
+        # just synced as part of FRAMEWORK_DIRS above; now we re-render so
+        # personal-profile repos don't get SHARED-only patterns re-added.
+        _refresh_gitignore_from_profile(local_root)
 
         # ------------------------------------------------ merge settings.json
         upstream_settings = os.path.join(upstream_root, ".claude", "settings.json")
