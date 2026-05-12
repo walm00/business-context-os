@@ -23,8 +23,6 @@ Read these files at the start of any context-related work:
 
 Drill into `docs/table-of-context.md`, `docs/current-state.md`, or `docs/document-index.md` only when you need detail.
 
-**Framework update check:** If `.Codex/bcos-Codex-reference.md` exists, compare it against this AGENTS.md once per session. Briefly mention any critical missing instructions. Don't nag.
-
 ---
 
 ## Folder Trust Levels
@@ -66,5 +64,5 @@ For full standards: `docs/_bcos-framework/methodology/document-standards.md`
 
 ---
 
-**Version**: 1.3.0
-**Last Updated**: 2026-04-23
+**Version**: 1.4.0
+**Last Updated**: 2026-05-12

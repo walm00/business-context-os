@@ -47,10 +47,10 @@ Two short `AskUserQuestion` gates, in order: what kind of project this is (0a), 
 
 ### 0-pre. CLAUDE.md self-heal (silent)
 
-Before anything else, run **once** per onboarding session to make sure the BCOS-managed instructions are present in `CLAUDE.md`. This catches the `git clone`-without-`install.sh` case the integrity check in `CLAUDE.md` mentions.
+Before anything else, run **once** per onboarding session to make sure the BCOS-managed instructions are present in `CLAUDE.md`. This catches the `git clone`-without-`install.sh` case: if `CLAUDE.md` exists but lacks the `<!-- BCOS:CORE:START -->` / `<!-- BCOS:CORE:END -->` markers, the framework section is missing or unstructured. The helper below splices it in.
 
 ```bash
-python .claude/scripts/_claude_md.py \
+"$CLAUDE_PROJECT_DIR/.claude/bin/python3" .claude/scripts/_claude_md.py \
   --target CLAUDE.md \
   --source .claude/bcos-claude-reference.md \
   --recovery .claude/bcos-claude-reference.md
