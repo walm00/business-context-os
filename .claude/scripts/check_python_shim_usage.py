@@ -13,8 +13,7 @@ shim path so the framework works on every supported platform.
 Scope (intentionally narrow to avoid false positives):
   - Scans only files we know should obey the convention:
     .claude/hooks/*.sh, .claude/hooks/*.py with shell invocations,
-    .claude/settings.json (hook command strings),
-    .codex/hooks.json, .codex/hooks/*.sh
+    .claude/settings.json (hook command strings)
   - Skips comments (# / // / /*).
   - Skips lines that already contain ".claude/bin/python3".
   - Skips fallback lines that explicitly check for the shim's absence
@@ -43,8 +42,6 @@ def _scoped_files() -> Iterable[Path]:
     scopes = [
         REPO_ROOT / ".claude" / "hooks",
         REPO_ROOT / ".claude" / "settings.json",
-        REPO_ROOT / ".codex" / "hooks",
-        REPO_ROOT / ".codex" / "hooks.json",
     ]
     for s in scopes:
         if s.is_file():
@@ -66,7 +63,6 @@ _INVOCATION_RE = re.compile(
     r'[\'"]?\$CLAUDE_PROJECT_DIR'    # "$CLAUDE_PROJECT_DIR/.claude/..."
     r'|[\'"]?\.\.?/'                  # ./path or ../path
     r'|[\'"]?\.claude/'               # .claude/scripts/...
-    r'|[\'"]?\.codex/'                # .codex/hooks/...
     r')'
 )
 
