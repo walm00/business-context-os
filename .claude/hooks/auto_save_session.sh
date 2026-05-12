@@ -20,6 +20,11 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 STATE_DIR="$PROJECT_DIR/.claude/hook_state"
 SESSIONS_DIR="$PROJECT_DIR/docs/_inbox/sessions"
 
+# Resolve the BCOS Python shim (bypasses Windows MS Store python3 stub).
+# Fall back to bare python3 for transition / pre-shim installs.
+BCOS_PY="$PROJECT_DIR/.claude/bin/python3"
+[ -x "$BCOS_PY" ] || BCOS_PY="python3"
+
 mkdir -p "$STATE_DIR" "$SESSIONS_DIR"
 
 # ---------------------------------------------------------------------------
@@ -29,7 +34,7 @@ INPUT=$(cat)
 
 # Extract fields using python (available everywhere, no jq dependency).
 # Pipe $INPUT to stdin — never interpolate untrusted hook input into a -c string.
-read -r STOP_HOOK_ACTIVE SESSION_ID TRANSCRIPT_PATH <<< "$(printf '%s' "$INPUT" | python3 -c "
+read -r STOP_HOOK_ACTIVE SESSION_ID TRANSCRIPT_PATH <<< "$(printf '%s' "$INPUT" | "$BCOS_PY" -c "
 import json, sys
 try:
     data = json.loads(sys.stdin.read())
@@ -58,7 +63,7 @@ if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
 fi
 
 # Pass transcript path via env var — never interpolate into source.
-EXCHANGE_COUNT=$(BCOS_TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c "
+EXCHANGE_COUNT=$(BCOS_TRANSCRIPT_PATH="$TRANSCRIPT_PATH" "$BCOS_PY" -c "
 import json, os
 count = 0
 path = os.environ.get('BCOS_TRANSCRIPT_PATH', '')

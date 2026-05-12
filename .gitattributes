@@ -5,6 +5,12 @@
 *.sh        text eol=lf
 *.py        text eol=lf
 
+# The POSIX Python shim has no extension — pin LF explicitly so bash on
+# every platform can execute it. The Windows shim is .cmd and needs CRLF
+# (cmd.exe is fragile about line endings in batch files).
+.claude/bin/python3 text eol=lf
+.claude/bin/python3.cmd text eol=crlf
+
 # Also normalize markdown/JSON/YAML so diffs don't flip on Windows commits.
 *.md        text eol=lf
 *.json      text eol=lf

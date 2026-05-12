@@ -178,6 +178,7 @@ These apply when editing any file in `docs/`:
 - Touch the `created` date — it's immutable
 - Add content without checking which document OWNS that topic
 - Edit anything between `<!-- BCOS:CORE:START -->` and `<!-- BCOS:CORE:END -->` markers manually — that block is framework-managed and gets overwritten on update. Add your content outside the markers, or open a PR against the framework
+- **Hardcode bare `python3` in BCOS-controlled hooks/scripts/settings.json commands.** Always use the shim at `.claude/bin/python3` — invoke as `"$CLAUDE_PROJECT_DIR/.claude/bin/python3"` from Claude Code hook commands, or `"$BCOS_PY"` from shell hooks after the standard resolution block (`BCOS_PY="$REPO_ROOT/.claude/bin/python3"; [ -x "$BCOS_PY" ] || BCOS_PY="python3"`). Bare `python3` silently fails on Windows (Microsoft Store stub satisfies `command -v` but exits 49 without running). The shim wraps `py -3` on Windows and passes through on POSIX. `.claude/scripts/check_python_shim_usage.py` is invoked from CI to enforce this.
 
 For full standards: `docs/_bcos-framework/methodology/document-standards.md`. For wiki-zone documents, `docs/_bcos-framework/architecture/wiki-zone.md` is authoritative.
 

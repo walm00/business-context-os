@@ -74,3 +74,16 @@ jobs:
           python-version: "3.12"
       - name: Check ecosystem integration
         run: python3 .claude/scripts/analyze_integration.py --ci
+
+  validate-python-shim:
+    name: Validate Python shim convention
+    runs-on: ubuntu-latest
+    # NOT continue-on-error: drift on the shim convention re-creates the
+    # Windows MS Store stub failure mode we just fixed. Block it hard.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check that BCOS-controlled files use the shim path
+        run: python3 .claude/scripts/check_python_shim_usage.py

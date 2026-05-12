@@ -596,14 +596,17 @@ Scheduled dispatcher runs spawn fresh Claude Code sessions with no human watchin
 Required entries (from the comprehensive shipped allowlist):
 
 - `Bash(python .claude/scripts/:*)` — catch-all for every dispatcher script
-- `Bash(python3 .claude/scripts/:*)` — same, for python3 alias
+- `Bash(python3 .claude/scripts/:*)` — same, for python3 alias (backward compat)
+- `Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 .claude/scripts/:*)` — **shim-prefixed catch-all (required for Windows installs after v1.6).** The shim at `.claude/bin/python3` bypasses the Windows MS Store python3 stub via `py -3`. Without this entry, dispatcher Bash invocations that use the shim path will hit a permission prompt and stall scheduled runs. See `docs/_bcos-framework/architecture/python-shim-contract.md`.
 - `Bash(git status --porcelain)` and `Bash(git commit -m bcos:*)` — auto-commit step
 - `Edit(.claude/quality/**)` and `Write(.claude/quality/**)` — derived state files
 - `Edit(docs/_wiki/index.md)` — wiki refresh
 - `Edit(docs/_archive/**)` — archive moves from headless actions
 - `Skill(bcos-wiki:*)`, `Skill(context-ingest:*)`, `Skill(schedule-tune:*)` — sibling skills the dispatcher delegates to
 
-If the local `.claude/settings.json` is missing any of the above, **stop and run `python .claude/scripts/update.py`** before continuing — the update script's `merge_settings_json` will additively add every missing entry from the shipped settings.json without touching user customizations. Then re-read settings.json to confirm.
+**Also verify the Python shim itself exists:** check that `.claude/bin/python3` (POSIX) or `.claude/bin/python3.cmd` (Windows) is present. If missing, the repo predates v1.6 — running `python .claude/scripts/update.py` (or `bash install.sh` from the upstream source) will create it. The shim is what makes the third allowlist entry above meaningful.
+
+If the local `.claude/settings.json` is missing any of the above, **stop and run `python .claude/scripts/update.py`** before continuing — the update script's `merge_settings_json` will additively add every missing entry from the shipped settings.json without touching user customizations, AND `ensure_python_shim` will create the shim if missing. Then re-read settings.json to confirm.
 
 If the user has a non-default `.claude/settings.local.json` that REJECTS any of these (via a `deny` rule or stale allowlist), surface the conflict and ask the user to resolve before proceeding — do not silently work around it.
 

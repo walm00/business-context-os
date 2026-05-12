@@ -60,6 +60,12 @@ __pycache__/
 
 # Agent worktrees (per-session ephemeral copies; large, machine-local)
 .claude/worktrees/
+# Python shim (.claude/bin/) is INTENTIONALLY TRACKED — same template content
+# on every platform (Win shim uses `py -3`, POSIX shim falls through `py -3`
+# then `/usr/bin/env python3`). Tracking it means fresh clones / second
+# workstations have a working shim immediately, without needing to run
+# install.sh or update.py first. install.sh and update.py still regenerate
+# it idempotently — that's the self-healing layer, not the only delivery.
 
 # Self-learning ladder event log + derived state (kept ignored even on
 # personal — append-only JSONL across multi-machine workflows produces

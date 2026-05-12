@@ -70,6 +70,11 @@
       "Bash(python3 .claude/scripts/run_wiki_source_refresh.py:*)",
       "Bash(python3 .claude/scripts/run_wiki_stale_propagation.py:*)",
 
+      "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 .claude/scripts/:*)",
+      "Bash(.claude/bin/python3 .claude/scripts/:*)",
+      "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 \"$CLAUDE_PROJECT_DIR/.claude/scripts/:*)",
+      "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/:*)",
+
       "Bash(bash .claude/scripts/set_profile.sh:*)",
       "Bash(bash .claude/skills/skill-discovery/find_skills.sh)",
       "Bash(bash .claude/agents/agent-discovery/find_agents.sh)",
@@ -227,7 +232,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/bin/python3\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
             "timeout": 10,
             "statusMessage": "Checking frontmatter compliance..."
           }
@@ -238,7 +243,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/bin/python3\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_frontmatter_check.py\"",
             "timeout": 10,
             "statusMessage": "Checking frontmatter compliance..."
           }
@@ -249,7 +254,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_commit_context_check.py\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/bin/python3\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_commit_context_check.py\"",
             "timeout": 15,
             "statusMessage": "Checking commit for context capture opportunities..."
           }
