@@ -39,10 +39,6 @@ Drill into the heavier orientation docs **when the task calls for it** — the w
 
 For cross-zone search, prefer `/context search <query>` over grep — it ranks against the canonical index.
 
-**Framework update check:** If `.claude/bcos-claude-reference.md` exists, compare it against this CLAUDE.md once per session. Briefly mention any critical missing instructions. Don't nag.
-
-**BCOS section integrity check:** If this file lacks `<!-- BCOS:CORE:START -->` / `<!-- BCOS:CORE:END -->` markers, the framework section is missing or unstructured (likely a `git clone` without `install.sh`). On the next onboarding session, `context-onboarding` will splice them in.
-
 ---
 
 ## Retrieval Playbook
@@ -140,22 +136,15 @@ superseded → docs/_archive/   (historical — do not act on as current)
 
 ---
 
-## Skill Map (intent → skill)
+## Skill defaults (high-priority routing)
 
-| Intent | Skill | Trigger |
-|--------|-------|---------|
-| New content arriving (any kind) | `context-ingest` | "save / integrate / park this" |
-| Plan a non-trivial change | `clear-planner` | Multi-file or architectural work |
-| Search across all zones | `context-routing` | `/context search` |
-| Curate a task-specific bundle | `context-routing` | `/context bundle` |
-| Create / refresh a wiki page | `bcos-wiki` | `/wiki create | refresh | promote` |
-| Audit for drift, duplication, boundary violations | `context-audit` | Periodic; before adding new data points |
-| Tune scheduled maintenance | `schedule-tune` | "run audit weekly" / "skip daydream" |
-| Onboard a fresh repo | `context-onboarding` | First session in a new repo |
-| Step back / strategic reflection | `daydream` | Identify gaps, envision improvements |
-| Manage learned rules | `learning` | List / forget / regenerate |
+Claude Code auto-surfaces every available skill with its description at session start — don't re-list them here. Three defaults override "improvise":
 
-Reach for the matching skill before improvising. If none fits, do the work directly — and consider whether a skill is missing.
+- **Plan a non-trivial change → `clear-planner`** (multi-file or architectural work; mandatory for AGENTING/DOCUMENTATION scenarios)
+- **New content arriving → `context-ingest`** ("save / integrate / park this")
+- **Cross-zone retrieval → `/context search <query>`** (BM25-ranked; cheaper than grep)
+
+For everything else, match the user's request against the system-reminder skill descriptions. If none fits, do the work directly — and consider whether a skill is missing.
 
 ---
 
@@ -178,12 +167,13 @@ These apply when editing any file in `docs/`:
 - Touch the `created` date — it's immutable
 - Add content without checking which document OWNS that topic
 - Edit anything between `<!-- BCOS:CORE:START -->` and `<!-- BCOS:CORE:END -->` markers manually — that block is framework-managed and gets overwritten on update. Add your content outside the markers, or open a PR against the framework
+- Write bare `python3` in BCOS-controlled hooks/scripts/settings.json commands — use `"$CLAUDE_PROJECT_DIR/.claude/bin/python3"` (Claude Code hooks) or `"$BCOS_PY"` (shell hooks, after the standard resolution block). `.claude/scripts/check_python_shim_usage.py` enforces it.
 
 For full standards: `docs/_bcos-framework/methodology/document-standards.md`. For wiki-zone documents, `docs/_bcos-framework/architecture/wiki-zone.md` is authoritative.
 
 ---
 
-**Version**: 1.9.0
-**Last Updated**: 2026-05-09
+**Version**: 1.10.0
+**Last Updated**: 2026-05-12
 
 <!-- BCOS:CORE:END -->
