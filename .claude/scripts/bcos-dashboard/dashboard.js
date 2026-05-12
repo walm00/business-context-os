@@ -831,8 +831,33 @@
   ]);
 
   function _actionItemNode(it, onResolved) {
-    const li = el("li", { class: "actions-inbox__item", "data-fingerprint": String(it.fingerprint || "") });
+    // 1.1.0: surface typed-event metadata on the cockpit card.
+    // - it.category === "bcos-framework" -> acknowledge-only treatment
+    // - it.stuck === true (consecutive_runs >= 3 or severity_override=stuck)
+    //   -> red "stuck (Nx)" badge pinned at the head of the item
+    // - it.footer_note -> small italic footer (used for the framework banner)
+    // All optional; absent fields keep the legacy rendering bit-for-bit.
+    const isFramework = String(it.category || "") === "bcos-framework";
+    const isStuck = it.stuck === true;
+    const liClasses = ["actions-inbox__item"];
+    if (isFramework) liClasses.push("actions-inbox__item--framework");
+    if (isStuck) liClasses.push("actions-inbox__item--stuck");
+    const li = el("li", { class: liClasses.join(" "), "data-fingerprint": String(it.fingerprint || "") });
     const head = el("div", { class: "actions-inbox__head" });
+
+    if (isStuck) {
+      const n = Number(it.consecutive_runs || 3);
+      head.appendChild(el("span", {
+        class: "chip chip--stuck",
+        title: "This finding has appeared " + n + " runs in a row — it won't resolve on its own. First seen: " + (it.first_seen || "?"),
+      }, "🔁 stuck (" + n + "x)"));
+    }
+    if (isFramework) {
+      head.appendChild(el("span", {
+        class: "chip chip--framework",
+        title: "BCOS framework finding — cannot be patched in this repo. Acknowledge only.",
+      }, "🔧 BCOS"));
+    }
     if (it.source_job) {
       const jobChip = el("button", {
         type: "button",
@@ -853,12 +878,17 @@
       title: CHIP_HELP[srcKey] || "",
     }, String(it.display_source || it.source || "?")));
 
+    // Framework findings get "Mark read" semantics (acknowledge only — no
+    // fix happens locally because the next update.py would overwrite). Repo
+    // findings keep the existing Mark-done flow (hidden for 90 days).
     const markBtn = el("button", {
       type: "button",
-      class: "mark-done-btn",
-      title: "Mark this done — hidden for 90 days",
-      "aria-label": "Mark done: " + String(it.title || ""),
-    }, "✓ Mark done");
+      class: "mark-done-btn" + (isFramework ? " mark-done-btn--framework" : ""),
+      title: isFramework
+        ? "Acknowledge — this is a BCOS framework finding. Cannot be patched here."
+        : "Mark this done — hidden for 90 days",
+      "aria-label": (isFramework ? "Mark read: " : "Mark done: ") + String(it.title || ""),
+    }, isFramework ? "✓ Mark read" : "✓ Mark done");
     markBtn.addEventListener("click", async () => {
       markBtn.disabled = true;
       markBtn.textContent = "…";
@@ -946,7 +976,12 @@
       return res;
     }
 
-    if (it.source_job && _ACTION_RUNNABLE.has(String(it.source_job))) {
+    // 1.1.0: suppress "Run now" for framework findings — running the
+    // dispatcher again won't fix a framework bug. Acknowledge is the only
+    // applicable action. The framework owner (Guntis) sees the issue via
+    // the umbrella's portfolio aggregation of bcos-framework-issues.jsonl
+    // and ships a fix upstream.
+    if (!isFramework && it.source_job && _ACTION_RUNNABLE.has(String(it.source_job))) {
       const runHere = el("button", {
         type: "button",
         class: "action-inline-btn action-inline-btn--primary",
@@ -1000,6 +1035,15 @@
       det.appendChild(el("summary", null, "context"));
       det.appendChild(el("div", { class: "actions-inbox__body" }, String(it.body)));
       li.appendChild(det);
+    }
+    // 1.1.0: framework banner footer. Surfaces the "this is BCOS's problem,
+    // not yours" message inline so the user understands acknowledge-only is
+    // by design — not a missing action.
+    if (it.footer_note) {
+      li.appendChild(el("div", {
+        class: "actions-inbox__framework-footer",
+        title: "Framework findings cannot be patched in this repo — they ship up to the BCOS owner via portfolio aggregation.",
+      }, String(it.footer_note)));
     }
     return li;
   }

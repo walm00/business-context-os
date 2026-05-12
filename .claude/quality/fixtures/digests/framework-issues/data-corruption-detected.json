@@ -1,0 +1,29 @@
+{
+  "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
+  "schema_version": "1.1.0",
+  "date": "2026-05-12",
+  "overall_verdict": "amber",
+  "run_at": "2026-05-12T09:00:00Z",
+  "findings": [
+    {
+      "number": 1,
+      "finding_type": "data-corruption-detected",
+      "category": "bcos-framework",
+      "verdict": "amber",
+      "emitted_by": "auto-fix-audit",
+      "first_seen": "2026-05-12",
+      "consecutive_runs": 1,
+      "finding_attrs": {
+        "file": ".claude/quality/ecosystem/resolutions.jsonl",
+        "dropped_line_count": 3,
+        "total_lines": 412,
+        "first_error": "json.JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+      },
+      "suggested_actions": ["acknowledge"]
+    }
+  ],
+  "auto_fixed": [],
+  "jobs": [
+    { "job": "auto-fix-audit", "verdict": "amber", "finding_count": 1 }
+  ]
+}

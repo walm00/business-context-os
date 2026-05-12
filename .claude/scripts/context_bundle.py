@@ -32,8 +32,17 @@ Output envelope:
   "missing-perspectives": [{family, expected-min, actual}, ...],
   "traversal-hops": [{from, edge, to, depth}, ...],
   "unsatisfied-zone-requirements": [zone-id, ...],
+  "stale-claims-by-doc": {                            # NEW (per-section staleness, U3)
+    "<doc-path>": [{section, last-confirmed, see-evidence, note}, ...]
+  },
   "escalations": [str, ...]
 }
+
+`stale-claims-by-doc` is a separate top-level block (per lesson L-019:
+extend with new blocks, never fold into existing ones). It is populated
+only for pool docs that declare `stale-claims:` in their frontmatter.
+Consumers that don't care about per-claim staleness ignore the block; the
+core envelope shape is unchanged.
 
 Hits keep a small subset of context-index doc fields:
 {path, name, zone, cluster, page-type, type, tags, exclusively_owns,
@@ -83,6 +92,72 @@ HIT_FIELDS = (
     "last-reviewed",
     "age_days",
 )
+
+# Pattern for the stale-claims: block inside a doc's frontmatter — matches
+# the same shape that validate_frontmatter._validate_stale_claims accepts.
+_STALE_CLAIMS_BLOCK_RE = re.compile(
+    r"^stale-claims:\s*\n(?P<body>(?:[ \t]+.*\n?)+)",
+    re.MULTILINE,
+)
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
+
+
+def _parse_stale_claims_entries(block_text: str) -> list[dict[str, Any]]:
+    """Mirror of validate_frontmatter._parse_stale_claims_block."""
+    entries: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for raw in block_text.splitlines():
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        if re.match(r"^\s*-\s+", raw):
+            if current is not None:
+                entries.append(current)
+            current = {}
+            after_dash = re.sub(r"^\s*-\s+", "", raw)
+            key, _, val = after_dash.partition(":")
+            if key:
+                current[key.strip()] = val.strip().strip('"').strip("'")
+            continue
+        if current is not None and re.match(r"^\s+\S", raw):
+            key, _, val = raw.strip().partition(":")
+            if key:
+                current[key.strip()] = val.strip().strip('"').strip("'")
+    if current is not None:
+        entries.append(current)
+    return entries
+
+
+def _extract_stale_claims_for_pool(
+    pool: list[dict[str, Any]],
+    repo_root: Path,
+) -> dict[str, list[dict[str, Any]]]:
+    """Return {doc-path: [stale-claim-entry, ...]} for pool docs that declare any.
+
+    Reads each pool doc's file on demand. Silently skips docs whose file is
+    unreadable, has no frontmatter, or has no `stale-claims:` block. Each
+    returned entry is a dict with whatever keys the author wrote — the
+    resolver does not enforce shape here (validate_frontmatter is the gate).
+    """
+    out: dict[str, list[dict[str, Any]]] = {}
+    for doc in pool:
+        path_str = doc.get("path")
+        if not path_str:
+            continue
+        candidate = repo_root / path_str
+        try:
+            text = candidate.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        fm = _FRONTMATTER_RE.match(text)
+        if not fm:
+            continue
+        block = _STALE_CLAIMS_BLOCK_RE.search(fm.group(1))
+        if not block:
+            continue
+        entries = _parse_stale_claims_entries(block.group("body"))
+        if entries:
+            out[path_str] = entries
+    return out
 
 
 class LLMEscalationNotImplementedError(NotImplementedError):
@@ -182,6 +257,11 @@ def resolve_bundle(
     # 8. Unsatisfied required zones.
     unsatisfied = _unsatisfied_zones(profile, docs)
 
+    # 9. Per-doc stale-claims (U3) — surface as a separate top-level block;
+    #    never fold into by-zone / by-family (per lesson L-019).
+    effective_root = repo_root or REPO_ROOT
+    stale_claims_by_doc = _extract_stale_claims_for_pool(pool, effective_root)
+
     local_bundle: dict[str, Any] = {
         "profile-id": profile_id,
         "generated-at": _now_iso(now),
@@ -192,6 +272,7 @@ def resolve_bundle(
         "missing-perspectives": missing,
         "traversal-hops": traversal_hops,
         "unsatisfied-zone-requirements": unsatisfied,
+        "stale-claims-by-doc": stale_claims_by_doc,
         "escalations": escalations,
     }
 

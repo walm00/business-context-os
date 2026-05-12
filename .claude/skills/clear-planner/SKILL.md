@@ -59,14 +59,22 @@ Parse the user's request:
 - What files/systems are involved?
 - Is there a clear objective?
 
-**Create session folder and planning-manifest.json:**
+**Create the session folder + planning-manifest.json in one step:**
 
 ```
 .claude/quality/sessions/{YYYYMMDD}_{HHMMSS}_{slug}/
   planning-manifest.json   <- Track planner's own workflow state
 ```
 
-**Use the relative path verbatim** when invoking `mkdir` — do NOT expand `.claude/quality/sessions/...` into an absolute path (e.g. `C:/Users/.../repo/.claude/...` or `$CLAUDE_PROJECT_DIR/.claude/...`). The shipped allowlist scopes mkdir to the relative form `.claude/quality/sessions/...`; expanding to an absolute path bypasses the rule and triggers a permission prompt that stalls scheduled / unattended runs.
+**Do NOT call `mkdir` first.** Use the `Write` tool directly on
+`.claude/quality/sessions/{YYYYMMDD}_{HHMMSS}_{slug}/planning-manifest.json`.
+Write auto-creates any missing parent directories, and the shipped allowlist
+already covers `Write(.claude/quality/sessions/**)` — so the folder pops into
+existence without a permission prompt, regardless of OS or whether the
+working-dir reference is relative or absolute. (Calling `mkdir` adds a Bash
+permission round-trip with no benefit; previous skill versions did, which
+caused intermittent prompts on Windows where path resolution sometimes
+expanded to absolutes outside the allowlist.)
 
 **If unclear:** Ask clarifying questions before proceeding.
 

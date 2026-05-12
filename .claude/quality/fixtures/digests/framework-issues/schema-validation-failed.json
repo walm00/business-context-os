@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
+  "schema_version": "1.1.0",
+  "date": "2026-05-12",
+  "overall_verdict": "red",
+  "run_at": "2026-05-12T09:00:00Z",
+  "findings": [
+    {
+      "number": 1,
+      "finding_type": "schema-validation-failed",
+      "category": "bcos-framework",
+      "verdict": "red",
+      "emitted_by": "dispatcher",
+      "first_seen": "2026-05-12",
+      "consecutive_runs": 1,
+      "finding_attrs": {
+        "offending_finding_type": "inbox-aged",
+        "validation_error": "finding_attrs missing required key 'age_days'",
+        "run_at": "2026-05-12T09:00:00Z"
+      },
+      "suggested_actions": ["acknowledge"]
+    }
+  ],
+  "auto_fixed": [],
+  "jobs": [
+    { "job": "audit-inbox", "verdict": "error", "finding_count": 1 }
+  ]
+}

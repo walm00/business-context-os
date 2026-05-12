@@ -1,39 +1,32 @@
 # Daily Maintenance Digest — 2026-05-05
 
-**Overall:** 🟡 amber — 5 jobs ran, 2 auto-fixes, 3 action items.
+**🟡 amber** · 5 ran · 3 findings · 2 auto-fixed · 6m12s
+
+**Headline:** 3 action items, 2 auto-fixed; pricing-strategy.md stale 2nd run.
 
 ## ⚠️ Action needed (3)
 
-### 1. inbox aged: docs/_inbox/Q1-notes.md (14 days) — triage
-File has been in `_inbox/` for 14 days with first heading "Q1 customer interview notes". Recommend: triage to `docs/customer-research/` or archive.
-
-### 2. source summary stale: docs/_wiki/source-summary/competitor-x.md (refresh-due 2026-04-22)
-Last refreshed 2026-04-22 (13 days past 30-day window). Source URL responded 200 on last check. Recommend: refresh now.
-
-### 3. stale propagation: docs/_wiki/pages/pricing-strategy.md
-3 builds-on links point to source summaries refreshed >7 days after this page was last reviewed. Recommend: mark-reviewed or update.
+| # | Job | File / Target | Issue | Stickiness |
+|---|---|---|---|---|
+| 1 | `audit-inbox` | `docs/_inbox/Q1-notes.md` | inbox aged 14 days | |
+| 2 | `wiki-source-refresh` | `docs/_wiki/source-summary/competitor-x.md` | refresh due (13d overdue) | |
+| 3 | `wiki-stale-propagation` | `docs/_wiki/pages/pricing-strategy.md` | 3 stale builds-on (max 11d lag) | |
 
 ## 🔧 Auto-fixed (2)
 
-- frontmatter-missing-version: docs/customer-research/persona-builder.md (added version: 1.0.0)
-- xref-trailing-slash: docs/_bcos-framework/guides/folder-conventions.md (normalized 2 links)
+- ✓ `frontmatter-missing-version` on `docs/customer-research/persona-builder.md` (added version: 1.0.0)
+- ✓ `xref-trailing-slash` on `docs/_bcos-framework/guides/folder-conventions.md` (normalized 2 links)
 
-## Per-job summary
+## 📊 Jobs (5)
 
-### audit-inbox — 🟡 amber
-1 item aged past 14-day triage threshold.
-
-### index-health — 🟢 green
-All cross-references valid after 2 auto-normalizations.
-
-### wiki-stale-propagation — 🟡 amber
-1 page has stale builds-on links.
-
-### wiki-source-refresh — 🟡 amber
-1 source summary past refresh-due window.
-
-### wiki-graveyard — 🟢 green
-0 graveyard items aged past archive threshold.
+| Job | | Findings | Note |
+|---|---|---|---|
+| audit-inbox | 🟡 | 1 | |
+| index-health | 🟢 | 0 | |
+| wiki-stale-propagation | 🟡 | 1 | |
+| wiki-source-refresh | 🟡 | 1 | |
+| wiki-graveyard | 🟢 | 0 | |
 
 ---
-_Run at 2026-05-05T07:00:00Z. Full history: .claude/hook_state/schedule-diary.jsonl_
+Run at 2026-05-05T07:00:00Z · `.claude/hook_state/schedule-diary.jsonl`
+Auto-commit: ✗ skipped (amber — findings present)

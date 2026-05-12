@@ -1,15 +1,19 @@
 {
   "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "date": "2026-05-05",
   "overall_verdict": "amber",
   "run_at": "2026-05-05T07:00:00Z",
+  "headline": "3 action items, 2 auto-fixed; pricing-strategy.md stale 2nd run.",
   "findings": [
     {
       "number": 1,
       "finding_type": "inbox-aged",
+      "category": "repo-context",
       "verdict": "amber",
       "emitted_by": "audit-inbox",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
         "file": "docs/_inbox/Q1-notes.md",
         "age_days": 14,
@@ -21,8 +25,11 @@
     {
       "number": 2,
       "finding_type": "refresh-due",
+      "category": "repo-context",
       "verdict": "amber",
       "emitted_by": "wiki-source-refresh",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
         "file": "docs/_wiki/source-summary/competitor-x.md",
         "last_refreshed": "2026-04-22",
@@ -34,8 +41,11 @@
     {
       "number": 3,
       "finding_type": "stale-propagation",
+      "category": "repo-context",
       "verdict": "amber",
       "emitted_by": "wiki-stale-propagation",
+      "first_seen": "2026-05-04",
+      "consecutive_runs": 2,
       "finding_attrs": {
         "file": "docs/_wiki/pages/pricing-strategy.md",
         "stale_builds_on_count": 3,

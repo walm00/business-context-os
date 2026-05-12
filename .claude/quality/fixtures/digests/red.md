@@ -1,47 +1,34 @@
 # Daily Maintenance Digest — 2026-05-05
 
-**Overall:** 🔴 red — 6 jobs ran, 1 auto-fix, 5 action items.
+**🔴 red** · 6 ran · 5 findings · 1 auto-fixed · 7m44s
+
+**Headline:** 3 critical: broken-xref on docs/strategy/2026-roadmap.md; +2 other.
 
 ## ⚠️ Action needed (5)
 
-### 1. broken xref: docs/strategy/2026-roadmap.md → docs/_archive/old-okrs.md
-Cross-reference points to archived document. Source-of-truth violation: active doc must not depend on `_archive/`. Recommend: relink to canonical source or remove reference.
-
-### 2. broken xref: docs/customer-research/personas.md → docs/_inbox/raw-interviews.md
-Cross-reference points to `_inbox/` (raw, untriaged). Recommend: triage target file first, then relink.
-
-### 3. orphan page: docs/_wiki/pages/legacy-pricing.md
-Page has no inbound `builds-on` references and no source-summary anchor. Recommend: archive or attach to a canonical data point.
-
-### 4. graveyard stale: docs/_archive/2024-q3-positioning.md (412 days)
-Archived item past 365-day graveyard threshold. Recommend: move to `.private/_planned-archive/` or delete.
-
-### 5. coverage gap: data point "ICP" (docs/strategy/icp.md) has no wiki explainer
-Canonical data point lacks a `_wiki/pages/` explainer. Recommend: stub a page or mark non-explainable in frontmatter.
+| # | Job | File / Target | Issue | Stickiness |
+|---|---|---|---|---|
+| 1 | `index-health` | `docs/strategy/2026-roadmap.md` | broken-xref → `_archive/old-okrs.md` | |
+| 2 | `index-health` | `docs/customer-research/personas.md` | broken-xref → `_inbox/raw-interviews.md` | |
+| 3 | `index-health` | `docs/_wiki/pages/legacy-pricing.md` | orphan page (no inbound builds-on) | |
+| 4 | `wiki-graveyard` | `docs/_archive/2024-q3-positioning.md` | stale 412d (threshold 365d) | |
+| 5 | `wiki-coverage-audit` | `docs/strategy/icp.md` | coverage gap — no wiki explainer | |
 
 ## 🔧 Auto-fixed (1)
 
-- frontmatter-missing-last-updated: docs/strategy/objectives.md (set to 2026-05-04)
+- ✓ `missing-last-updated` on `docs/strategy/objectives.md` (set to 2026-05-04)
 
-## Per-job summary
+## 📊 Jobs (6)
 
-### audit-inbox — 🟢 green
-0 items aged past triage threshold.
-
-### index-health — 🔴 red
-2 broken cross-references; 1 orphan wiki page.
-
-### wiki-coverage-audit — 🔴 red
-1 canonical data point missing wiki explainer.
-
-### wiki-graveyard — 🟡 amber
-1 archived item past 365-day threshold.
-
-### wiki-stale-propagation — 🟢 green
-0 stale builds-on chains.
-
-### wiki-source-refresh — 🟢 green
-0 sources past refresh-due window.
+| Job | | Findings | Note |
+|---|---|---|---|
+| audit-inbox | 🟢 | 0 | |
+| index-health | 🔴 | 3 | |
+| wiki-coverage-audit | 🔴 | 1 | |
+| wiki-graveyard | 🟡 | 1 | |
+| wiki-stale-propagation | 🟢 | 0 | |
+| wiki-source-refresh | 🟢 | 0 | |
 
 ---
-_Run at 2026-05-05T07:00:00Z. Full history: .claude/hook_state/schedule-diary.jsonl_
+Run at 2026-05-05T07:00:00Z · `.claude/hook_state/schedule-diary.jsonl`
+Auto-commit: ✗ skipped (red verdict — block_on_red=true)

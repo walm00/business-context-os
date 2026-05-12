@@ -1,28 +1,18 @@
 # Daily Maintenance Digest — 2026-05-05
 
-**Overall:** 🟢 green — 4 jobs ran, 0 auto-fixes, 0 action items.
+**🟢 green** · 4 ran · 0 findings · 0 auto-fixed · 4s
 
-## ⚠️ Action needed (0)
+**Headline:** 10th consecutive green run.
 
-None.
+## 📊 Jobs (4)
 
-## 🔧 Auto-fixed (0)
-
-None.
-
-## Per-job summary
-
-### audit-inbox — 🟢 green
-Inbox is clear. 0 items aged past triage threshold.
-
-### index-health — 🟢 green
-All cross-references valid. 0 broken xrefs, 0 orphan pages.
-
-### wiki-stale-propagation — 🟢 green
-0 source summaries due for propagation review.
-
-### wiki-source-refresh — 🟢 green
-0 sources past refresh-due window.
+| Job | | Findings | Note |
+|---|---|---|---|
+| audit-inbox | 🟢 | 0 | |
+| index-health | 🟢 | 0 | |
+| wiki-stale-propagation | 🟢 | 0 | |
+| wiki-source-refresh | 🟢 | 0 | |
 
 ---
-_Run at 2026-05-05T07:00:00Z. Full history: .claude/hook_state/schedule-diary.jsonl_
+Run at 2026-05-05T07:00:00Z · `.claude/hook_state/schedule-diary.jsonl`
+Auto-commit: ✓ committed (abc1234)

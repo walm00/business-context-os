@@ -49,7 +49,7 @@ Read `.claude/quality/schedule-config.json`. Validate required fields:
 - `auto_fix.whitelist` (array of strings)
 - `digest` (object) — `write_file` (bool) and `path` (string)
 
-If the config is malformed, STOP. Write a diary entry `dispatcher.error` with the validation failure, report to the user: "schedule-config.json is malformed — fix before the dispatcher can run. Use the `schedule-tune` skill to repair it."
+If the config is malformed, STOP. Emit a typed `framework-config-malformed` finding (schema 1.1.0+, `category: "bcos-framework"`) with `finding_attrs = {file: ".claude/quality/schedule-config.json", parse_error: "{message}" | null, missing_fields: [...] | null}`. Write the minimum-shape sidecar (with this finding + `overall_verdict: "red"` + empty `jobs[]`) AND a `framework-config-malformed` row to `.claude/hook_state/bcos-framework-issues.jsonl` via the Step 7c writer pattern. Write a diary entry `dispatcher.error` with the validation failure. Report to the user: "schedule-config.json is malformed — fix before the dispatcher can run. Use the `schedule-tune` skill to repair it." Note: the chat-echo follows the **error scenario** template from Step 7.3, not the normal compact card.
 
 ---
 
@@ -148,12 +148,68 @@ After Step 4 completes (last job returned), verify that **every job listed in St
 2. Read back the diary entries appended during this tick (use the dispatcher's in-memory record, or the tail of `.claude/hook_state/schedule-diary.jsonl` filtered to the current run's `ts` prefix if you're running on-demand).
 3. For each job in `expected_jobs`, confirm a diary entry exists. If any job is missing:
    - Append a `verdict: "error"` diary entry for it with `"notes": "job skipped silently — no completion record produced"`.
-   - Add a `dispatcher-silent-skip` action item to the digest: `"⚠️ {job_id} was scheduled but produced no completion record. Investigate the job reference / runner before next dispatcher tick."`
+   - **Schema 1.1.0+:** emit a typed `dispatcher-silent-skip` finding (`category: "bcos-framework"`, verdict `red`, `emitted_by: "dispatcher"`) into the in-memory findings list — Step 4c will then route it through stickiness compute and Step 7c will append it to `bcos-framework-issues.jsonl`. `finding_attrs = {job: "{job_id}", expected_after: "{tick_start_ts}", last_diary_ts: "{tail_ts}" | null, missing_artifact: null}`. This replaces the prose action-item; the dashboard renders it as an acknowledge-only card with "Reported to BCOS" footer.
    - Set the overall dispatcher verdict to `red` (silent skips are critical — they mean the safety surface lied).
 
 Do NOT proceed to Step 5 (auto-fixes) until the checklist passes. A silent skip on a destructive job (lifecycle-sweep auto-routing, wiki-archive-expired-post-mortem, etc.) would let policy violations land unannounced; better to halt and surface.
 
 **Rationale.** This was added after the 2026-05-05 incident in `theo-portfolio` where `command-center-schedules-snapshot` silently dropped out of a tick, leaving the downstream dashboard 24h stale with no error trail. Dispatcher behavior is now: "every scheduled job either completes with a verdict or surfaces as a `red` error — no third path."
+
+---
+
+## Step 4c: Compute Headline + Finding Stickiness
+
+**Added in schema 1.1.0.** Before applying auto-fixes (Step 5) or rendering the digest (Step 7), enrich each finding emitted in Step 4 with three computed fields and produce the run's headline string. This step is the load-bearing source of the dashboard's stuck-badge UX — without it, every dispatcher tick re-emits findings as if they were fresh and the user has no signal that a problem is recurring.
+
+**Inputs:** raw findings from Step 4, last 30 diary entries (already read in Step 3), the classifier in [`references/finding-categories.md`](./references/finding-categories.md).
+
+### Per-finding enrichment
+
+For each `Finding` in the in-memory findings list:
+
+1. **Resolve `category`** by looking up `finding_type` in the classifier table in `finding-categories.md`. Default: `repo-context` if unmapped (sidecars stay backward-compat with 1.0.0 emitters). Any unmapped ID is a contract violation — emit a `schema-validation-failed` framework finding alongside.
+2. **Compute the finding-identity tuple** `(finding_type, primary_attr_value, emitted_by)` — the primary_attr key per finding_type is in `finding-categories.md`'s classifier tables. For singletons (no per-instance primary key, e.g. `lessons-count-high`) use the string `"singleton"`.
+3. **Match against prior tick.** Scan diary entries from the **immediately-prior dispatcher tick** (the most-recent run before today, identified by the latest `ts` < today's run window). If any prior finding has the same identity tuple:
+   - `consecutive_runs = prior.consecutive_runs + 1`
+   - `first_seen = prior.first_seen` (preserve)
+4. **No match → fresh finding.**
+   - `consecutive_runs = 1`
+   - `first_seen = today` (ISO `YYYY-MM-DD`)
+5. **Strict reset semantics.** If the identity tuple appeared 2 ticks ago but NOT in the immediately-prior tick, it's a fresh finding (consecutive_runs = 1). One missing tick resets — the dispatcher does not "remember" through gaps. Rationale: a finding that disappeared and came back is a different incident than one that never went away; treating them the same would mask intermittent flicker.
+6. **Stuck severity override.** When `consecutive_runs >= 3`, mark `severity_override = "stuck"` in-memory (the renderer in Step 7 picks this up; the sidecar JSON also gets a `severity_override` field if present).
+7. **Acknowledge-only routing for framework findings.** If `category == "bcos-framework"`, force `suggested_actions = ["acknowledge"]`. The job may have proposed other actions; the dispatcher overrides. Framework findings never get Fix buttons.
+
+If the diary is empty or insufficient (< 1 prior tick available), every finding gets `consecutive_runs = 1, first_seen = today`. The count auto-corrects on subsequent runs.
+
+### Headline computation
+
+The headline is a single sentence rendered at the top of both the .md digest (Step 7) and the chat echo. Computed deterministically from the enriched findings + per-job verdicts:
+
+| Run shape | Headline template |
+|---|---|
+| Green clean (0 findings, 0 framework) | "{Nth consecutive green run.}{recovery callout if any job verdict flipped error→green this tick.}" |
+| Green with frequency suggestions only | "All {N} jobs green. {M} frequency suggestions to consider." + recovery callout if any |
+| Amber, no stuck | "{N} action items{; M auto-fixed if M>0}{; recovery callout if any}." |
+| Amber WITH stuck (>=1 finding with consecutive_runs >= 3) | "{N} stuck — oldest from {first_seen of oldest stuck finding}. Will not resolve on its own." |
+| Red (any critical / silent-skip / framework red) | "{N} critical: {top finding's display label}{; '+M other' if N>1}." |
+| Error (>=1 job verdict='error') | "{N} jobs errored: {first errored job's name}{; '+M other' if N>1}." |
+
+**Recovery callout** = "lifecycle-sweep recovered (3 prior errors cleared)" or similar. Computed by scanning prior 3 diary entries for the same job_id with `verdict in {"error", "red"}` followed by today's `"green"`.
+
+The headline gets a new top-level field in the sidecar JSON: `headline` (string), added in 1.1.0.
+
+### Output
+
+After Step 4c completes, the in-memory findings list has all 1.1.0 fields populated:
+- `category` (always)
+- `first_seen` (always)
+- `consecutive_runs` (always, ≥1)
+- `severity_override` (only when `consecutive_runs >= 3`)
+- `suggested_actions` (forced to `["acknowledge"]` for framework category)
+
+And the run has a `headline` string ready for Step 7.
+
+Step 5 (auto-fix application) then operates only on `category: "repo-context"` findings. Framework findings are NEVER auto-fixable — the dispatcher refuses to apply any whitelisted fix that targets a framework path.
 
 ---
 
@@ -196,46 +252,116 @@ Do NOT change the config automatically. The user must go through `schedule-tune`
 
 ## Step 7: Write Consolidated Digest
 
-If `digest.write_file` is true, write a single Markdown file to `digest.path` (default `docs/_inbox/daily-digest.md`). **Overwrite** — one file, always latest. History lives in the diary.
+**Schema 1.1.0+: the digest is rendered FROM the typed-event sidecar, not authored separately.** The dispatcher writes two co-located artifacts:
 
-Structure of the digest:
+- `docs/_inbox/daily-digest.json` — typed-event sidecar (canonical, dashboard reads this; see [`typed-events.md`](../../../docs/_bcos-framework/architecture/typed-events.md))
+- `docs/_inbox/daily-digest.md` — markdown renderer of the same in-memory data (humans without a dashboard read this)
+
+Both are overwritten each run. One file, always latest. History lives in the diary.
+
+**Field parity is non-negotiable.** If the .md says "3 action items" the JSON `findings[]` must have 3 entries with `category: "repo-context"`. The wiring test `test_digest_typed_events.py` asserts this; do not let them drift.
+
+### 7.1 Markdown template
+
+Fixed structure. Conditional sections render ONLY when their counts are non-zero — a green clean run is ~5 lines, an amber run with 5 findings is ~40 lines. Markdown tables for lists of ≥2 (eyes track columns faster than bullets). Single-item sections render as a one-line bullet.
 
 ```markdown
 # Daily Maintenance Digest — {YYYY-MM-DD}
 
-**Overall:** {🟢 green|🟡 amber|🔴 red} — {N} jobs ran, {M} findings, {K} auto-fixed.
+**{🟢 green | 🟡 amber | 🔴 red | ⚠️ error}** · {N} ran · {findings-summary} · {K} auto-fixed · {duration}
 
-## ⚠️ Action needed ({count})
+**Headline:** {computed in Step 4c}
 
-- [ ] {job-name}: {short description of action}
-- [ ] ...
+## ⚠️ Action needed ({count_repo_context_amber_red})
 
-(If no actions, write "None — everything's clean.")
+| # | Job | File / Target | Issue | Stickiness |
+|---|---|---|---|---|
+| 1 | `{emitted_by}` | `{primary_attr}` | {one-line meaning} | {`🔁 Nth run` if consecutive_runs ≥ 3, else blank} |
+| 2 | ... | ... | ... | ... |
 
 ## 🔧 Auto-fixed ({count})
 
-- {job-name}: {fix description}
-- ...
+- ✓ `{fix_id}` on `{target}` ({detail})
+- ✓ ...
 
-## Per-job summary
+## 🔧 BCOS framework issues ({count_bcos_framework})
 
-### index-health — {🟢 green|🟡 amber|🔴 red|⚠️ error}
-{one-line summary, optional details}
+> **Acknowledge-only.** These are framework bugs reported for transparency. Do not attempt to fix in this repo — `update.py` would overwrite. The framework owner is responsible for these.
 
-### daydream-lessons — {🟢 green|🟡 amber|🔴 red|⚠️ error}
-...
+| # | Finding | Detail | First seen |
+|---|---|---|---|
+| 1 | `{finding_type}` | {primary_attr_value} | {first_seen} |
 
-## 💡 Frequency suggestions
+## 📊 Jobs ({N})
 
-- {📉 or 📈 prefix}{suggestion line with exact command the user can say}
+| Job | | Findings | Note |
+|---|---|---|---|
+| {job} | {🟢 green / 🟡 amber / 🔴 red / ⚠️ error} | {finding_count} | {`📉 suggest weekly` / `✅ recovered` / `🔁 stuck` as applicable} |
+| ... | ... | ... | ... |
 
-(If none, omit this section entirely.)
+## 💡 Suggestions ({M}) — say "tune schedule"
+
+- 📉 `{job}` {current_schedule} → {suggested_schedule} · {reason}
+- 📈 ...
 
 ---
-_Run at {timestamp}. Full history: `.claude/hook_state/schedule-diary.jsonl`_
+Run at {ISO timestamp} · `.claude/hook_state/schedule-diary.jsonl`
+Auto-commit: {✓ committed (sha) | ✗ skipped (reason)}
 ```
 
-Also echo a compressed version of this report to the chat output so the user sees it without opening the file.
+### 7.2 Section-render rules
+
+| Section | Rendered when | Notes |
+|---|---|---|
+| Verdict bar | Always | Single line; emoji + counts + duration. **`{findings-summary}` shape:** if framework findings count is 0, render `"{M} findings"` (single number). If ≥1 framework finding, render split form `"{M_repo} repo · {M_framework} framework"` so the user immediately sees the split. Either way, total = M_repo + M_framework. |
+| `Headline` | Always | One sentence from Step 4c |
+| `⚠️ Action needed` | `≥1` repo-context finding with verdict amber/red | Table for ≥2 rows; single-line bullet for exactly 1 |
+| `🔧 Auto-fixed` | `≥1` `auto_fixed[]` entry | Bullet list (rare to exceed 5) |
+| `🔧 BCOS framework issues` | `≥1` `category: "bcos-framework"` finding | Separated block with acknowledge-only banner — never folded into `Action needed` |
+| `📊 Jobs` | Always (always ≥1 job ran) | Table; verdict emoji + finding count + inline status markers in Note column |
+| `💡 Suggestions` | `≥1` `frequency-suggestion` finding | Bullet list |
+| Footer | Always | Run timestamp, diary path, auto-commit status |
+
+**Inline status markers in the Jobs table** (Note column):
+
+| Marker | When |
+|---|---|
+| `📉 suggest weekly` (or similar) | A `frequency-suggestion` finding targets this job |
+| `✅ recovered` | This job's prior 3 diary entries had `error`/`red` and today is `green` |
+| `🔁 stuck (Nx)` | This job has ≥1 finding with `consecutive_runs ≥ 3`; N = max consecutive_runs across its findings |
+
+### 7.3 Chat-echo (3-line compact card per scenario)
+
+After writing the .md file, echo a FIXED 3-line markdown block to the chat output. **Do not improvise.** The block is what every Claude Code dashboard session card shows; deterministic formatting keeps the dashboard scannable across repos.
+
+The shape is always:
+
+```markdown
+**{verdict-emoji} {repo-or-portfolio-name} {state}** · {ran} ran · {findings} findings · {fixed} fixed
+{top-line: ONE sentence — usually identical to the .md headline}
+→ {action hint with concrete commands the user can say}
+```
+
+The third line ALWAYS gives the user a concrete next action. Pick the hint per scenario:
+
+| Scenario | Verdict bar example | Top line | Action hint |
+|---|---|---|---|
+| Green clean | `**🟢 BCOS green** · 1 ran · 0 findings · 0 fixed · 4s` | `Headline string from Step 4c, e.g. "10th consecutive green run."` | `→ Nothing to act on. Say "mark read" or ignore.` |
+| Green with suggestions | `**🟢 BCOS green** · 9 ran · 0 findings · 0 fixed · 5m` | `All 9 jobs green. 3 frequency suggestions emitted.` | `→ Say "tune schedule" / "show suggestions" / "ignore".` |
+| Amber, no stuck | `**🟡 BCOS amber** · 9 ran · 2 findings · 0 fixed` | `Top: {finding type} on {primary_attr}{; +N other}.` | `→ Say "fix it" / "show digest" / "mark read".` |
+| Amber WITH stuck | `**🟡 BCOS stuck** · 9 ran · 3 findings (2 stuck)` | `2 findings unresolved 3+ runs — won't resolve on their own.` | `→ Say "fix it" / "show stuck" / "snooze 7d".` |
+| Red critical / silent-skip | `**🔴 BCOS red** · 5 ran · 2 repo · 1 framework` | `{finding_type} on {primary_attr}{; +N other}.` | `→ Open daily-digest.md for the safety surface. Say "retry" / "investigate".` |
+| Error (job crashed) | `**⚠️ BCOS error** · 9 scheduled, 7 clean, 2 errored` | `{first errored job} {error message snippet}{; +N other}.` | `→ Say "retry failed jobs" / "show errors" / "skip".` |
+
+The verdict bar's `{findings-summary}` segment uses the same split rule as Step 7.2 — `"3 findings"` when zero framework, `"2 repo · 1 framework"` when ≥1 framework.
+
+**When framework findings present** (regardless of scenario), append ONE extra line BEFORE the action hint:
+
+```markdown
+⚠️ {N} BCOS framework issue{s} logged (acknowledge-only — Guntis will fix in next release)
+```
+
+This is the cleanest possible chat surface for the user across all dispatcher invocations. The full detail lives in `docs/_inbox/daily-digest.md`; the chat just orients and hands off.
 
 ---
 
@@ -272,6 +398,53 @@ If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), co
 5. Never create a new branch. Never push. Never skip hooks.
 
 This mirrors the update.py policy: "commit only if the tree is clean outside the files we own." If a user has in-progress work, the dispatcher stays out of the way entirely.
+
+---
+
+## Step 7c: Append BCOS-Framework Issues to Local Log
+
+**Added in schema 1.1.0.** When this dispatcher tick produced any finding with `category: "bcos-framework"`, append one JSONL line per such finding to `.claude/hook_state/bcos-framework-issues.jsonl`.
+
+This local log is the **producer side** of the umbrella portfolio-aggregation contract (see [`portfolio-framework-issues-feed.md`](../../../docs/_bcos-framework/architecture/portfolio-framework-issues-feed.md)). Each sibling repo writes its own log; the umbrella's Command Center walker (opt-in, only when umbrella installed) reads and aggregates across siblings. A BCOS install with no umbrella still writes the log — it just sits locally until somebody (or the dashboard) reads it. **No opt-out at the framework level**: every sibling writes its own log on every tick when framework findings present. Transparent by default.
+
+### Line shape
+
+One JSON object per line, written via the same `append_diary.py` atomic-append helper used for the diary (avoids the sensitive-file approval prompt on `.claude/` writes):
+
+```json
+{
+  "ts": "2026-05-12T09:00:42Z",
+  "run_at": "2026-05-12T09:00:00Z",
+  "sibling_id": null,
+  "finding_type": "dispatcher-silent-skip",
+  "verdict": "red",
+  "emitted_by": "dispatcher",
+  "first_seen": "2026-05-12",
+  "consecutive_runs": 1,
+  "finding_attrs": { "...": "per typed-events.md shape" }
+}
+```
+
+Fields:
+- `ts` — when the log line was appended (line-level timestamp; distinct from `run_at`)
+- `run_at` — when the dispatcher tick started (matches the sidecar's top-level `run_at`)
+- `sibling_id` — **always `null` on the producer side.** The umbrella walker fills this in when aggregating, prefixed with the sibling's project ID from `.bcos-umbrella.json`
+- `finding_type`, `verdict`, `emitted_by`, `first_seen`, `consecutive_runs`, `finding_attrs` — copied verbatim from the Finding in `daily-digest.json`
+
+### When NOT to write
+
+- Zero framework findings this tick → do not write anything to the file. The log only grows when something happened. (Reader code handles "file does not exist" as "no framework issues from this sibling".)
+- Framework finding categorised as `repo-context` by mistake (classifier bug) → do not write. Surface a `schema-validation-failed` framework finding instead and let the next tick correct.
+
+### Retention + size
+
+Framework issues are append-only. Never trimmed by BCOS itself. The umbrella walker applies its own retention window (default 7 days for portfolio view) when reading — the underlying file keeps the full history for audit. Expected size: a clean dev cycle produces 0 lines; a single bug-cycle from emit → fix → next-update can produce up to 1 line per affected sibling per dispatcher tick. Realistically under 1MB per sibling per year.
+
+### Failure modes
+
+- File does not exist → create on first append (the helper handles this).
+- Write fails → log the failure as a NEW framework finding (`framework-config-malformed` with `finding_attrs.parse_error = "log write failed: {message}"`) and continue. The dispatcher does NOT retry — repeated failures are caught by the next tick's safety surface.
+- Disk full → same as write fails. The dispatcher's job is to surface, not to ensure infinite reliability.
 
 ---
 
@@ -439,12 +612,13 @@ The morning scheduled run always OVERWRITES `daily-digest.md` fresh — so yeste
 The dispatcher is meant to survive imperfect repos:
 
 - Missing config → stop with a helpful error (see Preconditions)
-- Malformed config → stop, don't guess
-- A job reference file is missing → skip that job, log to diary, continue
-- A job errors → log `"verdict":"error"`, continue
+- Malformed config → emit `framework-config-malformed` typed finding (see Step 1), stop, don't guess
+- A job reference file is missing → emit `job-reference-missing` typed finding (`category: "bcos-framework"`, verdict `red`, `finding_attrs = {job: "{name}", expected_path: ".claude/skills/schedule-dispatcher/references/job-{name}.md"}`), skip that job, log to diary, continue. The framework finding routes to `bcos-framework-issues.jsonl` via Step 7c.
+- A job errors → log `"verdict":"error"`, continue. If the error originated in a framework-managed code path (auto-fix handler, dispatcher itself), also emit a `auto-fix-handler-threw` framework finding.
 - Diary file doesn't exist → create it, write the first entry
+- A JSONL loader reports `_LAST_LOAD_REPORT.dropped > 0` → emit `data-corruption-detected` typed finding with the file path + dropped line count
 
-Never silently swallow errors. Every dispatcher run produces either a digest OR a user-facing error message.
+Never silently swallow errors. Every dispatcher run produces either a digest OR a user-facing error message. **Schema 1.1.0+: framework-level error conditions emit typed `bcos-framework` findings rather than prose-only notes**, so they route through the same dashboard + portfolio aggregation surface as scheduled findings.
 
 ---
 

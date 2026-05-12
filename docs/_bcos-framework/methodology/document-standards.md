@@ -58,6 +58,11 @@ source: "https://..."                 # Original source if migrated from elsewhe
 confidentiality: internal             # public | internal | confidential | restricted
 lifecycle:                             # Exit-trigger declaration; consumed by lifecycle-sweep job
   archive_when: "proposal-sent"        # See "Lifecycle Triggers" section below
+stale-claims:                          # Per-section staleness flags; consumed by bundle resolver
+  - section: "Cost taxonomy"
+    last-confirmed: "2025-10-15"
+    see-evidence: docs/_collections/reports/audit-2025-02-to-2026-04/theo_financial_report.meta.md
+    note: "October 2025 baseline; Q1-Q2 2026 actuals captured in audit run, not yet folded back."
 ---
 ```
 
@@ -81,6 +86,7 @@ lifecycle:                             # Exit-trigger declaration; consumed by l
 | `source` | No | Where the original content came from |
 | `confidentiality` | No | Access level classification |
 | `lifecycle` | No | Nested object declaring an exit trigger — when/where this doc should move out of the active zone. Consumed by the `lifecycle-sweep` job (see "Lifecycle Triggers" section below). |
+| `stale-claims` | No | List of structured per-section staleness flags. Each entry names a section of this doc whose values are known-stale, points at fresher evidence, and notes what to reconcile. Consumed by the bundle resolver (surfaces in envelope) and by retrieval-time freshness checks. See "Stale Claims" section below. |
 
 Wiki-zone pages add fields such as `page-type`, `domain`, `exclusively-owns`, `builds-on`, `references`, `last-reviewed`, and source-summary provenance fields. Source summaries also keep `last-fetched`; that records source refresh, while `last-reviewed` records validation of the authored summary. The authoritative list lives in `docs/_wiki/.schema.yml`; the framework fallback template is `docs/_bcos-framework/templates/_wiki.schema.yml.tmpl`.
 
@@ -218,6 +224,78 @@ lifecycle:
 - **Not a workflow tracker.** It declares an *exit trigger*, not the doc's current operational state. Use `status` for state.
 - **Not required.** A doc without `lifecycle` is still valid; the sweep falls back to routing-rule pattern match.
 - **Not the only signal.** The sweep composes lifecycle + body-markers + reality cross-check + routing-rule pattern match. A trigger fires only when at least two of these agree (configurable confidence tier in `lifecycle-routing.yml`).
+
+### Stale Claims
+
+The `stale-claims:` field declares **per-section staleness** — finer-grained than `last-updated`, which is doc-wide. A canonical doc can be structurally fresh (`last-updated: 2026-05-01`) yet still contain numbers from six months ago. The resolver has no way to know unless the author says so.
+
+The field is **optional**. Prose freshness flags remain valid; `stale-claims:` upgrades them to a structured form the bundle resolver can read.
+
+#### Shape
+
+A list of entries; each entry is an object:
+
+| Field | Required | Description |
+|---|---|---|
+| `section` | Yes | Human-readable name (or section heading) inside this doc whose claims are known stale. Free text. |
+| `last-confirmed` | Yes | ISO date the values in that section were last verified. |
+| `see-evidence` | No | Repo-relative path to a fresher source (typically a `_collections/` sidecar or manifest). Must resolve. |
+| `note` | No | Short prose describing what is stale and how it diverges. |
+
+#### How the framework uses it
+
+- **Bundle resolver** ([`context_bundle.py`](../../../.claude/scripts/context_bundle.py)): surfaces `stale-claims-by-doc` as a separate top-level envelope block. Existing `by-zone` / `by-family` are untouched — consumers opt in.
+- **Frontmatter validation**: rejects entries missing `section` or `last-confirmed`; warns when `see-evidence` does not resolve.
+- **Wake-up generator / audit**: may count `stale-claims:` entries per doc and surface in `.wake-up-context.md`.
+
+#### Worked examples
+
+**Example 1 — single stale section pointing at a derived-report sidecar:**
+
+```yaml
+---
+name: "Cost Structure"
+type: data-point
+cluster: financial
+version: "2.1.0"
+status: active
+created: "2025-10-15"
+last-updated: "2026-05-01"
+stale-claims:
+  - section: "Cost taxonomy and normalized burn"
+    last-confirmed: "2025-10-15"
+    see-evidence: docs/_collections/reports/audit-2025-02-to-2026-04/theo_financial_report.meta.md
+    note: "October 2025 baseline; Q1-Q2 2026 actuals captured in audit run, not yet folded back."
+---
+```
+
+**Example 2 — multiple stale sections in the same doc:**
+
+```yaml
+stale-claims:
+  - section: "Cost taxonomy"
+    last-confirmed: "2025-10-15"
+    see-evidence: docs/_collections/reports/audit-2025-02-to-2026-04/theo_financial_report.meta.md
+  - section: "Monthly burn — €16k claim at line 53"
+    last-confirmed: "2025-10-15"
+    see-evidence: docs/_collections/reports/audit-2025-02-to-2026-04/theo_financial_report.meta.md
+    note: "Actual investor-view monthly average is ~€40k; gap is too large to be one-off-only."
+```
+
+**Example 3 — no fresh evidence yet, just a flag:**
+
+```yaml
+stale-claims:
+  - section: "Pricing tiers"
+    last-confirmed: "2025-09-01"
+    note: "2026 pricing review pending; numbers below are last year's."
+```
+
+#### What stale-claims is NOT
+
+- **Not a workflow tracker.** Use `status: under-review` for review state. `stale-claims` flags *known* divergence with a pointer to fresher truth (or a note that fresher truth does not yet exist).
+- **Not an automatic-rewrite trigger.** The framework does not auto-replace stale sections; the author owns the migration. The resolver merely surfaces the flag.
+- **Not a substitute for `last-updated`.** Doc-level freshness still matters; `stale-claims` is the finer-grained complement when only some of the doc is stale.
 
 ### Mechanical Index Facets
 

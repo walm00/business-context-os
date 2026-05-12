@@ -1,53 +1,66 @@
 {
   "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "date": "2026-05-05",
   "overall_verdict": "red",
   "run_at": "2026-05-05T07:00:00Z",
+  "headline": "3 critical: broken-xref on docs/strategy/2026-roadmap.md; +2 other.",
   "findings": [
     {
       "number": 1,
       "finding_type": "broken-xref",
+      "category": "repo-context",
       "verdict": "red",
       "emitted_by": "index-health",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
         "file": "docs/strategy/2026-roadmap.md",
-        "target": "docs/_archive/old-okrs.md",
-        "violation_class": "active-points-to-archive"
+        "broken_link": "docs/_archive/old-okrs.md",
+        "target_path": "docs/_archive/old-okrs.md"
       },
       "suggested_actions": ["relink", "remove-reference"]
     },
     {
       "number": 2,
       "finding_type": "broken-xref",
+      "category": "repo-context",
       "verdict": "red",
       "emitted_by": "index-health",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
         "file": "docs/customer-research/personas.md",
-        "target": "docs/_inbox/raw-interviews.md",
-        "violation_class": "active-points-to-inbox"
+        "broken_link": "docs/_inbox/raw-interviews.md",
+        "target_path": "docs/_inbox/raw-interviews.md"
       },
       "suggested_actions": ["triage-target", "remove-reference"]
     },
     {
       "number": 3,
       "finding_type": "orphan-pages",
+      "category": "repo-context",
       "verdict": "red",
       "emitted_by": "index-health",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
-        "file": "docs/_wiki/pages/legacy-pricing.md",
-        "inbound_builds_on_count": 0,
-        "anchor_data_point": null
+        "wiki_file": "docs/_wiki/pages/legacy-pricing.md",
+        "grace_days_threshold": 90
       },
       "suggested_actions": ["archive", "attach-anchor"]
     },
     {
       "number": 4,
       "finding_type": "graveyard-stale",
+      "category": "repo-context",
       "verdict": "amber",
       "emitted_by": "wiki-graveyard",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
         "file": "docs/_archive/2024-q3-positioning.md",
+        "last_reviewed_date": "2024-09-15",
         "age_days": 412,
         "threshold_days": 365
       },
@@ -56,19 +69,20 @@
     {
       "number": 5,
       "finding_type": "coverage-gap-data-point",
+      "category": "repo-context",
       "verdict": "red",
       "emitted_by": "wiki-coverage-audit",
+      "first_seen": "2026-05-05",
+      "consecutive_runs": 1,
       "finding_attrs": {
-        "data_point": "ICP",
-        "owner_doc": "docs/strategy/icp.md",
-        "missing_artifact": "wiki-explainer"
+        "data_point_file": "docs/strategy/icp.md"
       },
       "suggested_actions": ["stub-wiki-page", "mark-non-explainable"]
     }
   ],
   "auto_fixed": [
     {
-      "fix_id": "frontmatter-missing-last-updated",
+      "fix_id": "missing-last-updated",
       "target": "docs/strategy/objectives.md",
       "detail": "set to 2026-05-04"
     }

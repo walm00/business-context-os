@@ -38,6 +38,21 @@ if str(_HERE) not in sys.path:
 
 from diary_grouper import DiaryEntry, group_by_job, recent_unified  # noqa: E402
 from digest_parser import ParsedDigest, parse_digest  # noqa: E402
+
+# 1.1.0: load the typed-event sidecar (daily-digest.json) alongside the prose
+# digest. The cockpit action items decorate themselves with the sidecar's
+# `category`, `consecutive_runs`, `first_seen`, and `severity_override`
+# fields when a matching Finding can be located. Pure additive — if the
+# sidecar is absent or 1.0.0, action items keep their existing shape.
+_scripts_dir = _HERE.parent
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+try:
+    from digest_sidecar import Finding, ParsedSidecar, parse_sidecar  # noqa: E402
+except ImportError:  # graceful degrade — older installs without the module
+    Finding = None  # type: ignore[misc,assignment]
+    ParsedSidecar = None  # type: ignore[misc,assignment]
+    parse_sidecar = None  # type: ignore[misc,assignment]
 from labels import (  # noqa: E402
     JOB_LABELS,
     decorate_action,
@@ -65,6 +80,7 @@ REPO_ROOT = _repo_root()
 
 SCHEDULE_CONFIG_PATH = REPO_ROOT / ".claude" / "quality" / "schedule-config.json"
 DIGEST_PATH = REPO_ROOT / "docs" / "_inbox" / "daily-digest.md"
+SIDECAR_PATH = REPO_ROOT / "docs" / "_inbox" / "daily-digest.json"
 DIARY_PATH = REPO_ROOT / ".claude" / "hook_state" / "schedule-diary.jsonl"
 SCHEDULES_PATH = Path.home() / ".local-dashboard" / "schedules.json"
 
@@ -451,14 +467,25 @@ class _Snapshot:
     digest: ParsedDigest | None
     diary_by_job: dict[str, list[DiaryEntry]]
     schedules: dict[str, dict]
+    sidecar: "ParsedSidecar | None" = None  # 1.1.0 — typed-event sidecar
 
 
 def _snapshot() -> _Snapshot:
+    side = None
+    if parse_sidecar is not None:
+        try:
+            side = parse_sidecar(SIDECAR_PATH)
+        except Exception:  # noqa: BLE001
+            # Malformed sidecar should not crash the dashboard — log silently and
+            # continue with prose-only data. The dispatcher will emit a
+            # schema-validation-failed finding on its next tick.
+            side = None
     return _Snapshot(
         cfg=_load_schedule_config(),
         digest=parse_digest(DIGEST_PATH),
         diary_by_job=group_by_job(DIARY_PATH, n=5),
         schedules=_load_schedules_map(),
+        sidecar=side,
     )
 
 
@@ -822,12 +849,45 @@ def collect_actions_inbox() -> dict:
         decorate_action(item)
         items.append(item)
 
+    # 1.1.0: look up the typed sidecar Finding by `number` to attach
+    # category / consecutive_runs / first_seen / severity_override to the
+    # matching action item. Absent sidecar or 1.0.0 sidecar: skipped silently
+    # (items keep their existing shape).
+    sidecar_findings_by_number: dict[int, "Finding"] = {}
+    if snap.sidecar is not None:
+        for f in snap.sidecar.findings:
+            sidecar_findings_by_number[int(f.number)] = f
+
+    def _attach_sidecar_fields(item: dict, number: int | None) -> None:
+        if number is None or not sidecar_findings_by_number:
+            return
+        f = sidecar_findings_by_number.get(int(number))
+        if f is None:
+            return
+        category = getattr(f, "category", "repo-context") or "repo-context"
+        consecutive_runs = int(getattr(f, "consecutive_runs", 1) or 1)
+        severity_override = getattr(f, "severity_override", None)
+        stuck = severity_override == "stuck" or consecutive_runs >= 3
+        item["category"] = category
+        item["consecutive_runs"] = consecutive_runs
+        item["first_seen"] = getattr(f, "first_seen", None)
+        item["stuck"] = stuck
+        item["finding_type"] = f.finding_type
+        if category == "bcos-framework":
+            item["footer_note"] = (
+                "Reported to BCOS — will be fixed in next release."
+            )
+            # Framework findings get the acknowledge action, not the
+            # standard Fix/Mark-done flow. Front-end branches on this.
+            item["primary_action"] = "acknowledge"
+
     if snap.digest is not None:
         for act in snap.digest.actions:
             key = act.title.strip().lower()
             if key in seen_titles:
                 continue
             seen_titles.add(key)
+            before_count = len(items)
             _emit(
                 title=act.title.strip(),
                 source="digest",
@@ -835,6 +895,46 @@ def collect_actions_inbox() -> dict:
                 number=act.number,
                 body=act.body,
             )
+            if len(items) > before_count:
+                _attach_sidecar_fields(items[-1], act.number)
+
+    # 1.1.0: sidecar fallback. When the prose digest's Action-needed table
+    # format isn't recognised by digest_parser (it expects ### N. headings;
+    # the 1.1.0 template uses markdown tables), the sidecar IS the source.
+    # Emit any sidecar finding whose number wasn't already covered above so
+    # the user sees their cockpit cards even if the prose parser misses them.
+    if snap.sidecar is not None:
+        for f in snap.sidecar.findings:
+            # Synthesize a short title + body from the typed fields. This is
+            # the same shape `_emit` produces from the prose parser so the
+            # rest of the pipeline (atlas-open buttons, mark-done flow,
+            # filtering) works identically.
+            attrs = f.finding_attrs or {}
+            primary_attr = (
+                attrs.get("file")
+                or attrs.get("wiki_file")
+                or attrs.get("data_point_file")
+                or attrs.get("job")
+                or attrs.get("expected_path")
+                or attrs.get("rule_id")
+                or attrs.get("offending_finding_type")
+                or "(no primary attr)"
+            )
+            title = f"{f.finding_type}: {primary_attr}"
+            key = title.strip().lower()
+            if key in seen_titles:
+                continue
+            seen_titles.add(key)
+            before_count = len(items)
+            _emit(
+                title=title,
+                source="digest",
+                source_job=f.emitted_by,
+                number=int(f.number),
+                body="",
+            )
+            if len(items) > before_count:
+                _attach_sidecar_fields(items[-1], int(f.number))
 
     for job, entries in snap.diary_by_job.items():
         if not entries:

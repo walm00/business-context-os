@@ -379,6 +379,30 @@ def _h_lifecycle_fold_into(body: dict, ctx: dict | None = None) -> dict:
     )
 
 
+def _h_acknowledge(body: dict, ctx: dict | None = None) -> dict:
+    """The only action permitted on `category: "bcos-framework"` findings.
+
+    The user is saying "I've seen this; mark read in the cockpit, route to
+    portfolio aggregation as already-seen." No files mutated in client repo
+    — patching framework state locally would be overwritten by the next
+    `update.py`. The framework owner sees the issue via the umbrella's
+    cross-sibling aggregation of `bcos-framework-issues.jsonl`.
+
+    Added in 1.1.0. Applies to any of the 7 framework finding_types listed
+    in `finding-categories.md`. Safe to call on a repo-context finding too
+    (degenerate case: equivalent to dismissing), but the cockpit only
+    surfaces this action for framework cards.
+    """
+    finding = _coerce_finding(body)
+    finding_type = finding.get("finding_type", "?")
+    return _envelope(
+        "acknowledge",
+        body,
+        summary=f"Acknowledged framework finding: {finding_type}. No files mutated.",
+        telemetry="framework-issue-acknowledged",
+    )
+
+
 HANDLERS: dict[str, Callable[..., dict]] = {
     "inbox-aged-triage":              _h_inbox_aged_triage,
     "inbox-aged-archive":             _h_inbox_aged_archive,
@@ -396,6 +420,8 @@ HANDLERS: dict[str, Callable[..., dict]] = {
     "lifecycle-route-wiki":           _h_lifecycle_route_wiki,
     "lifecycle-route-collection":     _h_lifecycle_route_collection,
     "lifecycle-fold-into":            _h_lifecycle_fold_into,
+    # 1.1.0 — acknowledge-only handler for bcos-framework category findings.
+    "acknowledge":                    _h_acknowledge,
 }
 
 

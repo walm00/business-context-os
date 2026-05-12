@@ -93,7 +93,7 @@ One per subdirectory. Required. The manifest is the awareness surface — Claude
 ---
 type: collection-manifest
 collection: contracts                 # subdirectory name
-manifest-schema: contracts            # contracts | invoices | brand-kits | call-transcripts | statements | custom
+manifest-schema: contracts            # contracts | invoices | brand-kits | call-transcripts | statements | reports | custom
 version: 1.4.0                        # bumped on every row change
 created: 2026-01-15
 last-updated: 2026-04-30
@@ -144,6 +144,15 @@ The columns vary by `manifest-schema`. Pre-defined schemas have known required c
 **Schema: `statements`**
 
 | File | Period | Source | Key numbers | Related data point |
+
+**Schema: `reports`**
+
+Derived analytical reports — produced by an internal pipeline (financial audits, competitive-intel exports, customer-discovery rollups). The manifest row is the awareness surface; pair it with a `.meta.md` sidecar (see "Derived-Report Sidecar" below) when the report has key numbers worth ranking against value-lookup queries.
+
+| File | Period | Report type | Audience | Run date | Related data point |
+|------|--------|-------------|----------|----------|--------------------|
+| 2026-04-30_q1-revenue.xlsx | 2026-Q1 | Revenue rollup | Investors | 2026-04-30 | [revenue-model](../../revenue-model.md) |
+| 2026-02-15_competitive-landscape.html | 2026-02 | Competitive scan | Internal | 2026-02-15 | [competitive-positioning](../../competitive-positioning.md) |
 
 **Schema: `custom`**
 
@@ -208,6 +217,71 @@ Either party may terminate with 30-day written notice...
 - Sidecar follows BCOS frontmatter rules (versioned, owned, status).
 - Sidecar can be edited independently; the artifact PDF stays immutable.
 - If a sidecar contradicts the artifact (someone mis-extracted a date), the artifact wins — sidecar is a derived view, not the source.
+
+### Derived-Report Sidecar
+
+Derived reports (Excel/CSV/HTML produced by an internal pipeline) are a recurring artifact category — financial audits, competitive-intel scans, customer-discovery rollups, product-metrics summaries. They benefit from a sidecar that names the **period**, the **freshness window**, and the **key fields** the resolver should rank against `value-lookup:answer` queries.
+
+```yaml
+# 2026-04-30_q1-revenue.meta.md (sits next to 2026-04-30_q1-revenue.xlsx)
+---
+type: collection-sidecar
+collection: reports
+artifact-file: 2026-04-30_q1-revenue.xlsx
+version: 1.0.0
+created: 2026-04-30
+last-updated: 2026-04-30
+owner: gunti
+status: active
+
+cluster: revenue
+builds-on:                              # data points this evidence supports
+  - revenue-model.md
+  - customer-base.md
+
+# Derived-report sidecar fields
+period: "2026-Q1"
+generated-from: docs/_collections/raw-data/q1-2026-stripe-export.csv
+generation-date: 2026-04-30
+generation-method: scripts/generate_revenue_report.py
+freshness: fresh                        # fresh | stale | regenerate-now
+freshness-window: 90d                   # past this, retrieval flags as stale
+extracted-on: 2026-04-30
+extraction-method: human                # human | llm | mixed
+
+key-fields:
+  total-mrr: 42000
+  largest-customer: Acme Corp
+  largest-customer-mrr: 8500
+  new-customers-q1: 7
+  churned-customers-q1: 2
+---
+
+## Q1 2026 — Revenue summary
+
+(Prose context distilled from the xlsx — anchors for value-shape questions.)
+```
+
+**Field reference:**
+
+| Field | Purpose |
+|---|---|
+| `period` | Time window the report covers — quarter, month, audit span. Free-form string; the resolver does not parse semantics. |
+| `generated-from` | Repo-relative path to the raw input. Lets the next pipeline run identify what to re-process. |
+| `generation-date` | When this output was produced. Compared against `freshness-window` to decide regenerate-now. |
+| `generation-method` | Pipeline script or process. Lets a maintainer find how to regenerate without reading the manifest. |
+| `freshness` | Author's current verdict: `fresh` / `stale` / `regenerate-now`. The freshness-window expiry is mechanical; this field is the human override. |
+| `freshness-window` | Duration after which retrieval flags this sidecar as stale (`Nd`, `Nw`, `Nm`). |
+| `key-fields` | Domain-specific extracted values. The framework specifies the **shape** (map of name → value), not the **vocabulary** — finance uses `total-spend-eur`, revenue uses `total-mrr`, competitive intel uses `top-3-competitors`, etc. |
+
+**Lifecycle:**
+
+1. The same pipeline that produces the report writes the sidecar (or a follow-up `extract_keyfields.py` step).
+2. When `freshness-window` expires, the next pipeline run regenerates the sidecar with updated `key-fields:`.
+3. `collections-scan` may surface `freshness: stale` or window-expired sidecars in its log.
+4. Authors who want to flag a stale claim that still references this sidecar use `stale-claims:` on the canonical doc (see [`document-standards.md`](../methodology/document-standards.md)).
+
+**Why this matters:** the `value-lookup:answer` task profile (catalog: `_context.task-profiles.yml.tmpl`) ranks `collection-sidecar` **above** `collection-manifest`, `collection-artifact`, and active data points — precisely because the sidecar's `key-fields:` is evidence-extracted, fresh, and structured for measurement-shape questions. Without the sidecar, the resolver falls back to canonical taxonomy, which is the wrong answer for "how much / when / who / top-N" queries.
 
 ---
 
@@ -422,6 +496,10 @@ manifest-schemas:
   statements:
     description: "Financial / system exports (Stripe, Salesforce, etc.)"
     required-columns: [File, Period, Source, "Key numbers", "Related data point"]
+  reports:
+    description: "Derived analytical reports (Excel/CSV/HTML produced by an internal pipeline). Often paired with a `.meta.md` sidecar carrying period, freshness window, and extracted key-fields."
+    required-columns: [File, Period, "Report type", Audience, "Run date", "Related data point"]
+    file-naming-convention: "YYYY-MM-DD_<report-slug>.<ext>"
   custom:
     description: "User-defined; only base validation applies"
     required-columns: [File, "Related data point"]

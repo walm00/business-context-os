@@ -156,3 +156,14 @@ profiles:
     freshness-thresholds: [active=60, planned=never]
     traversal-hints: [from-edge=builds-on, depth-cap=2]
     coverage-assertions: []
+
+  - id: value-lookup:answer
+    description: Answering 'how much / when / who / top-N / biggest / smallest' questions against actual business data. Evidence wins over taxonomy. Use when the question shape is measurement, not definition.
+    required-zones: [collection-manifest=true, collection-sidecar=false, collection-artifact=false, active=false, wiki=false]
+    content-families:
+      - name=derived-reports, pattern=type=collection-manifest, required=false, min-count=0
+      - name=key-fields, pattern=type=collection-sidecar, required=false, min-count=0
+    source-of-truth-ranking: [collection-sidecar, collection-manifest, collection-artifact, active, wiki]
+    freshness-thresholds: [collection-manifest=90, collection-sidecar=90, collection-artifact=never, active=60, wiki=180]
+    traversal-hints: [from-edge=references, depth-cap=1]
+    coverage-assertions: []

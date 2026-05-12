@@ -1,0 +1,26 @@
+{
+  "$schema": "../../../../docs/_bcos-framework/architecture/typed-events.schema.json",
+  "schema_version": "1.1.0",
+  "date": "2026-05-12",
+  "overall_verdict": "red",
+  "run_at": "2026-05-12T09:00:00Z",
+  "findings": [
+    {
+      "number": 1,
+      "finding_type": "framework-config-malformed",
+      "category": "bcos-framework",
+      "verdict": "red",
+      "emitted_by": "dispatcher",
+      "first_seen": "2026-05-12",
+      "consecutive_runs": 1,
+      "finding_attrs": {
+        "file": ".claude/quality/schedule-config.json",
+        "parse_error": null,
+        "missing_fields": ["digest.write_file", "auto_fix.whitelist"]
+      },
+      "suggested_actions": ["acknowledge"]
+    }
+  ],
+  "auto_fixed": [],
+  "jobs": []
+}
