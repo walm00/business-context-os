@@ -2391,7 +2391,7 @@
     const btnSync = el("button", {
       type: "button",
       class: "cockpit__bcos-btn cockpit__bcos-btn--primary" + (isRunning ? " is-running" : ""),
-      title: "update.py --yes → CLAUDE.md review (Claude judges) → autocommit + push.",
+      title: "update.py --yes → autocommit + push.",
       disabled: isRunning ? "disabled" : null,
     }, isRunning ? "Sync running…" : "Run full sync");
     btnSync.addEventListener("click", () => {
@@ -2400,7 +2400,6 @@
         body: [
           "This will:",
           "• run update.py to pull framework changes",
-          "• have Claude review CLAUDE.md drift",
           "• commit & push if the working tree is clean",
         ],
         confirmLabel: "Run sync",
@@ -2411,7 +2410,7 @@
             const resp = await fetch("/api/bcos/sync", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ review: true, autocommit: true, push: true }),
+              body: JSON.stringify({ autocommit: true, push: true }),
             });
             const result = await resp.json();
             if (result.ok && result.run_id) {

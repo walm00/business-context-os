@@ -467,8 +467,8 @@ def _get_schedule_config(suffix: str, params: dict) -> dict:
 
 def _post_bcos_sync(body: dict, ctx: dict) -> dict:
     from bcos_sync import start_sync
+    # `review` was removed 2026-05-12 — accept and ignore for backward compat.
     flags = {
-        "review":     bool(body.get("review", True)),
         "autocommit": bool(body.get("autocommit", True)),
         "push":       bool(body.get("push", True)),
     }

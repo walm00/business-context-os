@@ -1,5 +1,5 @@
 """
-bcos_sync.py — Single-repo BCOS framework sync, review, and freshness.
+bcos_sync.py — Single-repo BCOS framework sync + freshness.
 
 This module is what the cockpit's "BCOS framework" block plugs into. It mirrors
 the umbrella-level §0 BCOS Framework pane that ships in the theo-portfolio
@@ -24,8 +24,10 @@ State & files:
 
 Design notes:
 
-  * CLAUDE.md review uses schema-in-prompt + --output-format json. NO reliance
-    on --json-schema (which is only available in newer Claude CLI versions).
+  * No AI-judged CLAUDE.md review step. Removed 2026-05-12 — see the long
+    comment block before _run_sync. CLAUDE.md is handled by the marker-fence
+    contract in _claude_md.py: framework owns inside CORE markers (verbatim
+    replace), user owns outside (untouched).
   * One thread per run. A module-level lock prevents concurrent syncs in the
     same dashboard process.
   * No SQLite. Logs are plain files. Run state is in-memory + the log file
@@ -262,130 +264,29 @@ def refresh_freshness() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# CLAUDE.md review — schema-in-prompt (no --json-schema)
+# CLAUDE.md review — REMOVED 2026-05-12.
+#
+# Previously this module ran an AI-judged merge of local CLAUDE.md against
+# upstream after every sync. That mechanism had additive-merge semantics:
+# anything "missing from local but present in the reference" got re-added,
+# even when local had intentionally trimmed it. Result: every framework-side
+# trim of CLAUDE.md got silently resurrected on the next sync of every
+# installed repo (discovered against execution-os during the v1.9.0 → v1.10.0
+# trim).
+#
+# The correct contract is much simpler:
+#   - Inside <!-- BCOS:CORE:START --> / <!-- BCOS:CORE:END -->: framework owns
+#     it; _claude_md.py replaces it verbatim on every update. Always wins.
+#   - Outside those markers: user owns it; update.py never touches it.
+#
+# Both sides of the fence are unambiguous, so the AI-judged review had
+# nothing to actually decide — it could only introduce bugs. The previous
+# CORE block is still saved to .claude/bcos-claude-reference.md by
+# _claude_md.py:103-108 as a pure recovery artifact (diff-against-on-demand;
+# nothing reads it back into CLAUDE.md programmatically).
+#
+# Symmetric fix applied in bcos-umbrella's command_center_dashboard 2026-05-12.
 # ---------------------------------------------------------------------------
-
-_REVIEW_PROMPT = (
-    "You are reviewing a CLAUDE.md drift between this repo and its upstream BCOS framework.\n"
-    "Compare the local CLAUDE.md against `.claude/bcos-claude-reference.md` (the upstream copy).\n"
-    "Do NOT delete any files — the caller handles cleanup.\n"
-    "\n"
-    "Three possible verdicts:\n"
-    "  NOOP         — local CLAUDE.md is already functionally identical to upstream.\n"
-    "  MERGED       — upstream has additive, non-conflicting changes; merge them in via Edit\n"
-    "                 preserving ALL local overrides.\n"
-    "  REVIEW_NEEDED — upstream changes conflict or are substantive; do NOT edit anything.\n"
-    "\n"
-    "Return ONLY a JSON object on the LAST LINE of your response, with NO surrounding prose:\n"
-    '  {"verdict": "NOOP|MERGED|REVIEW_NEEDED", "summary": "<one sentence>"}\n'
-    "No markdown fences. No other output after the JSON."
-)
-
-
-def _parse_review_output(raw: str) -> dict | None:
-    """Extract {verdict, summary} from claude CLI stdout.
-
-    The CLI returns a JSON wrapper containing the model's text under `result`.
-    We then locate the last JSON object in that text — robust to small
-    formatting variations.
-    """
-    if not raw:
-        return None
-    # Step 1: unwrap CLI envelope.
-    inner = raw
-    try:
-        wrapper = json.loads(raw)
-        if isinstance(wrapper, dict):
-            inner = wrapper.get("result") or wrapper.get("structured_output") or raw
-            if isinstance(inner, dict):
-                return inner if "verdict" in inner else None
-            if not isinstance(inner, str):
-                inner = raw
-    except ValueError:
-        pass
-
-    # Step 2: scan for the last `{...}` block in `inner`.
-    text = inner.strip()
-    last_open = text.rfind("{")
-    while last_open != -1:
-        try:
-            obj = json.loads(text[last_open:])
-            if isinstance(obj, dict) and "verdict" in obj:
-                return obj
-        except ValueError:
-            pass
-        last_open = text.rfind("{", 0, last_open)
-    return None
-
-
-def _run_review(run_id: str) -> str:
-    """Execute the CLAUDE.md review. Returns a status string for the log."""
-    ref_file = REPO_ROOT / ".claude" / "bcos-claude-reference.md"
-    claude_md = REPO_ROOT / "CLAUDE.md"
-    if not (ref_file.is_file() and claude_md.is_file()):
-        _append_log(run_id, "[review] skipped — reference or CLAUDE.md missing")
-        return "SKIPPED (no ref file)"
-
-    claude_exe = shutil.which("claude")
-    if not claude_exe:
-        _append_log(run_id, "[review] ERROR: claude CLI not on PATH")
-        return "ERROR: claude not on PATH"
-
-    base = [
-        "-p",
-        "--permission-mode", "acceptEdits",
-        "--output-format", "json",
-        _REVIEW_PROMPT,
-    ]
-    if sys.platform.startswith("win") and claude_exe.lower().endswith((".cmd", ".bat", ".ps1")):
-        argv = ["cmd", "/c", "claude", *base]
-    else:
-        argv = [claude_exe, *base]
-
-    _append_log(run_id, "[review] launching claude CLI...")
-    try:
-        proc = subprocess.run(
-            argv, cwd=str(REPO_ROOT),
-            capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
-            timeout=300,
-        )
-    except subprocess.TimeoutExpired:
-        _append_log(run_id, "[review] TIMEOUT after 5min")
-        return "TIMEOUT"
-    except OSError as e:
-        _append_log(run_id, f"[review] ERROR: {type(e).__name__}: {e}")
-        return f"ERROR: {type(e).__name__}"
-
-    if proc.stderr:
-        _append_log(run_id, f"[review] stderr: {proc.stderr.strip()[:500]}")
-    if proc.returncode != 0:
-        _append_log(run_id, f"[review] exit {proc.returncode}")
-        _append_log(run_id, (proc.stdout or "").strip()[:1500] or "(no output)")
-        return f"ERROR: exit {proc.returncode}"
-
-    verdict_obj = _parse_review_output(proc.stdout or "")
-    if not verdict_obj:
-        snippet = (proc.stdout or "").strip()[:200]
-        _append_log(run_id, f"[review] unparseable result: {snippet}")
-        return "ERROR: unparseable result"
-
-    v = verdict_obj["verdict"]
-    summary = (verdict_obj.get("summary") or "").strip()[:200]
-    label_map = {"NOOP": "NOOP", "MERGED": "MERGED", "REVIEW_NEEDED": "REVIEW NEEDED"}
-    status = f"{label_map.get(v, v)}: {summary}" if summary else label_map.get(v, v)
-    _append_log(run_id, f"[review] verdict — {status}")
-
-    # On NOOP/MERGED, delete the reference file (Claude has either reconciled
-    # the differences or there were none). REVIEW_NEEDED leaves it in place
-    # for the human to handle.
-    if v in ("MERGED", "NOOP"):
-        try:
-            ref_file.unlink(missing_ok=True)
-            _append_log(run_id, "[review] deleted bcos-claude-reference.md")
-        except OSError as e:
-            _append_log(run_id, f"[review] could not delete ref file: {e}")
-    return status
 
 
 # ---------------------------------------------------------------------------
@@ -408,7 +309,7 @@ def _git_is_clean() -> tuple[bool, str]:
 
 def _do_commit_push(run_id: str, push: bool) -> str:
     """Stage all changes, commit with a fixed message, optionally push."""
-    msg = "chore(bcos): sync framework to upstream + CLAUDE.md review"
+    msg = "chore(bcos): sync framework to upstream"
     try:
         subprocess.run(["git", "-C", str(REPO_ROOT), "add", "-A"], check=False, timeout=30)
         proc = subprocess.run(
@@ -441,13 +342,18 @@ def _do_commit_push(run_id: str, push: bool) -> str:
 
 
 def _run_sync(run_id: str, flags: dict) -> None:
-    """Worker thread: update.py → review → commit/push."""
+    """Worker thread: update.py → commit/push.
+
+    The AI-judged CLAUDE.md review step was removed 2026-05-12 — see the
+    long comment block above for the rationale. Sync is now strictly
+    update.py + (optional) commit + (optional) push.
+    """
     started = _iso_now()
     _append_log(run_id, f"=== bcos sync — {REPO_ID} ===")
     _append_log(run_id, f"started_at: {started}")
-    _append_log(run_id, f"flags: review={flags.get('review')} autocommit={flags.get('autocommit')} push={flags.get('push')}")
+    _append_log(run_id, f"flags: autocommit={flags.get('autocommit')} push={flags.get('push')}")
 
-    state = {"update_exit": -1, "review": None, "commit": None}
+    state = {"update_exit": -1, "commit": None}
 
     update_script = REPO_ROOT / ".claude" / "scripts" / "update.py"
     if not update_script.is_file():
@@ -493,20 +399,11 @@ def _run_sync(run_id: str, flags: dict) -> None:
     _write_sync_stamp()
     _append_log(run_id, "[stamp] wrote sync stamp")
 
-    # Phase B — CLAUDE.md review
-    if flags.get("review"):
-        state["review"] = _run_review(run_id)
-    else:
-        _append_log(run_id, "[review] skipped (flag off)")
-
-    # Phase C — commit + push
-    review_failed = isinstance(state["review"], str) and state["review"].startswith(("ERROR", "TIMEOUT"))
+    # Phase B — commit + push. The previous Phase B (AI-judged CLAUDE.md
+    # review) was removed; see module-top comment.
     if flags.get("autocommit"):
         if not pre_clean:
             state["commit"] = f"skipped ({dirty_reason})"
-            _append_log(run_id, f"[commit] {state['commit']}")
-        elif review_failed:
-            state["commit"] = "skipped (review failed)"
             _append_log(run_id, f"[commit] {state['commit']}")
         else:
             state["commit"] = _do_commit_push(run_id, push=bool(flags.get("push")))
@@ -538,8 +435,15 @@ def _finalize(run_id: str, state: dict, exit_code: int) -> None:
 # ---------------------------------------------------------------------------
 
 def start_sync(flags: dict | None = None) -> dict:
-    """Spawn a worker thread to run the sync. Returns immediately with run_id."""
-    flags = flags or {"review": True, "autocommit": True, "push": True}
+    """Spawn a worker thread to run the sync. Returns immediately with run_id.
+
+    Flags: {autocommit: bool, push: bool}. The legacy `review` flag is accepted
+    silently for backward compatibility with older callers but is now a no-op
+    (see module-top comment for why the review phase was removed).
+    """
+    flags = flags or {"autocommit": True, "push": True}
+    # Strip legacy review flag if a caller still passes it.
+    flags.pop("review", None)
     with _LOCK:
         if _active.get("run_id"):
             return {"ok": False, "error": "another sync is already running",
