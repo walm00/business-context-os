@@ -3,6 +3,18 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** monthly (1st of month)
 **Nature:** deep — full-architecture CLEAR audit + ecosystem sanity + lessons retention review
+**Boundary:** node — own-repo paths only (no `../`, no absolute paths outside `$CLAUDE_PROJECT_DIR`, no sibling-repo names). Enforced by dispatcher Step 4a preflight.
+
+<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
+```yaml
+emits-finding-types:
+  - integration-coverage-gap
+  - xref-broken-ecosystem
+  - lesson-retirement-candidate
+  - lesson-sharp-still
+  - lesson-merge-candidate
+  - lessons-count-high
+```
 
 <!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
 ```yaml

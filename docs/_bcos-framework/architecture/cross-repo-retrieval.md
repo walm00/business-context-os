@@ -13,7 +13,7 @@ exclusively-owns:
   - .bcos-umbrella.json retrieval block schema
   - cross-repo citation-id format
 strictly-avoids:
-  - full projects.json schema (lives in theo-portfolio umbrella-onboarding skill)
+  - full projects.json schema (lives in the umbrella host's `umbrella-onboarding` skill)
   - umbrella-side write paths (this doc covers consumer-side only)
   - permissions setup (covered by permissions-catalog.md)
 builds-on:
@@ -28,7 +28,7 @@ references:
 
 ## Why this exists
 
-`/context search` and `/context bundle` operate on this repo's `.claude/quality/context-index.json`. When the user has a portfolio of BCOS-enabled siblings registered with an umbrella (e.g. `theo-portfolio`), the framework has no way to consult them — even though `.bcos-umbrella.json` is sitting in the repo root and each sibling already maintains its own context index daily.
+`/context search` and `/context bundle` operate on this repo's `.claude/quality/context-index.json`. When the user has a portfolio of BCOS-enabled siblings registered with an umbrella host (e.g. `my-portfolio`), the framework has no way to consult them — even though `.bcos-umbrella.json` is sitting in the repo root and each sibling already maintains its own context index daily.
 
 This doc defines the **consumer-side contract** the framework reads from. The umbrella owns the canonical `projects.json` schema in its own onboarding skill; the framework consumes a documented minimum.
 
@@ -176,7 +176,7 @@ The calling agent (Claude) consumes this and decides whether to surface the sugg
 
 ## The minimum contract — what `projects.json[i]` must provide
 
-The umbrella's `projects.json` is written by the umbrella-onboarding skill (lives in `theo-portfolio`, not in this framework). The framework reads it as a flat list of project entries with the following minimum schema:
+The umbrella's `projects.json` is written by the `umbrella-onboarding` skill (lives in the `bcos-umbrella` plugin on the umbrella host, not in this framework). The framework reads it as a flat list of project entries with the following minimum schema:
 
 ```json
 {
@@ -266,7 +266,7 @@ The `<sibling-id>` is `projects[i].id` from the umbrella's `projects.json`, whic
   "cross-repo-status": {
     "attempted": true,
     "trigger": "auto-fallthrough" | "explicit-flag" | "explicit-no" | "not-opted-in" | "local-sufficient" | "peek-empty" | "peek-marginal",
-    "umbrella-id": "theo-portfolio" | null,
+    "umbrella-id": "my-portfolio" | null,
     "local-insufficient-signal": "zero-hit" | "low-coverage" | "low-tier" | "unsatisfied-zone-requirements" | null,
     "siblings-queried": [
       {"id": "...", "hits": 0, "took-ms": 12}
@@ -318,8 +318,8 @@ Cross-repo *write* workflows still need the mirror-to-user-level perms step docu
 
 | Topic | Lives where |
 |---|---|
-| Full `projects.json` schema | `theo-portfolio` umbrella-onboarding skill |
-| Writing `.bcos-umbrella.json` | `theo-portfolio` umbrella-onboarding skill |
+| Full `projects.json` schema | `umbrella-onboarding` skill (umbrella host) |
+| Writing `.bcos-umbrella.json` | `umbrella-onboarding` skill (umbrella host) |
 | Per-repo permissions setup | `permissions-catalog.md` |
 | Cross-repo dispatcher workflows | `scheduling.md` |
 | Embeddings / semantic cross-repo | Deferred; covered by P6 of wiki-missing-layers when it ships |

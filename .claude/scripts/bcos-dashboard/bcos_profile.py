@@ -8,12 +8,13 @@ template (`.claude/templates/gitignore.template`), so swapping between
 the bash CLI and the dashboard toggle is fully interchangeable.
 
 Profiles:
-- `shared`   — BCOS dropped into a multi-tenant/team repo. Runtime
-               artifacts (sessions, lessons, diary, digest, wake-up,
-               doc-index) are gitignored. (Default.)
 - `personal` — BCOS as a personal knowledge repo. Knowledge artifacts
                ARE tracked so they sync across machines. Only secrets
-               and machine-local files stay ignored.
+               and machine-local files stay ignored. (Default — the
+               common BCOS use case.)
+- `shared`   — BCOS dropped into a multi-tenant/team repo. Runtime
+               artifacts (sessions, lessons, diary, digest, wake-up,
+               doc-index) are gitignored.
 
 Public surface:
     read_profile() -> str
@@ -36,7 +37,7 @@ GITIGNORE = REPO_ROOT / ".gitignore"
 TEMPLATE = REPO_ROOT / ".claude" / "templates" / "gitignore.template"
 
 VALID_PROFILES = ("shared", "personal")
-DEFAULT_PROFILE = "shared"
+DEFAULT_PROFILE = "personal"
 
 DESCRIPTIONS = {
     "shared": (
@@ -53,7 +54,7 @@ DESCRIPTIONS = {
 
 
 def read_profile() -> str:
-    """Current profile (defaults to 'shared' when the marker file is missing)."""
+    """Current profile (defaults to 'personal' when the marker file is missing)."""
     if not PROFILE_FILE.is_file():
         return DEFAULT_PROFILE
     try:

@@ -4,11 +4,137 @@ All notable changes to CLEAR Context OS will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **Fresh-install profile default flipped from `shared` to `personal`.**
+  `install.sh` now renders `.gitignore` from the `personal` profile when
+  no `.gitignore` exists in the target repo, matching the common BCOS
+  use case (private, single-owner knowledge repo synced across
+  workstations). Team / multi-tenant installs switch with
+  `bash .claude/scripts/set_profile.sh shared`. Touches `install.sh`,
+  `set_profile.sh`, `bcos_profile.py` (`DEFAULT_PROFILE`), and
+  `gitignore-profiles.md`. Existing installs are unaffected — the
+  default only applies when `.gitignore` is absent. Companion fix on
+  the umbrella side (profile-aware `umbrella-onboarding` Step 5b +
+  `.gitignore`-stripping reconciler) is tracked in
+  [docs/_inbox/2026-05-13-umbrella-binding-tracking-profile-mismatch.md](docs/_inbox/2026-05-13-umbrella-binding-tracking-profile-mismatch.md).
+
+## [1.4.0] — 2026-05-13
+
+Dispatcher boundary + scheduled-task cwd verification. Five
+coordinated phases from the 2026-05-13 master plan, shipped in
+lock-step with `bcos-umbrella` 0.1.21 (umbrella-side preflight +
+audit + permissions reconciler).
+
+Motivation: 2026-05-13 surfaced three failure modes from
+cross-repo operation by scheduled jobs — improvised scratch scripts
+(`_xref_check.py`, `_scan_docs_tmp.py` written on the fly by two
+different siblings), a sibling whose `Working directory:` pointed at
+the umbrella host (blocking all downstream writes), and 6 of 16
+registered siblings missing from the portfolio's `additionalDirectories`. This release closes the
+node-side half of that loop (umbrella side ships separately).
+
+### Added
+
+- **Step 4a preflight** in `schedule-dispatcher/SKILL.md` (Phase 3).
+  Before running each job, the dispatcher scans the job spec for
+  cross-repo references: `../` segments, absolute paths outside
+  `$CLAUDE_PROJECT_DIR` / `$HOME/.claude/` / `$BCOS_PY` / `/tmp/`,
+  and known sibling-repo names harvested from `.bcos-umbrella.json`
+  (fallback: path-only scan when umbrella-absent). On match: emit
+  typed `node-job-cross-repo-reference` finding (category
+  `bcos-framework`, verdict `red`, `finding_attrs = {job,
+  offending_path, location}`), skip the job, log `verdict:error` to
+  diary, continue.
+- **`audit_node_configs.py`** (Phase 4). Portfolio-level cold-scan
+  equivalent of Step 4a. Walks every BCOS-installed sibling under
+  `--root`, scans each enabled job's `job-{name}.md` spec for
+  cross-repo references, emits `{scanned, clean, violations}` JSON.
+  Exit code always 0 — verdict in payload, advisory CI compatible.
+  Live validation: 6 BCOS siblings, 0 violations.
+- **Working-directory verification** in `context-onboarding`
+  SKILL.md Step 6e (Phase 5). After confirming the scheduled task
+  exists, Reads its SKILL.md prompt body and verifies the `Working
+  directory: <value>` line matches `{REPO_PATH}` exactly. On mismatch:
+  emit typed `scheduled-task-cwd-mismatch` finding (same shape as
+  `bcos-umbrella`'s audit-time emission for dashboard dedupe), route
+  through `bcos-framework-issues.jsonl`, AskUserQuestion to choose
+  Recreate vs Leave-as-is. Closes the silent-write-block failure
+  mode (a sibling's task pointed at the umbrella host instead of the
+  sibling's own repo) at registration time.
+- **`validate_permissions_catalog.py`** + CI hook (Phase 0).
+  Bidirectional drift check between `permissions-catalog.md` and
+  `.claude/settings.json`. Advisory (continue-on-error). Catches
+  catalog rows with no matching allowlist entry AND allowlist
+  entries with no catalog rationale row.
+- **`_scheduled_task_cwd.py`** helper module. Pure-function
+  `parse_working_directory()` + `paths_equivalent()`. Used by
+  `context-onboarding` Step 6e to verify cwd without a runtime
+  dependency on the umbrella plugin.
+- **Three new typed finding_types** in
+  `docs/_bcos-framework/architecture/typed-events.md` (schema 1.1.0
+  additive; framework category 7 → 9):
+  - `node-job-cross-repo-reference` — Phase 3.
+  - `scheduled-task-cwd-mismatch` — Phase 5 (shared with umbrella).
+  - All emitted with `category: "bcos-framework"`, acknowledge-only.
+- **Boundary stamps** on every `job-*.md` reference doc
+  (`**Boundary:** node — own-repo paths only`). Pairs the prose
+  contract with the runtime preflight: a reader can verify
+  enforcement by following the stamp's Step 4a reference.
+
+### Coordination contracts (paired with bcos-umbrella 0.1.21)
+
+| Surface | Side | Finding type | Attrs shape |
+|---|---|---|---|
+| BCOS dispatcher Step 4a | node | `node-job-cross-repo-reference` | `{job, offending_path, location}` |
+| Umbrella dispatcher Step 4a | umbrella | `umbrella-job-write-outside-host` | `{job, write_target, location}` |
+| BCOS context-onboarding Step 6e + umbrella audit | shared | `scheduled-task-cwd-mismatch` | `{sibling_id, expected_cwd, actual_cwd, task_name, platform}` |
+
+`location` enum (`_run` / `_claude_step` / `spec_prose`) shared
+across the node-side + umbrella-side preflight findings for renderer
+parity.
+
+### Tests
+
+47 net new tests across the release:
+
+- `test_audit_node_configs.py` (16) — TDD: tests written first.
+  Includes regression coverage for the two false-positive classes
+  surfaced during live smoke (`**Boundary:**` stamp line documenting
+  the rule itself; markdown link URLs `[text](../path)` and inline
+  backtick code in `## See also` sections).
+- `test_finding_type_coverage.py` (3) — labels coverage gap that
+  was already promised by `labels.py`'s docstring. Asserts every
+  enum entry has a `FINDING_TYPE_LABELS` entry.
+- `test_node_job_boundary_stamp.py` (3) — every
+  schedule-dispatcher `job-*.md` carries the boundary stamp and the
+  stamp references Step 4a.
+- `test_context_onboarding_cwd_check.py` (19) — TDD. Step 6e prose
+  contract (7), typed-events wiring (4), helper unit tests (8).
+- `test_digest_typed_events.py` (+1 enum extension, baseline updated).
+
+Plus 7 pre-existing brittle wiki/search tests unpinned to assert
+against invariants instead of moment-in-time values (separate
+commit; closes 6 failures + 1 error that had been carrying along).
+
+Full discovery: 234 tests, all green.
+
+### Lesson captured
+
+- **Job specs using prose verbs (scan/check/validate) without a
+  `_run` script invite Claude to improvise.** Convert to `_run` with
+  a real script. Tags: `#dispatcher #boundary #scheduled-tasks`.
+  Surfaced by 2026-05-13 incidents in two siblings where prose-only
+  job specs led Claude to write scratch helpers (`_xref_check.py`,
+  `_scan_docs_tmp.py`) on the fly instead of failing loudly.
+
 ## [1.3.0] — 2026-04-23
 
 ### Added
 
-- **Comprehensive permission defaults for scheduled maintenance.** `.claude/settings.json` now ships a 179-entry allowlist covering every component the dispatcher and its jobs actually invoke: a catch-all prefix (`Bash(python .claude/scripts/:*)`, `Bash(python3 .claude/scripts/:*)`) plus explicit entries for every framework script (~35 of them, from `refresh_ecosystem_state.py` through every `run_wiki_*.py` runner and every `cmd_wiki_*.py` slash command); the narrow set of git commands the auto-commit step uses (`git status --porcelain`, `git rev-parse --abbrev-ref HEAD`, specific `git add` paths, `git commit -m bcos:*`); writes to every BCOS-owned path (`.claude/hook_state/**`, `.claude/quality/**`, `docs/_inbox/**`, `docs/_planned/**`, `docs/_archive/**`, `docs/_wiki/index.md`, `docs/_wiki/log.md`, `docs/_wiki/queue.md`, `docs/_wiki/.archive/**`, `docs/_wiki/raw/**`, `docs/_wiki/source-summary/**`, `docs/_wiki/pages/**`); and every dispatcher-invoked skill (`bcos-wiki`, `context-ingest`, `schedule-tune`, `learning`, `context-routing`, `clear-planner`, `context-mine`, `context-onboarding`, `core-discipline`, plus the existing six). Existing installs pick up the new entries via `update.py`'s additive `merge_settings_json`. Destructive permissions are deliberately NOT shipped (`git push`, `git reset`, `git rm`, blanket `Bash`/`Edit`/`Write`). The full mapping of permission → component lives in [`docs/_bcos-framework/architecture/permissions-catalog.md`](docs/_bcos-framework/architecture/permissions-catalog.md) — that's the SoT to keep in sync when adding new jobs. Closes the "Laura from Gravity got almost no scheduled tasks to fire and the one that did got stuck" failure mode.
+- **Comprehensive permission defaults for scheduled maintenance.** `.claude/settings.json` now ships a 179-entry allowlist covering every component the dispatcher and its jobs actually invoke: a catch-all prefix (`Bash(python .claude/scripts/:*)`, `Bash(python3 .claude/scripts/:*)`) plus explicit entries for every framework script (~35 of them, from `refresh_ecosystem_state.py` through every `run_wiki_*.py` runner and every `cmd_wiki_*.py` slash command); the narrow set of git commands the auto-commit step uses (`git status --porcelain`, `git rev-parse --abbrev-ref HEAD`, specific `git add` paths, `git commit -m bcos:*`); writes to every BCOS-owned path (`.claude/hook_state/**`, `.claude/quality/**`, `docs/_inbox/**`, `docs/_planned/**`, `docs/_archive/**`, `docs/_wiki/index.md`, `docs/_wiki/log.md`, `docs/_wiki/queue.md`, `docs/_wiki/.archive/**`, `docs/_wiki/raw/**`, `docs/_wiki/source-summary/**`, `docs/_wiki/pages/**`); and every dispatcher-invoked skill (`bcos-wiki`, `context-ingest`, `schedule-tune`, `learning`, `context-routing`, `clear-planner`, `context-mine`, `context-onboarding`, `core-discipline`, plus the existing six). Existing installs pick up the new entries via `update.py`'s additive `merge_settings_json`. Destructive permissions are deliberately NOT shipped (`git push`, `git reset`, `git rm`, blanket `Bash`/`Edit`/`Write`). The full mapping of permission → component lives in [`docs/_bcos-framework/architecture/permissions-catalog.md`](docs/_bcos-framework/architecture/permissions-catalog.md) — that's the SoT to keep in sync when adding new jobs. Closes the "almost no scheduled tasks fire, and the one that does gets stuck on a permission prompt" failure mode reported by an early adopter.
 - **Cross-repo permissions installer** (`.claude/scripts/install_global_permissions.py`). When BCOS workflows span multiple repos (umbrella + sub-repos, portfolio mode, sibling-repo writes) the project-level allowlist isn't enough — cross-repo writes still prompt and stall the unattended session. The installer mirrors the project allowlist into `~/.claude/settings.json` (user-level, applies in every project on the machine) using the same additive merge logic as `update.py` — existing user-level rules are preserved, re-running is a no-op. Hooks are not mirrored (they're project-specific by design). Trust-model details and revocation guidance live in the catalog under "Cross-repo workflows".
 - **Scanner skip rules for generated files** in `job-index-health.md`: `document-index.md` and any dot-prefixed file under `docs/` (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`) are excluded from frontmatter checks. Eliminates the most-repeated false positive across multi-repo installs. Also clarifies that `owner` is not a required frontmatter field.
 - **`prune-sessions` and `prune-diary` on the default auto-fix whitelist.** Both scripts are deterministic, write only to their managed directories, and reversible via git. Documented in `auto-fix-whitelist.md`.

@@ -143,8 +143,8 @@ architecture. Route material by what it *is*, not by file type alone:
 | Canonical facts, current decisions, project/task/business reality | Draft active data points in `docs/*.md` |
 | Raw notes, unsorted snippets, uncertain material | Keep in `docs/_inbox/` until triaged |
 | Future ideas, plans, or maybes | Park in `docs/_planned/` |
-| Verbatim evidence artifacts: invoices, contracts, transcripts, exports, brand kits, reports as received | Route to `docs/_collections/<type>/` with manifest discipline, or map externally if too large |
-| Explanatory material: how-tos, glossaries, runbooks, post-mortems, decision narratives, source summaries | Route through `bcos-wiki`: `/wiki create`, `/wiki promote`, or `/wiki queue add` |
+| **Legal-weight evidence only** — signed contracts, NDAs, regulatory filings, audited reports (the file IS the legal artifact) | Route to `docs/_collections/<type>/` with manifest discipline, or map externally if too large |
+| Operational & explanatory long-form content — runbooks, SOPs, how-tos, decision logs, post-mortems, playbooks, scripts-with-context, glossaries, FAQs, AND informational transcripts / exports / research / customer-call notes / source summaries | Route through `bcos-wiki`: `/wiki create`, `/wiki promote`, or `/wiki queue add`. The wiki is the **universal long-form / cross-cutting content destination** per [plugin-storage-contract.md](../../../docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2 — not just URLs and source-summaries. |
 
 **For connected external systems:**
 - Ask what kind of docs to look for — adapt the prompt to the project type from Step 0a:
@@ -575,7 +575,7 @@ After data points and the document index are in place, the next checklist item i
 **Before creating anything, resolve two variables:**
 
 1. **`{REPO_PATH}`** — the absolute path to this repo's root directory (the current working directory)
-2. **`{PROJECT}`** — a short slug derived from the repo folder name. Lowercase, hyphens only, no spaces. Examples: `leverage`, `tystiq`, `acme-corp`.
+2. **`{PROJECT}`** — a short slug derived from the repo folder name. Lowercase, hyphens only, no spaces. Examples: `acme-corp`, `my-product`, `client-portal`.
 
 ### 6a. Seed the config file
 
@@ -589,28 +589,30 @@ The diary lives at `.claude/hook_state/schedule-diary.jsonl` (gitignored). Ensur
 
 ### 6b-pre. Permissions preflight (CRITICAL — prevents stuck dispatcher runs)
 
-Scheduled dispatcher runs spawn fresh Claude Code sessions with no human watching. Every permission prompt that fires in those sessions becomes a stuck task — Laura's experience: "almost none of the scheduled tasks did fire, just one and it stuck." This step prevents that.
+Scheduled dispatcher runs spawn fresh Claude Code sessions with no human watching. Every permission prompt that fires in those sessions becomes a stuck task — an early adopter reported "almost none of the scheduled tasks fired, just one, and it stuck." This step prevents that by running the same drift check CI runs.
 
-**Read `.claude/settings.json` and verify these markers exist** (the install.sh ships them; this verification is for repos that installed before v1.5 or had a custom settings.json):
+**Run the catalog drift guard:**
 
-Required entries (from the comprehensive shipped allowlist):
+```bash
+python .claude/scripts/validate_permissions_catalog.py
+```
 
-- `Bash(python .claude/scripts/:*)` — catch-all for every dispatcher script
-- `Bash(python3 .claude/scripts/:*)` — same, for python3 alias (backward compat)
-- `Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 .claude/scripts/:*)` — **shim-prefixed catch-all (required for Windows installs after v1.6).** The shim at `.claude/bin/python3` bypasses the Windows MS Store python3 stub via `py -3`. Without this entry, dispatcher Bash invocations that use the shim path will hit a permission prompt and stall scheduled runs. See `docs/_bcos-framework/architecture/python-shim-contract.md`.
-- `Bash(git status --porcelain)` and `Bash(git commit -m bcos:*)` — auto-commit step
-- `Edit(.claude/quality/**)` and `Write(.claude/quality/**)` — derived state files
-- `Edit(docs/_wiki/index.md)` — wiki refresh
-- `Edit(docs/_archive/**)` — archive moves from headless actions
-- `Skill(bcos-wiki:*)`, `Skill(context-ingest:*)`, `Skill(schedule-tune:*)` — sibling skills the dispatcher delegates to
+This is the same script CI runs on every commit (`validate-permissions-catalog` job). It performs a bidirectional check between [`permissions-catalog.md`](../../../docs/_bcos-framework/architecture/permissions-catalog.md) (the SoT) and `.claude/settings.json`:
 
-**Also verify the Python shim itself exists:** check that `.claude/bin/python3` (POSIX) or `.claude/bin/python3.cmd` (Windows) is present. If missing, the repo predates v1.6 — running `python .claude/scripts/update.py` (or `bash install.sh` from the upstream source) will create it. The shim is what makes the third allowlist entry above meaningful.
+- **Forward:** every entry catalogued must exist in `permissions.allow`.
+- **Reverse:** every `permissions.allow` entry must have a catalog row OR be on the small structural-infra allowlist.
 
-If the local `.claude/settings.json` is missing any of the above, **stop and run `python .claude/scripts/update.py`** before continuing — the update script's `merge_settings_json` will additively add every missing entry from the shipped settings.json without touching user customizations, AND `ensure_python_shim` will create the shim if missing. Then re-read settings.json to confirm.
+**Exit code 0** → preflight passed; proceed. **Exit code 1** → drift detected. The script's stdout names the specific missing entries. Resolve drift by running:
 
-If the user has a non-default `.claude/settings.local.json` that REJECTS any of these (via a `deny` rule or stale allowlist), surface the conflict and ask the user to resolve before proceeding — do not silently work around it.
+```bash
+python .claude/scripts/update.py
+```
 
-The full SoT of required entries lives in `docs/_bcos-framework/architecture/permissions-catalog.md`. If anything in that catalog is missing from settings.json, the dispatcher will hit a permission prompt sooner or later.
+The update script's `merge_settings_json` is additive — it adds missing entries from the shipped settings.json without touching user customisations, AND `ensure_python_shim` creates the Python shim (`.claude/bin/python3` / `.claude/bin/python3.cmd`) if absent. Re-run the validator to confirm clean.
+
+**Why call the validator instead of hand-rolling a marker list here:** drift between this skill and CI used to be a maintenance hazard — every new dispatcher entry meant editing two places. Both now consume the same catalog SoT. Adding a permission means editing one row in [permissions-catalog.md](../../../docs/_bcos-framework/architecture/permissions-catalog.md) and one entry in `settings.json`; the validator catches any future drift automatically.
+
+If the user has a non-default `.claude/settings.local.json` that REJECTS catalog entries (via a `deny` rule or stale allowlist), surface the conflict and ask the user to resolve before proceeding — do not silently work around it.
 
 ### 6b-cross. Cross-repo workflow check
 
@@ -676,9 +678,42 @@ Run the schedule-dispatcher skill to execute today's scheduled CLEAR maintenance
 Keep output focused. If everything is green with no action items, say so in one line.
 ```
 
-### 6e. Verify the task actually exists
+### 6e. Verify the task actually exists AND its working directory is correct
 
-Before declaring success, confirm the OS-level task was created. Use `mcp__scheduled-tasks__list_scheduled_tasks` and check that `bcos-{project}` appears with the correct cron expression. If it's missing, surface the error and stop — don't claim success on a half-failed setup.
+Before declaring success, confirm the task is set up properly:
+
+1. **Existence check.** Use `mcp__scheduled-tasks__list_scheduled_tasks` and confirm `bcos-{project}` appears with the correct cron expression. If it's missing, surface the error and stop — don't claim success on a half-failed setup.
+
+2. **Working-directory check.** From the list response, find the entry's `path` field (points at the task's `SKILL.md`). Use `Read` on that path and scan for a `Working directory: <value>` line. The `<value>` MUST exactly match `{REPO_PATH}` (the absolute path to this repo). On mismatch:
+
+   - **Emit a typed `scheduled-task-cwd-mismatch` finding** (`category: "bcos-framework"`, verdict `amber`, `emitted_by: "context-onboarding"`). The shape is shared with `bcos-umbrella`'s `audit_scheduled_task_cwd.py` so the dashboard deduplicates registration-time + audit-time emissions:
+
+     ```json
+     {
+       "finding_type": "scheduled-task-cwd-mismatch",
+       "category": "bcos-framework",
+       "verdict": "amber",
+       "emitted_by": "context-onboarding",
+       "suggested_actions": ["acknowledge"],
+       "finding_attrs": {
+         "sibling_id": "{project}",
+         "expected_cwd": "{REPO_PATH}",
+         "actual_cwd": "<value from Working directory line>",
+         "task_name": "bcos-{project}",
+         "platform": "{win32|darwin|linux}"
+       }
+     }
+     ```
+
+   - Append the finding to this repo's `.claude/hook_state/bcos-framework-issues.jsonl` (create the file if needed). The portfolio aggregator picks it up on the next dispatcher run.
+   - **Surface to the user via `AskUserQuestion`:**
+     - Question: "Your scheduled task `bcos-{project}` has working directory `<actual_cwd>` but this repo lives at `{REPO_PATH}`. The dispatcher will run in the wrong directory and writes meant for this repo's `docs/_inbox/` will be blocked. How do you want to fix?"
+     - Options:
+       - **Recreate the task** — delete + create with correct path (recommended)
+       - **Leave as-is** — acknowledge the finding; revisit later via `umbrella-schedule-tune` or manual edit
+   - If "Recreate", call `mcp__scheduled-tasks__delete_event` (or the equivalent delete tool) on the bad task, then re-run Step 6d.
+
+3. **Why this matters.** A 2026-05-13 incident in a sibling repo: the sibling's scheduled task had its working-directory pointing at the umbrella host instead of the sibling itself. The dispatcher ran daily, but every attempt to write `docs/_inbox/daily-digest.md` was blocked with "Path is outside allowed working directories" — a silent failure with no obvious trail. The check above catches this at registration time so the user never lives with a broken-but-superficially-OK schedule.
 
 ### 6f. Offer cadence tuning (optional)
 

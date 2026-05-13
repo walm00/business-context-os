@@ -17,7 +17,7 @@ The same `.gitignore` can't serve both. Profiles solve it: one source of truth (
 
 ## The Two Profiles
 
-### `shared` (default)
+### `shared`
 
 **Use this when** BCOS is dropped into a repo that has its own purpose — an app codebase, a team workspace, a multi-tenant project.
 
@@ -31,9 +31,9 @@ Files ignored *only* in this profile:
 - `docs/document-index.md` — auto-generated index
 - `docs/_inbox/daily-digest.md` — runtime maintenance output
 
-### `personal`
+### `personal` (default)
 
-**Use this when** the entire repo exists to be your knowledge base. It's private, will never be shared with collaborators, and exists primarily so you can sync context across machines and have a remote backup.
+**Use this when** the entire repo exists to be your knowledge base. It's private, will never be shared with collaborators, and exists primarily so you can sync context across machines and have a remote backup. This is the common BCOS use case, and the default for fresh installs.
 
 **Behavior:** Knowledge artifacts ARE tracked. Only secrets, OS noise, and machine-local files stay ignored.
 
@@ -43,7 +43,6 @@ What's still ignored in `personal`:
 - IDE files (`.vscode/`, `.idea/`)
 - Machine-local Claude state (`.claude/settings.local.json`, `.claude/hook_state/*`, `.claude/bcos-claude-reference.md`)
 - Per-machine schedule config (`.claude/quality/schedule-config.json` — cron times differ per machine; only the `.template.json` ships)
-- Sync tooling markers (`.stfolder/`)
 - Private strategy folder (`.private/`)
 
 ---
@@ -85,7 +84,7 @@ This file is committed so the chosen profile is part of the repo's contract. Any
 ## Switching Profiles
 
 ### Fresh install
-`install.sh` generates a `shared` `.gitignore` automatically (preserving current behavior). The install summary tells you how to switch to `personal` if that's what you want.
+`install.sh` generates a `personal` `.gitignore` automatically — the common BCOS use case. The install summary tells you how to switch to `shared` if BCOS is dropped into a team or multi-tenant repo.
 
 ### After install — going `shared` → `personal`
 

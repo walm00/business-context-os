@@ -3,6 +3,7 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** daily (cheap mechanical scan)
 **Nature:** dead-letter scan — surface wiki ingest failures the framework otherwise hides
+**Boundary:** node — own-repo paths only (no `../`, no absolute paths outside `$CLAUDE_PROJECT_DIR`, no sibling-repo names). Enforced by dispatcher Step 4a preflight.
 
 <!-- emits-finding-types: machine-readable -->
 ```yaml

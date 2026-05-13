@@ -3,6 +3,7 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** daily
 **Nature:** mechanical — rebuild inventory, scan for structural issues, apply whitelisted fixes
+**Boundary:** node — own-repo paths only (no `../`, no absolute paths outside `$CLAUDE_PROJECT_DIR`, no sibling-repo names). Enforced by dispatcher Step 4a preflight.
 
 <!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
 ```yaml
@@ -96,70 +97,53 @@ errored, log the error in `notes` and continue — non-fatal.
 See `auto-fix-whitelist.md` (`wiki-index-refresh` ID) for the full safety
 rationale: same derived-artifact pattern as `ecosystem-state-refresh`.
 
-### 5. Scan docs for structural issues
+### 5. Scan + auto-fix in one mechanical pass
 
-Scan `docs/*.md` (recursively) but **skip any top-level `docs/_<name>/` folder** — the underscore prefix is the framework's opt-out convention. The framework-managed underscores are:
+Run:
 
-- `docs/_inbox/` — raw material, no quality bar (categorized separately by the indexer)
-- `docs/_planned/` — future state, different rules (categorized separately)
-- `docs/_archive/` — historical, untouched (categorized separately)
-- `docs/_collections/` — bulk files, no frontmatter required (categorized separately)
-- `docs/_bcos-framework/` — framework, synced from upstream (silent skip)
+```
+python .claude/scripts/scan_docs_structure.py --json --apply-whitelist <comma-joined-fix-ids-from-schedule-config>
+```
 
-**Any other `docs/_<custom>/` folder a user creates is also skipped** — that's the whole point of the convention. The indexer counts them and reports a one-line summary in its stdout, e.g. `Custom _-folders skipped: 2 folder(s), 8 file(s)`. Surface that count in the `notes` field of your result so users see it in the digest. Do not list folder names or file contents — `_*` is opt-out from visibility, not just from validation.
+The script is the single source of truth for what step 5/6 used to describe in prose. It:
 
-Also skip these **generated / convention files** (no frontmatter by design — flagging them is a false positive that recurs every run):
+- Iterates `docs/**/*.md` and processes only files whose zone is `active` (everything under `_inbox/`, `_planned/`, `_archive/`, `_collections/`, `_bcos-framework/`, `_wiki/`, dotfiles, and any user `_<custom>/` folder is skipped by `context_index._zone_for`)
+- Checks each file against all 8 issue IDs listed below
+- Applies any fix ID present in `--apply-whitelist` inline and emits the result under `auto_fixed`
+- Reports anything not auto-fixed under `actions_needed`
+- Emits a single JSON document on stdout — capture it directly into your result
 
-- `docs/document-index.md` — auto-generated index
-- Any dot-prefixed basename (`.wake-up-context.md`, `.session-diary.md`, `.onboarding-checklist.md`, `.portfolio-aggregate.md`, and any other `docs/.*.md`)
+Pass the **intersection** of your dispatcher's `auto_fix.whitelist` config and the IDs this scanner knows how to apply: `missing-last-updated`, `frontmatter-field-order`, `trailing-whitespace`, `eof-newline`, `broken-xref-single-candidate`.
 
-Note on `owner` field: `owner` is **not** a required frontmatter field (see `docs/_bcos-framework/methodology/document-standards.md`). Do not flag it as `missing-required-field`. The required list is exactly: `name, type, cluster, version, status, created, last-updated`.
+**Issue IDs the scanner emits:**
 
-For each remaining file, check:
-
-| Issue ID                      | What to look for                                                     |
+| Issue ID                      | What it means                                                        |
 |-------------------------------|----------------------------------------------------------------------|
 | `missing-frontmatter`         | No YAML frontmatter block at all, or empty block                     |
 | `missing-required-field`      | Required field missing: name, type, cluster, version, status, created, last-updated |
-| `missing-last-updated`        | `last-updated` field absent (but other frontmatter present)          |
+| `missing-last-updated`        | Only `last-updated` is missing (other required fields present)       |
 | `frontmatter-field-order`     | All required fields present, but not in canonical order              |
-| `broken-xref`                 | Markdown link pointing to a non-existent **local** file (see scheme-exclusion note below) |
-| `broken-xref-single-candidate`| broken-xref where exactly one file with matching basename exists     |
+| `broken-xref`                 | Markdown link to a non-existent **local** file; 0 or ≥2 basename candidates |
+| `broken-xref-single-candidate`| Broken xref where exactly one file with matching basename exists     |
 | `trailing-whitespace`         | Lines ending in spaces/tabs                                          |
 | `eof-newline`                 | File does not end in exactly one newline                             |
 
-**Non-local link schemes — do NOT flag as broken-xref.** A markdown link is only checkable against the local filesystem if its `href` is a relative path or starts with `/` (repo-absolute). Links whose href starts with a URI scheme are external by design and out of scope for `broken-xref`. Skip these schemes (case-insensitive):
+Notes baked into the script (do not re-describe in prose elsewhere):
 
-- `http://`, `https://` — web
-- `mailto:`, `tel:`, `sms:` — contact
-- `file://` — absolute local URI (different validation surface)
-- `computer://` — Claude cross-repo absolute reference (intentional pointer to a sibling repo path; not a local file)
-- `obsidian://`, `vscode://`, `cursor://` — editor deep links
-- Any other `^[a-z][a-z0-9+.-]*:` scheme prefix
+- URI-scheme links (`http://`, `mailto:`, `computer://`, `obsidian://`, any `^[a-z][a-z0-9+.-]*:`) and pure fragment links (`#anchor`) are excluded from xref checks
+- `owner` is NOT a required field — the canonical required set is `name, type, cluster, version, status, created, last-updated`
+- The basename index for single-candidate resolution covers all `docs/**/*.md` (including wiki and inbox), so the scanner can correctly point an `active` doc at a sibling that has moved
 
-Also skip pure fragments (`#anchor-only`) — they reference within the same doc.
+If the script crashes, the JSON's `verdict` will be `error` and `notes` will contain the exception. Surface that verbatim in your result and stop — do not improvise replacement scans.
 
-Apply the scheme filter **before** the broken-xref check; the `^[a-z][a-z0-9+.-]*:` regex is the conservative way to detect any URI scheme without enumerating every protocol. If a link is excluded by this rule, it does not contribute to `broken-xref` or `broken-xref-single-candidate` findings.
-
-Use `build_document_index.py`'s output as the source of truth for "which files exist" — do not re-glob.
-
-### 6. Apply auto-fixes
-
-For each issue, check against the dispatcher's `auto_fix.whitelist`. If allowed:
-
-- Apply the fix (see `auto-fix-whitelist.md` for exact semantics)
-- Record it in `auto_fixed` output field: one string per fix, format: `{issue-id} in {relative-path}`
-
-If not allowed, record it in `actions_needed`: one string per item, format: `{issue-id}: {relative-path} — {short description}`.
-
-### 7. Determine verdict
+### 6. Determine verdict
 
 - 🟢 `green` — no findings, or every finding was auto-fixed
 - 🟡 `amber` — one or more items remain in `actions_needed`, all non-critical (missing fields, broken xref without candidate, etc.)
 - 🔴 `red` — any critical item: missing-frontmatter entirely on an active doc, or index script errored
 - ⚠️ `error` — the scan itself failed (script crash, permission error, etc.)
 
-### 8. Emit result
+### 7. Emit result
 
 Return to the dispatcher:
 

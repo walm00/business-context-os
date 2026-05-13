@@ -3,6 +3,7 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** weekly (Friday)
 **Nature:** mechanical — read-only audit on the self-learning ladder; surfaces amber findings, never auto-disables (v0.1)
+**Boundary:** node — own-repo paths only (no `../`, no absolute paths outside `$CLAUDE_PROJECT_DIR`, no sibling-repo names). Enforced by dispatcher Step 4a preflight.
 
 <!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py (P1_007). Schema: docs/_bcos-framework/architecture/typed-events.md -->
 ```yaml

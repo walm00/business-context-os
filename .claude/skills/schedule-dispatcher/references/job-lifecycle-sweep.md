@@ -3,6 +3,7 @@
 **Invoked by:** `schedule-dispatcher` skill
 **Default cadence:** weekly (Friday)
 **Nature:** classifier scan + (after burn-in) declarative auto-routing
+**Boundary:** node — own-repo paths only (no `../`, no absolute paths outside `$CLAUDE_PROJECT_DIR`, no sibling-repo names). Enforced by dispatcher Step 4a preflight.
 
 <!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
 ```yaml

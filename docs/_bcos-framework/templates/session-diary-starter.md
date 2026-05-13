@@ -37,7 +37,7 @@ Append-only running notes. Most-recent on top.
 **Lessons captured**: L-ECOSYSTEM-20260511-020 (cheap-signal-before-expensive-merge pattern), L-ECOSYSTEM-20260511-021 (OR-vs-AND semantics for multi-signal gates).
 
 **What still needs to happen** (out of scope, won't be done in this repo):
-- Umbrella-side: theo-portfolio's umbrella-onboarding skill should write `retrieval.auto_fallthrough: true` into each registered sibling's `.bcos-umbrella.json` by default. Once that lands, every BCOS repo registered with that umbrella will start using the smart-trigger flow automatically. User confirmed they'll handle this client-side as part of umbrella onboarding.
+- Umbrella-side: the umbrella host's `umbrella-onboarding` skill should write `retrieval.auto_fallthrough: true` into each registered sibling's `.bcos-umbrella.json` by default. Once that lands, every BCOS repo registered with that umbrella will start using the smart-trigger flow automatically. User confirmed they'll handle this client-side as part of umbrella onboarding.
 - Calling-agent UX: actual "should I look at sibling X?" prompting still needs wiring downstream of `cross-repo-suggestions`. The data is in the envelope waiting; consumers can opt in.
 
 **Plan artifact**: `.claude/quality/sessions/20260511_073336_smart-trigger-refactor/` (planning + plan committed at `8f92299`).

@@ -2,7 +2,7 @@
 bcos_sync.py — Single-repo BCOS framework sync + freshness.
 
 This module is what the cockpit's "BCOS framework" block plugs into. It mirrors
-the umbrella-level §0 BCOS Framework pane that ships in the theo-portfolio
+the umbrella-level §0 BCOS Framework pane that ships in the umbrella host's
 Command Center, simplified for the single-repo case (each end-user has one
 BCOS install).
 

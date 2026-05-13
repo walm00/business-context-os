@@ -549,15 +549,16 @@ chmod +x .claude/hooks/precompact_save.sh 2>/dev/null || true
 chmod +x .claude/scripts/set_profile.sh 2>/dev/null || true
 
 # ─── Gitignore profile (generate default if none) ───────────────────
-# If the target repo has no .gitignore yet, generate one from the "shared"
-# profile (current default behavior — keeps host codebase clean of BCOS
-# runtime artifacts). Users on personal knowledge repos can switch with:
-#   bash .claude/scripts/set_profile.sh personal
+# If the target repo has no .gitignore yet, generate one from the "personal"
+# profile — the common case for BCOS users (private, single-owner knowledge
+# repo synced across workstations). Team / multi-tenant installs can switch
+# with:
+#   bash .claude/scripts/set_profile.sh shared
 GITIGNORE_GENERATED=""
 if [ ! -f "$TARGET_DIR/.gitignore" ] && [ -f ".claude/templates/gitignore.template" ] && [ -x ".claude/scripts/set_profile.sh" ]; then
-    if bash .claude/scripts/set_profile.sh shared >/dev/null 2>&1; then
-        GITIGNORE_GENERATED="shared"
-        echo -e "  ${GREEN}CREATE${NC}  .gitignore (profile: shared)"
+    if bash .claude/scripts/set_profile.sh personal >/dev/null 2>&1; then
+        GITIGNORE_GENERATED="personal"
+        echo -e "  ${GREEN}CREATE${NC}  .gitignore (profile: personal)"
         echo ""
     fi
 fi
@@ -577,13 +578,14 @@ echo ""
 echo "  Open Claude Code and say: \"Help me get started with my business context.\""
 echo "  Claude will figure out the rest."
 echo ""
-if [ "$GITIGNORE_GENERATED" = "shared" ]; then
-echo -e "  ${YELLOW}TIP:${NC} A .gitignore was generated using the 'shared' profile"
-echo "  (BCOS runtime artifacts ignored — best for team/multi-tenant repos)."
-echo "  If this is a personal knowledge repo and you want session diary,"
-echo "  lessons, and digests synced across machines, switch to 'personal':"
+if [ "$GITIGNORE_GENERATED" = "personal" ]; then
+echo -e "  ${YELLOW}TIP:${NC} A .gitignore was generated using the 'personal' profile"
+echo "  (knowledge artifacts tracked — best for private, single-owner knowledge"
+echo "  repos synced across workstations). If BCOS is dropped into a team or"
+echo "  multi-tenant repo and you want runtime artifacts gitignored, switch to"
+echo "  'shared':"
 echo ""
-echo "      bash .claude/scripts/set_profile.sh personal"
+echo "      bash .claude/scripts/set_profile.sh shared"
 echo ""
 fi
 if [ "$SKIPPED" -gt 0 ]; then

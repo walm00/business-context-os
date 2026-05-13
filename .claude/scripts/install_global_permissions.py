@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """Mirror this project's BCOS permission allowlist into ~/.claude/settings.json.
 
+This is the writer for **Surface 2** of the three managed permission surfaces
+documented authoritatively in
+`docs/_bcos-framework/architecture/permissions-catalog.md` (see "Managed
+permission surfaces" and "Surface 2: cross-repo mirror surface"). That doc
+owns the trust-model rationale, revocation guidance, and the contract for
+what gets mirrored vs preserved. Keep this docstring short — defer to the
+catalog for anything that could drift between writer + contract.
+
 When BCOS schedules and workflows span multiple repos (umbrella + sub-repos,
 portfolio mode, sibling-repo writes), the project-local `.claude/settings.json`
 isn't enough — it only applies in this one project. The cron task fires fine,
