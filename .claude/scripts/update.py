@@ -29,6 +29,32 @@ import urllib.error
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Pause guard
+# ---------------------------------------------------------------------------
+# A repo pauses BCOS framework updates by creating `.bcos-update-paused` at
+# its root. The file's contents (if any) are surfaced as the pause reason.
+# Use cases: framework-source repo (outbound publish only), mid-migration
+# pins, custom-tuned installs, vacation holds.
+#
+# The pause sentinel itself is per-install state and never ships from the
+# source repo (publish.sh's DEV_ONLY_PATHS strips it), so downstream installs
+# only see this file if they create it themselves.
+#
+# Toggle via Command Center per-row Pause/Resume button, or by hand:
+#   touch  .bcos-update-paused          # pause
+#   rm     .bcos-update-paused          # resume
+_SENTINEL = Path(__file__).resolve().parents[2] / ".bcos-update-paused"
+if _SENTINEL.is_file():
+    try:
+        reason = _SENTINEL.read_text(encoding="utf-8").strip()
+    except OSError:
+        reason = ""
+    print("ERROR: BCOS updates paused for this repo.", file=sys.stderr)
+    print(f"Reason: {reason or '(no reason given)'}", file=sys.stderr)
+    print(f"Resume by deleting {_SENTINEL.name} at the repo root.", file=sys.stderr)
+    sys.exit(2)
+
+# ---------------------------------------------------------------------------
 # Configuration — update UPSTREAM_REPO before public launch
 # ---------------------------------------------------------------------------
 
