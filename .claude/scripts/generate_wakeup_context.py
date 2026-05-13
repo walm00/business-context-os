@@ -314,15 +314,32 @@ def main():
         lines.append(f"**Wiki:** {wiki_status}")
         # Schema 1.2 — authority hierarchy framing.
         # Explicit anti-pattern: do NOT add "always check the wiki first".
+        # Per plugin-storage-contract.md Rule 2: wiki is the universal long-form
+        # destination (runbooks, SOPs, decisions, transcripts, FAQs, ...) — not
+        # just URLs/source-summary. The framing below names a few page-types so
+        # downstream agents see the breadth.
         lines.append(
-            "**Wiki authority:** `docs/*.md` is canonical. `_wiki/pages/` "
-            "(authority: canonical-process) is operational truth. "
-            "`_wiki/source-summary/` is reference-only — if it conflicts "
-            "with active context, active wins."
+            "**Wiki authority + scope:** universal long-form destination per "
+            "plugin-storage-contract Rule 2 — runbooks, SOPs, decision logs, "
+            "post-mortems, glossaries, FAQs, transcripts, external sources. "
+            "`docs/*.md` is canonical. `_wiki/pages/` (authority: "
+            "canonical-process) is operational truth. `_wiki/source-summary/` "
+            "is reference-only — if it conflicts with active context, active wins."
         )
         clusters = wiki_top_clusters(docs, top_n=5)
         if clusters:
             lines.append(f"**Wiki topics:** {', '.join(clusters)}")
+        lines.append("")
+    else:
+        # Wiki zone not initialized. Surface its role so fresh agents know
+        # where operational/explanatory knowledge belongs and can offer to
+        # initialize when the user wants to drop a runbook / SOP / transcript.
+        lines.append(
+            "**Wiki:** not initialized. The wiki is BCOS's universal long-form "
+            "destination per plugin-storage-contract Rule 2 (runbooks, SOPs, "
+            "decision logs, transcripts, FAQs, external sources). Run "
+            "`/wiki init --defaults` to scaffold with sensible defaults."
+        )
         lines.append("")
 
     inventory_line = context_inventory(project_root)

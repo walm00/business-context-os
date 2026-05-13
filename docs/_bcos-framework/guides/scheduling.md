@@ -210,32 +210,22 @@ Valid `schedule` values: `"daily"`, `"mon"..."sun"`, `"weekdays"`, `"weekends"`,
 
 ## Why scheduled tasks sometimes get stuck
 
-Scheduled dispatcher runs spawn fresh Claude Code sessions with no human at the keyboard. If a permission prompt fires in one of those sessions, the task hangs until a human notices. The fix is to ship the right permissions by default.
+Scheduled dispatcher runs spawn fresh Claude Code sessions with no human at the keyboard. A permission prompt during one of those runs hangs the task until a human notices. The fix is to ship the right permissions by default.
 
-BCOS ships a comprehensive `.claude/settings.json` allowlist covering every script, write path, sibling skill, and git command the dispatcher needs. The full catalog lives at [permissions-catalog.md](../architecture/permissions-catalog.md) — it's the SoT.
+The authoritative contract lives in [permissions-catalog.md](../architecture/permissions-catalog.md) — what entries BCOS ships, what each one enables, and the bidirectional drift guard (`validate_permissions_catalog.py`) that runs in CI and during onboarding. If you installed BCOS before v1.5 and want to pick up newer dispatcher entries: `python .claude/scripts/update.py` (the `merge_settings_json` step is additive — your customisations stay).
 
-If you installed BCOS before v1.5, your `.claude/settings.json` may be missing entries that newer dispatcher jobs added. Run:
-
-```bash
-python .claude/scripts/update.py
-```
-
-The update script's `merge_settings_json` is additive — it adds missing entries from the shipped settings.json without touching your customizations. After running it, ask Claude to "run today's maintenance now" and confirm a digest appears with no permission prompts.
-
-There is one permission BCOS cannot ship by default: `mcp__scheduled-tasks__create_scheduled_task`, used during onboarding to create the cron task itself. When Claude prompts for it the first time, pick **"Always allow"** so future scheduled runs don't get stuck on it.
+One permission BCOS cannot ship by default: `mcp__scheduled-tasks__create_scheduled_task`, used during onboarding to create the cron task itself. Pick **"Always allow"** the first time so future scheduled runs aren't stuck on it.
 
 ### Cross-repo workflows
 
-Project-level `.claude/settings.json` only applies inside the project that owns it. If your scheduled jobs read or write **across repos** — umbrella reading sub-repos, a workflow in repo A drafting a `_planned/` doc into repo B, sibling-repo updates — those cross-repo writes will still prompt and stall the unattended session.
-
-The fix is to mirror the BCOS allowlist into `~/.claude/settings.json` (user-level, applies in every project on the machine):
+When BCOS workflows span multiple repos (umbrella + sub-repos, sibling writes), the project-level allowlist isn't enough. Mirror it into `~/.claude/settings.json`:
 
 ```bash
 python .claude/scripts/install_global_permissions.py --dry-run   # preview
 python .claude/scripts/install_global_permissions.py             # apply
 ```
 
-The merge is additive — existing user-level rules are preserved. Re-running it is a no-op. Trust-model details and revocation guidance live in [permissions-catalog.md](../architecture/permissions-catalog.md#cross-repo-workflows--mirroring-perms-to-user-level-settings).
+Trust-model implications, the five-state reconciliation algorithm used by the umbrella plugin's parallel surface, and revocation guidance all live in [permissions-catalog.md > Managed permission surfaces](../architecture/permissions-catalog.md#managed-permission-surfaces).
 
 ---
 

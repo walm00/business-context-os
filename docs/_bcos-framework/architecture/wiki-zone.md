@@ -10,19 +10,40 @@ For the sibling zone mechanics see [`collections-zone.md`](./collections-zone.md
 
 ## Why a Wiki Zone Exists
 
-BCOS is built around **canonical, exclusively-owned data points**: each fact has exactly one home, and we link instead of duplicating. That model is excellent for *what is true* and terrible for *how to do things*.
+BCOS is built around **canonical, exclusively-owned data points**: each fact has exactly one home, and we link instead of duplicating. That model is excellent for *what is true* and terrible for everything else.
 
-Operational and explanatory knowledge has no home in the data-point model:
+The wiki is BCOS's **universal long-form / cross-cutting content destination** — canonical per [`plugin-storage-contract.md`](./plugin-storage-contract.md) Rule 2. It holds three broad categories of content that don't fit the data-point model:
 
-- A runbook for rebuilding `document-index.md` when frontmatter is corrupt
-- A how-to for onboarding a new client to BCOS
-- A glossary that defines "cluster," "data point," and "document" for newcomers
-- A post-mortem on the March pricing migration incident
-- A decision log explaining why we picked Postgres over Mongo in 2025
-- A reformatted FAQ derived from the brand-voice data point
-- An external source summary captured from a website, GitHub repo, or YouTube talk
+**1. Operational truth** (`authority: canonical-process`) — how the business actually runs:
 
-These pages **explain**, **operate on**, or **summarize for skimming** the canonical truths in `docs/*.md`. They are derivative by design — they cite upstream data points, never replace them. That's what `docs/_wiki/` is for.
+- Runbooks (rebuilding `document-index.md` when frontmatter is corrupt; deploying the dashboard)
+- How-tos (onboarding a new client to BCOS; running discovery calls)
+- SOPs and playbooks (sales follow-up cadence; the meeting-transcript ingestion pipeline)
+- Decision logs (why we picked Postgres over Mongo in 2025)
+- Post-mortems (the March pricing migration incident)
+- Scripts-with-context (filename-sanitization logic for the Zapier transcript ingestor, with the WHY around it)
+
+**2. Internal reference** (`authority: internal-reference`) — derivative explainers for skimming:
+
+- Glossaries that define "cluster," "data point," "document"
+- FAQs reformatted from the brand-voice data point
+- Tutorials onboarding newcomers to a domain
+
+**3. Plugin cross-cutting content and external sources** — content that crosses plugin boundaries or originates outside:
+
+- Meeting transcripts (informational, not legal evidence)
+- WhatsApp / Slack exports
+- Customer-call notes, email captures, research clippings
+- Charters tied to plugin records
+- External source summaries captured from websites, GitHub repos, YouTube talks (`authority: external-reference`)
+
+These pages **explain**, **operate on**, **reference**, or **summarize for skimming** the canonical truths in `docs/*.md` — or capture the surrounding context plugins and consumers need. They are derivative by design: they cite upstream data points via `builds-on:`, never replace them. That's what `docs/_wiki/` is for.
+
+**What does NOT belong in the wiki:**
+
+- **Canonical data points** — those live in `docs/*.md`. If a wiki page tries to own canonical content, the `duplication-vs-data-point` lint catches it.
+- **Plugin-private structured data** (initiative records, task JSON, SQLite) — those live in `docs/_<plugin>/` per Rule 1.
+- **Legal-weight evidence** (signed contracts, regulatory filings, audited reports) — those live in `_collections/` per Rule 3. Informational artifacts (a meeting transcript, an email export) → wiki. Legal artifacts → collections.
 
 ---
 
@@ -876,5 +897,7 @@ The pin-llm-wiki repo at `https://github.com/ndjordjevic/pin-llm-wiki` provides 
 
 **Status:** v3 design — schema-governance layer added; canonical (parallel draft-a retired 2026-05-01); ready for skill scaffolding.
 **Created:** 2026-04-30
-**Last Updated:** 2026-05-01
-**Version:** 3.1.0
+**Last Updated:** 2026-05-13
+**Version:** 3.2.0
+
+**v3.2.0 — 2026-05-13:** Reframed the "Why Wiki Zone Exists" opening to explicitly anchor the wiki as BCOS's universal long-form / cross-cutting content destination per [plugin-storage-contract.md](./plugin-storage-contract.md) Rule 2. Three content categories surfaced (operational truth, internal reference, plugin cross-cutting + external sources) instead of a single "operational/explanatory" framing. Added explicit "what does NOT belong" callouts (canonical data points, plugin-private structured records, legal-weight evidence). Diagnosed via a downstream session where an agent inferred "wiki = URLs only" from the prior framing and dumped a runbook into `docs/operations/`. See [`.claude/quality/sessions/20260513_103523_wiki-reframe-autoinit/`](../../../.claude/quality/sessions/20260513_103523_wiki-reframe-autoinit/) for the full plan.

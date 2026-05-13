@@ -140,6 +140,37 @@ Wiki jobs are first-class job references and use the same dispatcher contract:
 
 ---
 
+## Step 4a: Cross-repo-reference preflight (node-job boundary)
+
+**Boundary contract for node jobs:** a BCOS node job's world is its own repo. Its `_run` script paths and its `_claude_step` prose MUST resolve inside `$CLAUDE_PROJECT_DIR`. Reading or writing a sibling repo from a node dispatcher tick is a boundary violation — siblings live in their own dispatcher and their own git history; reaching across blurs ownership and produces drift the framework cannot reconcile. (The umbrella dispatcher is the only legitimate cross-sibling reader; even it must not *write* outside its host. See [`umbrella-dispatcher/SKILL.md`](../umbrella-dispatcher/SKILL.md) for the asymmetric rule.)
+
+Before running each job in Step 4, scan the job spec (the entire `job-{name}.md` body) for cross-repo references:
+
+1. **`../` path segments** anywhere in `_run` script paths, `_claude_step` prose, or inline shell snippets.
+2. **Absolute paths** that do not start with `$CLAUDE_PROJECT_DIR`, `$HOME/.claude/`, `$BCOS_PY`, or `/tmp/` (the standard sandboxed prefixes).
+3. **Known sibling-repo names.** If `.bcos-umbrella.json` exists at the repo root, parse its `siblings[].id` list (or `projects[].id` if the umbrella ships that shape) and treat each id as a forbidden substring in `_run`/`_claude_step`. **Fallback:** when `.bcos-umbrella.json` is absent (standalone BCOS install with no umbrella), preflight reduces to the `../` + absolute-path scans — no sibling-name list to check against.
+
+If the preflight matches **any** of the three rules, **skip the job** for this tick and emit a typed `node-job-cross-repo-reference` finding (`category: "bcos-framework"`, verdict `red`, `emitted_by: "dispatcher"`):
+
+```json
+{
+  "finding_type": "node-job-cross-repo-reference",
+  "finding_attrs": {
+    "job": "{job_id}",
+    "offending_path": "{first matched substring}",
+    "location": "_run" | "_claude_step" | "spec_prose"
+  }
+}
+```
+
+Log a corresponding `verdict: "error"` diary entry with `notes: "preflight: cross-repo reference '{offending_path}' in {location}"`. Continue with the next job. Step 4c routes the finding through stickiness compute and Step 7c appends it to `bcos-framework-issues.jsonl` — same handling shape as `job-reference-missing`.
+
+**Why preflight rather than runtime detection:** by the time a job's `_run` is invoked, a cross-repo write may have already mutated sibling state. Static scan before execution is the only point where the framework can refuse cleanly without partial side effects.
+
+**Coordination with umbrella dispatcher.** The umbrella's `audit_node_configs.py` (BCOS Phase 4) sweeps every registered sibling's `schedule-config.json` for this same drift class as a portfolio-level diagnostic. Both emitters use this `finding_type` so the Command Center can deduplicate.
+
+---
+
 ## Step 4b: Completion Checklist — every scheduled job MUST produce a verdict
 
 After Step 4 completes (last job returned), verify that **every job listed in Step 2's run-list produced exactly one diary entry in this dispatcher tick**. This is the silent-skip guard: a job whose reference file is missing, whose runner threw before the `try/except` could catch it, or that was implicitly forgotten by Claude during execution must NOT disappear unnoticed.
@@ -153,7 +184,7 @@ After Step 4 completes (last job returned), verify that **every job listed in St
 
 Do NOT proceed to Step 5 (auto-fixes) until the checklist passes. A silent skip on a destructive job (lifecycle-sweep auto-routing, wiki-archive-expired-post-mortem, etc.) would let policy violations land unannounced; better to halt and surface.
 
-**Rationale.** This was added after the 2026-05-05 incident in `theo-portfolio` where `command-center-schedules-snapshot` silently dropped out of a tick, leaving the downstream dashboard 24h stale with no error trail. Dispatcher behavior is now: "every scheduled job either completes with a verdict or surfaces as a `red` error — no third path."
+**Rationale.** This was added after a 2026-05-05 incident where a `command-center-schedules-snapshot` job silently dropped out of a tick, leaving the downstream dashboard 24h stale with no error trail. Dispatcher behavior is now: "every scheduled job either completes with a verdict or surfaces as a `red` error — no third path."
 
 ---
 
@@ -614,6 +645,7 @@ The dispatcher is meant to survive imperfect repos:
 - Missing config → stop with a helpful error (see Preconditions)
 - Malformed config → emit `framework-config-malformed` typed finding (see Step 1), stop, don't guess
 - A job reference file is missing → emit `job-reference-missing` typed finding (`category: "bcos-framework"`, verdict `red`, `finding_attrs = {job: "{name}", expected_path: ".claude/skills/schedule-dispatcher/references/job-{name}.md"}`), skip that job, log to diary, continue. The framework finding routes to `bcos-framework-issues.jsonl` via Step 7c.
+- A job spec contains a cross-repo reference (Step 4a preflight match) → emit `node-job-cross-repo-reference` typed finding (`category: "bcos-framework"`, verdict `red`, `finding_attrs = {job: "{name}", offending_path: "{first match}", location: "_run" | "_claude_step" | "spec_prose"}`), skip that job, log to diary, continue.
 - A job errors → log `"verdict":"error"`, continue. If the error originated in a framework-managed code path (auto-fix handler, dispatcher itself), also emit a `auto-fix-handler-threw` framework finding.
 - Diary file doesn't exist → create it, write the first entry
 - A JSONL loader reports `_LAST_LOAD_REPORT.dropped > 0` → emit `data-corruption-detected` typed finding with the file path + dropped line count

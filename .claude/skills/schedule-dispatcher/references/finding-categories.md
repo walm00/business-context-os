@@ -21,7 +21,7 @@ The split is **load-bearing**: it's the reason an LLM operating in a client repo
 
 ---
 
-## Classifier (all 56 known `finding_type` IDs)
+## Classifier (all 58 known `finding_type` IDs)
 
 ### `repo-context` (49)
 
@@ -77,12 +77,14 @@ The split is **load-bearing**: it's the reason an LLM operating in a client repo
 | `rule-reversal-spike` | auto-fix-audit | `rule_id` |
 | `rule-downstream-error` | auto-fix-audit | `rule_id` |
 
-### `bcos-framework` (7, added in 1.1.0)
+### `bcos-framework` (9, added in 1.1.0)
 
 | `finding_type` | Emitter | Primary `finding_attrs` key |
 |---|---|---|
 | `dispatcher-silent-skip` | dispatcher Step 4b | `job` |
 | `job-reference-missing` | dispatcher Step 4 | `job` |
+| `node-job-cross-repo-reference` | dispatcher Step 4a (preflight) | `job` |
+| `scheduled-task-cwd-mismatch` | `context-onboarding` Step 6e (registration-time) AND `bcos-umbrella` `audit_scheduled_task_cwd.py` (audit-time) | `sibling_id` |
 | `schema-validation-failed` | dispatcher Step 7 | `offending_finding_type` |
 | `auto-fix-handler-threw` | dispatcher Step 5 | `fix_id` |
 | `installer-seed-missing` | dispatcher Step 1/4 | `expected_path` |

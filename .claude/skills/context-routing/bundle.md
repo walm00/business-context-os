@@ -129,7 +129,7 @@ Same three-stage filter as `/context search` (see [`search.md`](search.md#cross-
   "cross-repo-status": {
     "attempted": true,
     "trigger": "auto-fallthrough",
-    "umbrella-id": "theo-portfolio",
+    "umbrella-id": "my-portfolio",
     "local-insufficient-signal": "zero-hit",
     "siblings-queried": [{"id": "executions-os", "hits": 1, "took-ms": 14}],
     "siblings-skipped": []

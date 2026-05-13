@@ -81,7 +81,7 @@ What the framework does *not* guarantee:
 
 - Encryption at rest — that's your filesystem's job
 - Backup — see above
-- Sync across machines — use Syncthing, Dropbox, or an encrypted cloud target if you need that
+- Sync across machines — bring your own mechanism (cloud drive, encrypted file-sync tool, etc.) if you need that
 
 ---
 

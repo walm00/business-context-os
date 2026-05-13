@@ -8,12 +8,13 @@
 #   bash .claude/scripts/set_profile.sh           # show current profile
 #
 # Profiles:
-#   shared    — BCOS dropped into a multi-tenant/team repo. Runtime artifacts
-#               (sessions, lessons, diary, digest, wake-up, doc-index) are
-#               gitignored to keep the host codebase clean. (Default.)
 #   personal  — BCOS as a personal knowledge repo, never shared. Knowledge
 #               artifacts ARE tracked so they sync across machines. Only
-#               secrets and machine-local files stay ignored.
+#               secrets and machine-local files stay ignored. (Default for
+#               fresh installs — the common BCOS use case.)
+#   shared    — BCOS dropped into a multi-tenant/team repo. Runtime artifacts
+#               (sessions, lessons, diary, digest, wake-up, doc-index) are
+#               gitignored to keep the host codebase clean.
 
 set -euo pipefail
 
@@ -35,7 +36,7 @@ if [[ $# -eq 0 ]]; then
   if [[ -f "$PROFILE_FILE" ]]; then
     echo "Current profile: $(cat "$PROFILE_FILE")"
   else
-    echo "Current profile: shared (default — no $PROFILE_FILE)"
+    echo "Current profile: personal (default — no $PROFILE_FILE)"
   fi
   echo
   echo "Usage: bash $0 <shared|personal>"

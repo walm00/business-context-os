@@ -1,11 +1,26 @@
 # Wiki Zone Configuration
 #
 # Lives at: docs/_wiki/.config.yml
-# Created by install.sh or `/wiki init`. Project-owned after creation.
+# Created by install.sh, `/wiki init` (interactive), `/wiki init --defaults`
+# (headless), or `ensure_wiki_zone.py` (idempotent). Project-owned after creation.
+#
+# Field semantics:
+#   domain — display name (NOT a single-domain narrowing). The wiki holds all
+#     long-form/cross-cutting content per plugin-storage-contract.md Rule 2.
+#   detail_level / source_types / auto_lint / auto_mark_complete — affect
+#     Path A (URL ingest) behavior; see _wiki/queue.md.
+#   enable_path_b — when true, /wiki promote and /wiki create from accept
+#     local content (runbooks, transcripts, scripts, notes). Recommended true.
 
 domain: "{{DOMAIN}}"
+detail_level: {{DETAIL_LEVEL}}             # brief | standard | deep
+source_types: {{SOURCE_TYPES_LIST}}        # YAML list, e.g. [web, github, youtube]
+auto_lint: {{AUTO_LINT}}                   # batch | per-ingest | never
+auto_mark_complete: {{AUTO_MARK_COMPLETE}} # true | false
+enable_path_b: {{ENABLE_PATH_B}}           # true | false
 created: "{{TODAY}}"
 last-updated: "{{TODAY}}"
+schema-source: docs/_wiki/.schema.yml      # local; falls back to framework template
 
 paths:
   pages: pages

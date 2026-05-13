@@ -87,3 +87,19 @@ jobs:
           python-version: "3.12"
       - name: Check that BCOS-controlled files use the shim path
         run: python3 .claude/scripts/check_python_shim_usage.py
+
+  validate-permissions-catalog:
+    name: Validate Permissions Catalog
+    runs-on: ubuntu-latest
+    # Advisory — catalog drift is a framework concern, not user blocker.
+    # Bidirectional check: catalog tokens <-> .claude/settings.json
+    # permissions.allow. See validate_permissions_catalog.py docstring
+    # for matching semantics.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check catalog <-> settings.json drift
+        run: python3 .claude/scripts/validate_permissions_catalog.py

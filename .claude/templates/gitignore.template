@@ -71,17 +71,11 @@ __pycache__/
 # personal — append-only JSONL across multi-machine workflows produces
 # guaranteed merge conflicts; the auditor's reversal-rate thresholds depend
 # on a complete history that git checkout --theirs would silently truncate.
-# Sync via Syncthing if cross-machine continuity matters; never via git.)
+# Cross-machine continuity is a per-user choice; git is not the mechanism.)
 .claude/quality/ecosystem/resolutions.jsonl
 .claude/quality/ecosystem/learned-rules.json
 .claude/quality/ecosystem/learning-blocklist.json
 .claude/quality/ecosystem/state.json
-
-# Syncthing marker folder (per-machine sync setup, not repo content)
-.stfolder/
-
-# Syncthing ignore config (per-machine, not repo content; reveals maintainer sync setup)
-.stignore
 
 # Dashboard runtime state (per-machine; the code ships, the runtime doesn't)
 .claude/scripts/bcos-dashboard/__pycache__/
@@ -109,7 +103,7 @@ __pycache__/
 docs/.wake-up-context.md
 
 # Session diary (per-user accumulated session notes — append-only;
-# multi-machine sync via Syncthing if needed, never via git)
+# git is not the mechanism for multi-machine sync)
 docs/.session-diary.md
 
 # Auto-generated document index (regenerated per user)

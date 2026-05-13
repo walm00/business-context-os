@@ -20,9 +20,9 @@ last-updated: "2026-05-07"
 - The rationale for why each permission is shipped vs. left for user approval at runtime
 
 **STRICTLY_AVOIDS:**
-- The actual `settings.json` file (lives at `.claude/settings.json` — this catalog documents what's in it)
+- The actual settings files themselves (this catalog documents what they should contain; the three managed surfaces — `.claude/settings.json`, `~/.claude/settings.json`, `<umbrella>/.claude/settings.local.json` — live where they live)
 - Hook configuration semantics (see `docs/_bcos-framework/architecture/system-design.md`)
-- User-level permissions in `~/.claude/settings.json` (out of scope — BCOS only owns project-level)
+- Skill author conventions for declaring required permissions (see [`how-to-extend`](#how-to-extend))
 
 ---
 
@@ -72,6 +72,7 @@ Explicit per-script entries (also shipped — redundant with the catch-all but d
 | `refresh_wiki_index.py` | `index-health` Step 4, `wiki-coverage-audit`, `wiki-stale-propagation`, auto-fix `wiki-index-refresh` |
 | `lifecycle_sweep.py` | `lifecycle-sweep` job (preferred headless path) |
 | `auto_fix_audit.py` | `auto-fix-audit` job (resolution-log auditor) |
+| `scan_docs_structure.py` | `index-health` Step 5 (replaces the prose scan/auto-fix loop; emits JSON with findings + applied fixes) |
 | `context_index.py` | dispatcher Step 2.5 (regenerates `.claude/quality/context-index.json` once per run) |
 | `context_search.py`, `context_bundle.py` | `context-routing` skill (`/context search`, `/context bundle`) |
 | `promote_resolutions.py` | self-learning ladder (regenerates `learned-rules.json`) |
@@ -81,6 +82,8 @@ Explicit per-script entries (also shipped — redundant with the catch-all but d
 | `bcos_inventory.py` | ecosystem state inventory |
 | `load_zone_registry.py`, `load_task_profiles.py`, `validate_task_profiles.py` | shared loaders for context-routing, used by multiple skills |
 | `validate_frontmatter.py`, `validate_references.py` | CI hooks and `index-health` |
+| `validate_permissions_catalog.py` | CI hook `validate-permissions-catalog` (drift guard between this catalog and `.claude/settings.json`). Bidirectional check — flags catalog entries missing from settings AND settings entries with no catalog rationale row. Advisory (continue-on-error). |
+| `audit_node_configs.py` | Portfolio-level cold-scan equivalent of the runtime Step 4a preflight in `schedule-dispatcher/SKILL.md`. Walks every BCOS-installed sibling under `--root`, scans each enabled job's `job-{name}.md` spec for cross-repo references (`../` segments + absolute paths outside the sandbox), returns `{scanned, clean, violations}` JSON. Read-only; exit code always 0 so it can wire as advisory CI. Pairs with the typed-event `node-job-cross-repo-reference` emitted at runtime. |
 | `wiki_schema.py` | every wiki job (`wiki-source-refresh`, `wiki-graveyard`, `wiki-coverage-audit`) validates schema before scanning |
 | `wiki_failed_ingest.py` | `wiki-failed-ingest` job |
 | `run_wiki_canonical_drift.py` | `wiki-canonical-drift` job |
@@ -181,9 +184,23 @@ These tools are deliberately omitted from the shipped allowlist because:
 
 ---
 
-## Cross-repo workflows — mirroring perms to user-level settings
+## Managed permission surfaces
 
-The shipped `.claude/settings.json` is **project-local**: it applies only when Claude is rooted in this repo. When BCOS schedules and workflows span multiple repos (umbrella + sub-repos, portfolio mode, sibling-repo writes, syncing context across a multi-repo system), every cross-repo write hits a permission prompt and the unattended scheduled session stalls.
+BCOS + bcos-umbrella manage **three** distinct settings surfaces. Each has its own writer, its own marker key (so re-running the writer is idempotent and respects user removals), and its own boundary — the writers refuse to touch each other's surface. The catalog is the authoritative contract for all three.
+
+| Surface | Writer | Marker key | What gets written | What's never touched |
+|---|---|---|---|---|
+| `.claude/settings.json` (project-level) | `install.sh` + `update.py:merge_settings_json` | (none — full file is BCOS-managed under shipped defaults) | Every entry in the Catalog table above. Additive merge: user-added rules in `permissions.allow` are preserved. | User's own `permissions.deny`, hook entries outside BCOS's hooks block, any top-level key BCOS doesn't own. |
+| `~/.claude/settings.json` (user-level cross-repo mirror) | `install_global_permissions.py` (BCOS framework) | _(none yet — additive merge against existing user content)_ | The same `permissions.allow` entries from the project allowlist. Hooks are NOT mirrored (project-specific by design). Re-running is a no-op. | Anything else in user-level settings. The script never deletes user rules — revocation is the user's call. |
+| `<umbrella-host>/.claude/settings.local.json` (umbrella `additionalDirectories`) | `sync_umbrella_permissions.py` (bcos-umbrella plugin) | `_bcosManagedAdditionalDirectories` | The `permissions.additionalDirectories` array reconciled against `projects.json` siblings via five-state algorithm (ADD / ADOPT / NOOP / RESPECT_USER_REMOVAL / PRESERVE). | The rest of `settings.local.json`. Foreign additionalDirectories entries (e.g. `claude-usage`) are PRESERVED, not nuked. Once the user removes an id from the managed-list, the reconciler never re-adds it (tombstone). |
+
+### Surface 1: project-level `.claude/settings.json`
+
+This catalog's main "Catalog" table above is the SoT. The shipped settings.json mirrors it 1:1 plus a small set of structural entries (`Read(**)`, `Glob`, `Grep`) that don't need a catalog row. Drift between the two is caught by [`validate_permissions_catalog.py`](#testing--drift-guards) — run on every commit via CI and on every onboarding.
+
+### Surface 2: cross-repo mirror surface — `~/.claude/settings.json`
+
+The project surface is **project-local**: it applies only when Claude is rooted in this repo. When BCOS schedules and workflows span multiple repos (umbrella + sub-repos, portfolio mode, sibling-repo writes, syncing context across a multi-repo system), every cross-repo write hits a permission prompt and the unattended scheduled session stalls.
 
 **Common cross-repo scenarios**
 
@@ -212,25 +229,56 @@ The merge is **additive** — your existing user-level rules are never removed, 
 
 **To revoke later**: open `~/.claude/settings.json` and remove the rules you no longer want. The script never deletes anything from user-level settings.
 
+### Surface 3: umbrella `additionalDirectories` — `<umbrella-host>/.claude/settings.local.json`
+
+When a host is an **umbrella** (`bcos-umbrella` plugin installed), it needs `permissions.additionalDirectories` listing every registered sibling so the umbrella session can read sibling content without prompts. `sync_umbrella_permissions.py` (added in bcos-umbrella 0.1.21) reconciles this list against `.claude/registries/projects.json` using the `_bcosManagedAdditionalDirectories` marker key.
+
+| State | Action | Rationale |
+|---|---|---|
+| id NOT in managed-list, path NOT in additionalDirectories | **ADD** | First time seeing this sibling — register it. |
+| id NOT in managed-list, path IS in additionalDirectories | **ADOPT** | User added the path manually before this tool existed; adopt into the managed-list so future runs are idempotent. |
+| id IN managed-list, path IS in additionalDirectories | **NOOP** | Steady state. |
+| id IN managed-list, path NOT in additionalDirectories | **RESPECT USER REMOVAL** | User explicitly removed this — leave it removed forever (tombstone). |
+| Path in additionalDirectories not corresponding to any registered sibling | **PRESERVE** | Foreign entry (e.g. `claude-usage`); never touch it. |
+
+**Idempotency contract:** the reconciler is safe to run on every umbrella-dispatcher tick. It's wired as the `umbrella-permissions-sync` job in `templates/umbrella-schedule-config.template.json` so existing umbrella hosts pick it up on `bcos-umbrella-update.py`.
+
+**Why a marker key:** without `_bcosManagedAdditionalDirectories`, the reconciler can't distinguish "user removed this" from "we never added this". The marker is a tombstone that survives removal.
+
 ### Cross-workstation portability
 
 The mirror script handles cross-repo coverage on **one** machine. Three things still don't travel between workstations on their own:
 
-| File / location | What it carries | Portability options |
+| File / location | What it carries | Portability |
 |---|---|---|
-| `~/.claude/settings.json` | Cross-repo permissions written by `install_global_permissions.py` | (a) Sync `~/.claude/` via Syncthing, OR (b) re-run the installer on each workstation |
-| `~/.claude/scheduled-tasks/<task>.json` | Your actual cron/Task-Scheduler entries | (a) Sync `~/.claude/` via Syncthing, OR (b) re-run onboarding Step 6 per machine |
+| `~/.claude/settings.json` | Cross-repo permissions written by `install_global_permissions.py` | Re-run the installer on each workstation, or bring your own `~/.claude/` sync mechanism |
+| `~/.claude/scheduled-tasks/<task>.json` | Your actual cron/Task-Scheduler entries | Re-run onboarding Step 6 per machine, or bring your own `~/.claude/` sync mechanism |
 | `~/.claude/projects/<project>/sessions/` | Conversation history | Stays per-machine — large, machine-specific, not useful to sync |
 
-**Recommended setup for a multi-workstation maintainer:**
-
-1. Sync `~/.claude/` via Syncthing across your workstations (excluding `~/.claude/projects/*/sessions/` if you want to keep history machine-local).
-2. Run `install_global_permissions.py` once on your primary machine — Syncthing carries the user-level rules to the others.
-3. Run onboarding Step 6 per repo on the primary machine — Syncthing carries the scheduled-task entries.
+**Recommended setup for a multi-workstation maintainer:** re-run `install_global_permissions.py` and onboarding Step 6 on each workstation. If you prefer to sync `~/.claude/` via an out-of-band file-sync tool, that works too — exclude `~/.claude/projects/*/sessions/` if you want conversation history machine-local.
 
 **For a single-workstation user:** ignore the above; the mirror script is sufficient.
 
-The same Syncthing pattern is what handles BCOS event-log files (`.claude/quality/ecosystem/resolutions.jsonl` etc.) which are deliberately gitignored on every profile — append-only logs across multi-machine workflows produce git merge conflicts that silently truncate the auditor's history. Syncthing them works; git tracking them does not.
+The same constraint applies to BCOS event-log files (`.claude/quality/ecosystem/resolutions.jsonl` etc.) which are deliberately gitignored on every profile — append-only logs across multi-machine workflows produce git merge conflicts that silently truncate the auditor's history. Git is not the mechanism for these files; an out-of-band file-sync tool is, if you need cross-machine continuity at all.
+
+---
+
+## Testing / drift guards
+
+Drift between any of the three managed surfaces and this catalog is caught by `validate_permissions_catalog.py`:
+
+```bash
+python .claude/scripts/validate_permissions_catalog.py
+```
+
+Bidirectional check:
+
+- **Forward:** every rule quoted in the "Catalog" table above must exist in `.claude/settings.json > permissions.allow`.
+- **Reverse:** every `permissions.allow` entry must have a catalog row OR be on the small structural-infra allowlist (`Read(**)`, `Glob`, `Grep`).
+
+Wired into CI (advisory; `continue-on-error: true`) as the `validate-permissions-catalog` job. Also invoked by `context-onboarding` Step 6b-pre — onboarding and CI consume the same drift check, so a fresh install can never start in a permission-drifted state.
+
+Exit code 0 = clean. Exit code 1 = drift detected (with detailed report on stdout). Run it locally before opening a PR that touches `settings.json` or this catalog.
 
 ---
 

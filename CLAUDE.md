@@ -50,10 +50,12 @@ BCOS is a structured knowledge system, not a markdown dump. Every doc has YAML f
 | Question about a specific topic / data point | `docs/document-index.md` → owning data point | Index maps topic → file in one read; no grep |
 | Fuzzy or cross-zone lookup ("anything about X") | `/context search <query>` | BM25 over canonical + wiki, ranked by relevance + freshness |
 | Strategy / "what's true right now" | `docs/current-state.md` | Canonical for active priorities, decisions, recent changes |
-| "How do we do X" (process, runbook, SOP) | `_wiki/pages/` filtered by `authority: canonical-process` + topic tag | Operational truth — built on canonical via `builds-on:` |
+| "How do we do X" (process, runbook, SOP, playbook) | `_wiki/pages/` filtered by `authority: canonical-process` + topic tag | Operational truth — built on canonical via `builds-on:` |
+| "Why did we decide X" (decision-log, post-mortem narrative) | `_wiki/pages/` filtered by `page-type: decision-log` or `post-mortem` | Narrative reasoning — extracted atomic rules may also live in `lessons.json` |
 | "What does X mean" (glossary, FAQ, definition) | `_wiki/pages/` filtered by `authority: internal-reference` | Authored explainers; cheaper than reading the full data point |
+| Plugin cross-cutting content (meeting transcript, WhatsApp/Slack export, email, research clipping, customer-call notes) | `_wiki/raw/<type>/<slug>.md` (+ optional `_wiki/source-summary/<slug>.md` derivative) | Per [plugin-storage-contract.md](docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2 — the wiki is the universal destination for plugin long-form content; NOT `_collections/` |
 | External claim, article, web source | `_wiki/source-summary/` (banner citation links to original) | Reference-only; canonical wins on conflict |
-| Source artifact (contract, invoice, transcript, brand kit) | `_collections/<type>/_manifest.md` → artifact | Verbatim evidence — outranks canonical when claims conflict |
+| Source artifact (signed contract, regulatory filing, audited report — **legal-weight evidence only**) | `_collections/<type>/_manifest.md` → artifact | Verbatim evidence — outranks canonical when claims conflict. Non-legal artifacts (informational transcripts, exports) → wiki instead |
 | Architecture / "where does X live" | `docs/table-of-context.md` | Domain map of the whole context |
 | Curated bundle for a complex multi-source task | `/context bundle <task>` | Task-aware, freshness-flagged, conflict-resolved package |
 | Local-miss in a portfolio context (sibling repos may have it) | `/context search --cross-repo <query>` *(opt-in)* | Consults sibling BCOS repos via `.bcos-umbrella.json`. Off by default; flip `retrieval.auto_fallthrough: true` for automatic per-portfolio fallthrough. See `_bcos-framework/architecture/cross-repo-retrieval.md` |
@@ -81,11 +83,16 @@ When the right path isn't obvious, default to `/context search <query>` — it r
 | "save this for later" / brain dump | `docs/_inbox/` | Raw, awaiting triage |
 | "park this idea" / future state | `docs/_planned/` | Polished idea, not yet real |
 | "integrate this" / "update X" | active `docs/*.md` | Find owner, edit, bump version |
-| "explain this" / "make a runbook" | `docs/_wiki/pages/` | Derivative — links to canonical via `builds-on:` |
-| Verbatim artifacts (invoices, transcripts, brand kits) | `docs/_collections/<type>/` | Never paraphrase the artifact |
-| Web URLs / external documents | `docs/_wiki/source-summary/` via `bcos-wiki` | External reference, can go stale |
+| "explain this" / "make a runbook / SOP / how-to" | `docs/_wiki/pages/` (page-type: how-to, runbook, playbook, tutorial) | Operational truth — derivative; links to canonical via `builds-on:` |
+| "log this decision" / "write up the post-mortem" | `docs/_wiki/pages/` (page-type: decision-log, post-mortem) | Narrative reasoning; atomic rules may extract to `lessons.json` |
+| "define this term" / "FAQ entry" | `docs/_wiki/pages/` (page-type: glossary, faq) | Authored explainer (authority: internal-reference) |
+| Meeting transcript, WhatsApp/Slack export, call notes, research clipping (informational) | `docs/_wiki/raw/<type>/` + optional `_wiki/source-summary/` derivative | Per [plugin-storage-contract.md](docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2 — wiki is the universal destination for plugin long-form content |
+| Web URLs / external documents | `docs/_wiki/source-summary/` via `bcos-wiki` (Path A) | External reference, can go stale; banner-cites verbatim raw capture |
+| **Legal-weight evidence** (signed contract, NDA, regulatory filing, audited report) | `docs/_collections/<type>/` | Use ONLY when the file IS the legal artifact and editing corrupts evidence with material consequences. Everything else → wiki |
 
-**Wiki vs. canonical:** Canonical data points (`docs/*.md`) own *what is true*. Wiki pages explain or operationalize that truth (how-to, runbook, decision-log, glossary). If you're defining truth → canonical. If you're explaining how to use it → wiki.
+**Wiki vs. canonical:** Canonical data points (`docs/*.md`) own *what is true*. Wiki pages explain, operationalize, or capture supporting material around that truth (runbooks, decisions, narratives, transcripts, glossaries). If you're defining truth → canonical. If you're operationalizing or referencing it → wiki.
+
+**Wiki vs. collections:** Wiki is the universal long-form / cross-cutting content destination per [plugin-storage-contract.md](docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2. `_collections/` is reserved for legal-weight evidence (Rule 3). When in doubt, route to wiki.
 
 When unsure, run `context-ingest` and let it propose the route. See `.claude/skills/context-ingest/SKILL.md` for the full triage decision tree.
 
@@ -173,7 +180,7 @@ For full standards: `docs/_bcos-framework/methodology/document-standards.md`. Fo
 
 ---
 
-**Version**: 1.10.0
-**Last Updated**: 2026-05-12
+**Version**: 1.11.0
+**Last Updated**: 2026-05-13
 
 <!-- BCOS:CORE:END -->

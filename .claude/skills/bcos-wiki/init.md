@@ -2,29 +2,61 @@
 
 (Skill-directory paths are defined in `SKILL.md`.)
 
-## Inverse Guard (must NOT already exist)
+## Two modes
+
+`/wiki init` runs the **interactive interview** (default — 6 AskUserQuestion prompts).
+
+`/wiki init --defaults` runs the **headless scaffold** with sensible defaults. Use this when:
+
+- A downstream agent needs to drop a runbook / SOP / transcript into a fresh repo and the user wants to skip the 6-question interview.
+- The SKILL.md Guard's auto-init flow fires (selection: "init with defaults + proceed").
+- A plugin install script needs a substrate-ready wiki zone before dropping `_wiki/.schema.d/<plugin>.yml` — but those callers should prefer [`.claude/scripts/ensure_wiki_zone.py`](../../scripts/ensure_wiki_zone.py) which wraps `cmd_wiki_init.py` and is the documented plugin-install hook.
+
+The `--defaults` flag delegates to [`.claude/scripts/cmd_wiki_init.py`](../../scripts/cmd_wiki_init.py) — invoke it as:
+
+```bash
+.claude/bin/python3 .claude/scripts/cmd_wiki_init.py
+```
+
+That script handles the Inverse Guard (idempotent — re-running on an existing zone is a clean no-op) and writes the full scaffold from the framework templates. After it returns, surface the JSON output to the user and continue with whatever operation triggered the init (per SKILL.md Guard "resume" semantics).
+
+---
+
+## Inverse Guard (must NOT already exist) — interactive mode only
 
 If `docs/_wiki/.config.yml` exists in the repo, **stop** with:
 > *"A wiki zone already exists here (`docs/_wiki/.config.yml` found). Use `/wiki run <url>` to ingest a new source, `/wiki promote <inbox-path>` to convert an inbox capture, or `/wiki schema list` to inspect the vocabulary."*
 
-Only proceed if absent.
+Only proceed if absent. (The `--defaults` mode's headless backend `cmd_wiki_init.py` handles this guard mechanically — re-runs are no-ops.)
 
 ---
 
 ## Interview (AskUserQuestion-driven, per BCOS UX rule)
 
+> **Note — the wiki is multi-purpose by design.** Per [`plugin-storage-contract.md`](../../../docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2, the wiki holds operational/explanatory knowledge (runbooks, SOPs, decision logs, how-tos, glossaries, post-mortems, FAQs, meeting notes), plugin cross-cutting context (charters, transcripts, research, customer-call notes), AND external sources (URLs, GitHub, YouTube). The `display_name` below is just a label — the wiki itself is universal. Don't narrow it.
+
 Run **`AskUserQuestion`** with these six questions. Present them in one structured prompt — not as a chained interrogation. The user answers all six in one round.
 
 | Question key | Prompt | Type | Default | Notes |
 |---|---|---|---|---|
-| `domain` | "What is this wiki about?" | text | (required) | One short phrase, used as the wiki's display name. Example: `BCOS framework operations` or `agentic AI frameworks`. |
-| `detail_level` | "Default detail level for ingests?" | enum | `standard` | `brief` ≈ 5–15k tokens · `standard` ≈ 30–80k tokens · `deep` ≈ 100–500k+ tokens. Per-source overrides via `<!-- detail:X -->` queue tags. |
-| `source_types` | "Which Path A source types?" | multi-select | `[web, github, youtube]` | Pick the URL types you'll actually ingest. Reduces clutter in `raw/` if narrower. |
+| `domain` | "Display name for this wiki?" | text | git repo basename (fallback: `wiki`) | Just a label for the zone's README + wake-up summary. **The wiki stores all categories of long-form content regardless of name** — don't narrow it. Example: `BCOS framework operations`, `theo-delivery operations`, or accept the default. The field is named `domain:` in `.config.yml` for backwards compat; semantically it's a display name. |
+| `detail_level` | "Default detail level for Path A ingests?" | enum | `standard` | `brief` ≈ 5–15k tokens · `standard` ≈ 30–80k tokens · `deep` ≈ 100–500k+ tokens. Per-source overrides via `<!-- detail:X -->` queue tags. Affects URL fetches only. |
+| `source_types` | "Which Path A URL source types?" | multi-select | `[web, github, youtube]` | Pick the URL types you'll actually ingest. Reduces clutter in `raw/` if narrower. Path B (local content) always works regardless. |
 | `auto_lint` | "When should lint run automatically?" | enum | `batch` | `batch` (after each `/wiki run`) · `per-ingest` (after every single source) · `never` (only `/wiki lint`). |
-| `auto_mark_complete` | "After successful ingest, flip the queue line to `[x]` automatically?" | bool | `true` | Recommended `true` — saves a manual checkbox toggle. |
-| `enable_path_b` | "Enable Path B (local content / inbox-promotion)?" | bool | `true` | Set `false` to disable `/wiki promote` and `/wiki create`. URLs-only wikis can keep this off. |
+| `auto_mark_complete` | "After successful URL ingest, flip the queue line to `[x]` automatically?" | bool | `true` | Recommended `true` — saves a manual checkbox toggle. |
+| `enable_path_b` | "Enable Path B (local content — runbooks, scripts, notes, inbox-promotion)?" | bool | `true` | Recommended `true` — Path B is the common case for operational/explanatory knowledge. Set `false` only if this wiki is URL-only by design. |
 
 Display a recap; ask a final confirmation question (`Proceed: yes / no / cancel`). If `no`/`cancel`, stop without writing anything.
+
+### `--defaults` mode (skip the interview)
+
+When invoked as `/wiki init --defaults`, skip the AskUserQuestion interview entirely and use the values from the "Default" column above. The `display_name` resolves from `git rev-parse --show-toplevel | basename` (fallback: `wiki`). All other defaults are taken verbatim.
+
+This mode is for two callers:
+- **Downstream agents** that want to drop a runbook into a fresh repo and don't want to interrupt the user with 6 questions (used internally by the SKILL.md Guard's auto-init flow — see below).
+- **Plugin install scripts** (`install_here.py`) calling [`ensure_wiki_zone.py`](../../scripts/ensure_wiki_zone.py) to guarantee the wiki zone exists before dropping `_wiki/.schema.d/<plugin>.yml` fragments.
+
+Both can re-run `/wiki schema` commands later to refine vocabulary as real categories emerge. The defaults are minimum-viable, not final.
 
 ---
 

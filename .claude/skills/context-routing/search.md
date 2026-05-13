@@ -175,7 +175,7 @@ Each sibling's `context-index.json` is loaded, optionally filtered by `projects[
   "cross-repo-status": {
     "attempted": true,                  // deep-fetch ran
     "trigger": "auto-fallthrough",      // see triggers below
-    "umbrella-id": "theo-portfolio",
+    "umbrella-id": "my-portfolio",
     "local-insufficient-signal": "low-coverage",
     "siblings-queried": [{"id": "executions-os", "hits": 4, "took-ms": 23}],
     "siblings-skipped": [{"id": "stalled-repo", "reason": "timeout"}]

@@ -56,10 +56,13 @@ description: |
 |-------------|-------------|-----|
 | HTTP/HTTPS URL (article, GitHub, YouTube) | `/wiki run <url>` (the `bcos-wiki` skill, Path A) | Wiki owns external-source ingest, banner citations, schema validation, refresh tier |
 | Path inside `docs/_inbox/` and user says "make this a wiki page" | `/wiki promote <path>` (Path B) | Wiki owns the `_inbox/` → `_wiki/pages/` promotion |
-| Slack export, meeting transcript, chat log, call recording transcript | `context-mine` first → its output lands in `_inbox/` → resume `context-ingest` triage on the result | Mine is the extraction preprocessor; ingest is the classifier/router |
+| Local file or pasted text — runbook, SOP, decision narrative, post-mortem, glossary entry, FAQ, transcript, research clipping, customer-call notes | `/wiki create from <path-or-paste>` (Path B) | Per [plugin-storage-contract.md](../../../docs/_bcos-framework/architecture/plugin-storage-contract.md) Rule 2, the wiki is the universal long-form / cross-cutting content destination. Don't route to `_collections/` (legal-weight only) or `docs/operations/<custom>` (that's a folder pattern that bypasses wiki tooling). |
+| Slack export, meeting transcript, chat log, call recording transcript | `context-mine` first → its output lands in `_inbox/` → resume `context-ingest` triage on the result | Mine is the extraction preprocessor; ingest is the classifier/router. The processed `_inbox/` capture then typically routes to `/wiki promote` (transcripts are informational long-form content — Rule 2). |
 | Loose notes, pasted text, brain dump, "save this for later" | Stay in `context-ingest` (use AskUserQuestion below) | This skill owns inbox/planned/active classification |
 
 If the dispatch is unambiguous (a URL is a URL), invoke the specialist directly and tell the user one sentence about what you did. If the input is mixed (e.g. Slack export *and* a URL), do mine first, then handle the URL via `/wiki run` separately, then return to ingest for whatever's left.
+
+**Wiki zone not initialized?** If the user's content routes to `/wiki create from` or `/wiki promote` but the target repo has no `_wiki/` zone, the bcos-wiki SKILL.md Guard fires AskUserQuestion offering: (a) init with defaults + proceed [Recommended], (b) full interview + proceed, (c) cancel. Do **not** route around the wiki to `docs/operations/<custom>` or `_collections/` — that creates a parallel storage path that breaks Rule 2's substrate guarantee.
 
 `context-routing` (`/context`) is **retrieval, not ingest** — never dispatch there from here.
 

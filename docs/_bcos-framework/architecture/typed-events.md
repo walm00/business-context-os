@@ -4,7 +4,7 @@ How the dispatcher's daily digest emits **structured events** alongside the huma
 
 For the bigger picture of how this fits the autonomy + UX + self-learning surface, see [`docs/_planned/autonomy-ux-self-learning/implementation-plan.md`](../../_planned/autonomy-ux-self-learning/implementation-plan.md). This doc is the **contract**; that plan is the **rollout**.
 
-> **Status: schema 1.1.0 (additive).** The `finding_type` enum is harvested from the 9 `job-*.md` reference docs (P1_001) and pinned below. Per-type `finding_attrs` shapes are the canonical contract (P1_002). Sidecars conforming to this doc declare `schema_version: "1.1.0"`; sidecars on `"1.0.0"` continue to work — the three new fields (`category`, `first_seen`, `consecutive_runs`) and 7 new `bcos-framework` finding_types are additive. The dashboard defaults `category` to `repo-context` when absent so old sidecars render bit-for-bit identical to the 1.0.0 path.
+> **Status: schema 1.1.0 (additive).** The `finding_type` enum is harvested from the 9 `job-*.md` reference docs (P1_001) and pinned below. Per-type `finding_attrs` shapes are the canonical contract (P1_002). Sidecars conforming to this doc declare `schema_version: "1.1.0"`; sidecars on `"1.0.0"` continue to work — the three new fields (`category`, `first_seen`, `consecutive_runs`) and 9 new `bcos-framework` finding_types are additive. The dashboard defaults `category` to `repo-context` when absent so old sidecars render bit-for-bit identical to the 1.0.0 path.
 
 ---
 
@@ -77,7 +77,7 @@ A `JobSummary`:
 
 ## `finding_type` enum (canonical)
 
-Harvested from the `job-*.md` reference docs in `.claude/skills/schedule-dispatcher/references/` plus dispatcher-emitted meta and framework events. **56 distinct IDs** as of 1.1.0 (49 `repo-context` from 12 emitter groups + 7 `bcos-framework` added in 1.1.0). Two IDs are dual-emitted (`missing-frontmatter` + `broken-xref` come from both `audit-inbox` and `index-health` — that overlap is intentional: daily lint vs. weekly deep). The enum value is the same in both cases; the emitter is disambiguated by the `emitted_by` field on the `Finding`. The full mechanical classifier mapping every ID to its category lives in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md).
+Harvested from the `job-*.md` reference docs in `.claude/skills/schedule-dispatcher/references/` plus dispatcher-emitted meta and framework events. **58 distinct IDs** as of 1.1.0 (49 `repo-context` from 12 emitter groups + 9 `bcos-framework` added in 1.1.0). Two IDs are dual-emitted (`missing-frontmatter` + `broken-xref` come from both `audit-inbox` and `index-health` — that overlap is intentional: daily lint vs. weekly deep). The enum value is the same in both cases; the emitter is disambiguated by the `emitted_by` field on the `Finding`. The full mechanical classifier mapping every ID to its category lives in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md).
 
 ### audit-inbox (8)
 
@@ -195,14 +195,16 @@ Emitted by ingest-time triage (`_wiki_triage.classify()` called from `bcos-wiki/
 |---|---|
 | `frequency-suggestion` | Job autonomy / cadence tuning suggestion (📈 / 📉). |
 
-### Dispatcher framework (7) — added in 1.1.0
+### Dispatcher framework (9) — added in 1.1.0
 
-Emitted by the dispatcher itself when the framework's own state is broken (not by client content). All entries are `category: bcos-framework` per the classifier in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md). Always render as acknowledge-only cards in the dashboard — never get a Fix button — because the LLM patching them in a client repo would be overwritten by the next `update.py` run.
+Emitted by the dispatcher itself OR by registration-time skills (e.g. `context-onboarding`) when the framework's own state is broken (not by client content). All entries are `category: bcos-framework` per the classifier in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md). Always render as acknowledge-only cards in the dashboard — never get a Fix button — because the LLM patching them in a client repo would be overwritten by the next `update.py` run.
 
 | `finding_type` | One-line meaning |
 |---|---|
 | `dispatcher-silent-skip` | A scheduled job produced no diary completion record this tick. Step 4b safety guard fired. |
 | `job-reference-missing` | A scheduled job has no `job-{name}.md` reference file at the expected path. |
+| `node-job-cross-repo-reference` | A scheduled node job's spec contains a path or sibling-name reference that crosses the repo boundary (`../`, absolute path outside `$CLAUDE_PROJECT_DIR`, or a known sibling-repo name). Step 4a preflight fired. Job skipped. |
+| `scheduled-task-cwd-mismatch` | A registered BCOS scheduled task's `Working directory:` line in `~/.claude/scheduled-tasks/<taskId>/SKILL.md` does not match the expected repo path. Emitted by `context-onboarding` at registration time AND by `bcos-umbrella`'s `audit_scheduled_task_cwd.py` at audit time — shared shape, deduped in the dashboard. |
 | `schema-validation-failed` | A typed-event Finding the dispatcher emitted fails contract validation against this doc's shapes. |
 | `auto-fix-handler-threw` | A whitelisted `fix_id`'s handler raised an exception during Step 5. |
 | `installer-seed-missing` | A file expected to be installed by `update.py` is absent at runtime. |
@@ -277,6 +279,8 @@ Every `Finding` carries a typed `finding_attrs` object. Shapes below are the con
 | `rule-downstream-error` | `{rule_id: str, underlying_finding_type: str, underlying_action_taken: str, downstream_job: str, verdict_before: str, verdict_after: str, batch_size: int, window_hours: int}` |
 | `dispatcher-silent-skip` | `{job: str, expected_after: str, last_diary_ts: str \| null, missing_artifact: str \| null}` |
 | `job-reference-missing` | `{job: str, expected_path: str}` |
+| `node-job-cross-repo-reference` | `{job: str, offending_path: str, location: str}` |
+| `scheduled-task-cwd-mismatch` | `{sibling_id: str, expected_cwd: str, actual_cwd: str \| null, task_name: str, platform: str}` |
 | `schema-validation-failed` | `{offending_finding_type: str, validation_error: str, run_at: str}` |
 | `auto-fix-handler-threw` | `{fix_id: str, target: str, exception_class: str, exception_message: str}` |
 | `installer-seed-missing` | `{expected_path: str, framework_files_entry: str, owning_job: str \| null}` |

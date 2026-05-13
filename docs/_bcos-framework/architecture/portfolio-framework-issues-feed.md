@@ -60,9 +60,9 @@ The producer-consumer contract between BCOS (each sibling repo) and `bcos-umbrel
 | `ts` | ISO-8601 | When this line was written (line-level). Distinct from `run_at`. |
 | `run_at` | ISO-8601 | When the dispatcher tick that produced this finding started. Matches the sidecar's top-level `run_at`. Lets the consumer dedupe lines emitted by the same tick. |
 | `sibling_id` | `null` on producer | **Always `null`** at write time. The umbrella walker fills this in when aggregating, prefixed with the sibling's project ID from `.bcos-umbrella.json`. |
-| `finding_type` | string | One of the 7 `bcos-framework` finding_types in [`typed-events.md`](./typed-events.md). |
+| `finding_type` | string | One of the 9 `bcos-framework` finding_types enumerated in [`typed-events.md`](./typed-events.md). |
 | `verdict` | `"red" \| "amber"` | Framework findings never carry verdict `green`. |
-| `emitted_by` | string | Usually `"dispatcher"` for the dispatcher-emitted set; can also be a specific job ID (e.g. `auto-fix-audit` for `data-corruption-detected`). |
+| `emitted_by` | string | Usually `"dispatcher"` for the dispatcher-emitted set; can also be a specific job ID (e.g. `auto-fix-audit` for `data-corruption-detected`) or a registration-time skill (`context-onboarding` for `scheduled-task-cwd-mismatch`). |
 | `first_seen` | ISO date | When this exact finding first emitted across all prior ticks. From Step 4c stickiness compute. |
 | `consecutive_runs` | int ≥ 1 | How many consecutive ticks this same `(finding_type, primary_attr, emitted_by)` tuple has appeared. From Step 4c. |
 | `finding_attrs` | object | Per `finding_type` shape from [`typed-events.md`](./typed-events.md). |
@@ -144,7 +144,7 @@ The umbrella's aggregator job (a new entry in `umbrella-schedule-config.json`, s
 {
   "schema_version": "1.0.0",
   "generated_at": "2026-05-12T09:30:00Z",
-  "umbrella_id": "theo-portfolio",
+  "umbrella_id": "my-portfolio",
   "retention_days": 7,
   "siblings_polled": 5,
   "siblings_with_findings": 2,
@@ -152,7 +152,7 @@ The umbrella's aggregator job (a new entry in `umbrella-schedule-config.json`, s
   "lines_dropped": 0,
   "findings": [
     {
-      "sibling_id": "ventspils-game",
+      "sibling_id": "sibling-a",
       "ts": "2026-05-12T08:05:00Z",
       "run_at": "2026-05-12T08:00:00Z",
       "finding_type": "installer-seed-missing",
@@ -168,8 +168,8 @@ The umbrella's aggregator job (a new entry in `umbrella-schedule-config.json`, s
     "dispatcher-silent-skip": 1
   },
   "by_sibling": {
-    "ventspils-game": 2,
-    "local-dashboard-builder": 6
+    "sibling-a": 2,
+    "sibling-b": 6
   }
 }
 ```
@@ -258,7 +258,7 @@ Mirror BCOS dashboard's stuck logic: findings with `consecutive_runs >= 3` get a
 
 ### Sibling chip styling
 
-Each finding card carries a sibling chip (e.g. `[ventspils-game]`). Clicking the chip filters to that sibling's findings only — useful when an owner wants to drill into one project.
+Each finding card carries a sibling chip (e.g. `[sibling-a]`). Clicking the chip filters to that sibling's findings only — useful when an owner wants to drill into one project.
 
 ### Empty state
 
