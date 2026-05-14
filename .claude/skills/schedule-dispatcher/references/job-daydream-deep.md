@@ -16,17 +16,6 @@ emits-finding-types:
   - cluster-needs-restructuring
 ```
 
-<!-- emits-finding-types: machine-readable; consumed by .claude/scripts/test_finding_type_coverage.py. Schema: docs/_bcos-framework/architecture/typed-events.md -->
-```yaml
-emits-finding-types:
-  - architecture-misalignment
-  - datapoint-should-split
-  - datapoint-should-merge
-  - datapoint-should-retire
-  - datapoint-missing
-  - cluster-needs-restructuring
-```
-
 ---
 
 ## Purpose

@@ -401,62 +401,11 @@ def merge_entities(upstream_path: str, local_path: str) -> int:
     return added
 
 
-def merge_settings_json(upstream_path: str, local_path: str) -> int:
-    """Merge upstream settings.json hooks and permission allowlist into local.
-    Additive only — never removes user entries. Returns count of new entries added."""
-    import json as _json
-
-    with open(upstream_path, "r", encoding="utf-8") as f:
-        upstream = _json.load(f)
-    if os.path.exists(local_path):
-        with open(local_path, "r", encoding="utf-8") as f:
-            local = _json.load(f)
-    else:
-        local = {}
-
-    added = 0
-
-    # --- hooks (additive, keyed by command string) ---
-    if "hooks" in upstream:
-        if "hooks" not in local:
-            local["hooks"] = {}
-        for event, matchers in upstream.get("hooks", {}).items():
-            if event not in local["hooks"]:
-                local["hooks"][event] = matchers
-                added += len(matchers)
-                continue
-
-            local_commands = set()
-            for matcher_group in local["hooks"][event]:
-                for hook in matcher_group.get("hooks", []):
-                    local_commands.add(hook.get("command", ""))
-
-            for matcher_group in matchers:
-                for hook in matcher_group.get("hooks", []):
-                    cmd = hook.get("command", "")
-                    if cmd and cmd not in local_commands:
-                        local["hooks"][event].append(matcher_group)
-                        added += 1
-                        break  # one add per matcher group
-
-    # --- permissions.allow (additive, deduped by exact rule string) ---
-    upstream_allow = upstream.get("permissions", {}).get("allow", [])
-    if upstream_allow:
-        local.setdefault("permissions", {}).setdefault("allow", [])
-        local_allow = local["permissions"]["allow"]
-        existing = set(local_allow)
-        for rule in upstream_allow:
-            if rule not in existing:
-                local_allow.append(rule)
-                existing.add(rule)
-                added += 1
-
-    if added > 0:
-        with open(local_path, "w", encoding="utf-8") as f:
-            _json.dump(local, f, indent=2)
-            f.write("\n")
-
-    return added
+# merge_settings_json now lives in `_settings_merge.py` so tests + tooling
+# can import it without triggering update.py's pause-sentinel guard.
+# Re-exported here for backwards compatibility with any external caller.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _settings_merge import merge_settings_json  # noqa: E402,F401
 
 
 def merge_schedule_config(template_path: str, live_path: str, *,
@@ -638,11 +587,42 @@ def ensure_convention_infrastructure(project_root: str, upstream_root: str) -> l
                 shutil.copy2(src, dst)
                 created.append(f"  + .private/{fname}")
 
-    # Gitkeep files
-    for d in [".claude/hook_state"]:
-        gitkeep = os.path.join(project_root, d, ".gitkeep")
-        if not os.path.exists(gitkeep):
-            Path(gitkeep).touch()
+    # Gitkeep files (claude state + empty wiki subdirs so structure survives clone)
+    for d in [
+        ".claude/hook_state",
+        "docs/_wiki/pages",
+        "docs/_wiki/source-summary",
+        "docs/_wiki/.archive",
+        "docs/_wiki/.schema.d",
+    ]:
+        full = os.path.join(project_root, d)
+        if os.path.isdir(full):
+            gitkeep = os.path.join(full, ".gitkeep")
+            if not os.path.exists(gitkeep):
+                Path(gitkeep).touch()
+
+    # Wiki zone — MUST exist (plugin-storage-contract.md Rule 2). Idempotent;
+    # no-op if zone already initialized. Catches pre-wiki installs upgrading
+    # into the wiki-enabled framework.
+    ensure_wiki_script = os.path.join(project_root, ".claude", "scripts", "ensure_wiki_zone.py")
+    if os.path.exists(ensure_wiki_script):
+        try:
+            import subprocess, json as _json
+            res = subprocess.run(
+                [sys.executable, ensure_wiki_script],
+                cwd=project_root, capture_output=True, text=True, timeout=20,
+            )
+            try:
+                payload = _json.loads(res.stdout) if res.stdout else {}
+            except Exception:
+                payload = {}
+            if payload.get("ok") and not payload.get("no_op"):
+                for p in payload.get("created", [])[:6]:
+                    created.append(f"  + {p}")
+            elif not payload.get("ok"):
+                created.append(f"  ! wiki zone: {payload.get('notes', 'init failed')}")
+        except Exception as e:
+            created.append(f"  ! wiki zone: ensure skipped ({e.__class__.__name__})")
 
     return created
 
@@ -876,6 +856,25 @@ def main():
                 print(f"  settings.json: merged {entries_added} new entries (hooks + permissions) from upstream.")
             else:
                 print(f"  settings.json: all upstream entries already registered.")
+
+            # ------ Permissions catalog drift check (advisory) ----------
+            # Surfaces drift between catalog SoT and shipped settings.
+            # Advisory: prints a warning but never fails the update.
+            # See docs/_bcos-framework/architecture/permissions-write-contract.md
+            try:
+                import subprocess as _sp
+                _validator = str(local_root / ".claude" / "scripts" / "validate_permissions_catalog.py")
+                if os.path.isfile(_validator):
+                    _res = _sp.run(
+                        [sys.executable, _validator, "--quiet"],
+                        cwd=str(local_root), capture_output=True, text=True, timeout=15,
+                    )
+                    if _res.returncode != 0 and _res.stdout.strip():
+                        print()
+                        print(f"  {_res.stdout.strip()}")
+                        print(f"  Detail: python .claude/scripts/validate_permissions_catalog.py")
+            except Exception:
+                pass  # never abort update on advisory check failure
 
         # ----------------------------------- merge schedule-config.json
         # The template just got updated above (it's in FRAMEWORK_FILES). Now

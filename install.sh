@@ -399,11 +399,14 @@ echo -e "  ${GREEN}CREATE${NC}  docs/_archive/ (superseded documents)"
 echo -e "  ${GREEN}CREATE${NC}  docs/_collections/ (high-volume files — transcripts, reports)"
 echo ""
 
-# Optional wiki zone scaffold. The zone is safe to create up front: active
-# authored pages still live only under pages/ and source-summary/, while raw/
-# remains framework-managed storage for bcos-wiki Path B material.
-mkdir -p docs/_wiki/pages docs/_wiki/source-summary docs/_wiki/raw/web docs/_wiki/raw/github docs/_wiki/raw/youtube docs/_wiki/raw/local docs/_wiki/.archive
-echo -e "  ${GREEN}CREATE${NC}  docs/_wiki/ (optional wiki zone)"
+# Wiki zone scaffold — MANDATORY per plugin-storage-contract.md Rule 2.
+# The wiki is BCOS's universal long-form / cross-cutting content destination.
+# Active authored pages live under pages/ and source-summary/; raw/ remains
+# framework-managed storage for bcos-wiki Path B material. All wiki schedules
+# (wiki-stale-propagation, wiki-source-refresh, wiki-graveyard, wiki-coverage-audit,
+# wiki-canonical-drift, wiki-failed-ingest) assume this substrate exists.
+mkdir -p docs/_wiki/pages docs/_wiki/source-summary docs/_wiki/raw/web docs/_wiki/raw/github docs/_wiki/raw/youtube docs/_wiki/raw/local docs/_wiki/.archive docs/_wiki/.schema.d
+echo -e "  ${GREEN}CREATE${NC}  docs/_wiki/ (wiki zone — universal long-form destination)"
 copy_template_if_missing "$SCRIPT_DIR/docs/_bcos-framework/templates/_wiki.schema.yml.tmpl" "docs/_wiki/.schema.yml" "Project Wiki"
 copy_template_if_missing "$SCRIPT_DIR/docs/_bcos-framework/templates/_wiki.config.yml.tmpl" "docs/_wiki/.config.yml" "Project Wiki"
 copy_template_if_missing "$SCRIPT_DIR/.claude/skills/bcos-wiki/templates/README.md.tmpl" "docs/_wiki/README.md" "Project Wiki"
@@ -414,6 +417,11 @@ copy_if_missing "$SCRIPT_DIR/.claude/skills/bcos-wiki/templates/raw/web-README.m
 copy_if_missing "$SCRIPT_DIR/.claude/skills/bcos-wiki/templates/raw/github-README.md.tmpl" "docs/_wiki/raw/github/README.md"
 copy_if_missing "$SCRIPT_DIR/.claude/skills/bcos-wiki/templates/raw/youtube-README.md.tmpl" "docs/_wiki/raw/youtube/README.md"
 copy_if_missing "$SCRIPT_DIR/.claude/skills/bcos-wiki/templates/raw/local-README.md.tmpl" "docs/_wiki/raw/local/README.md"
+# .gitkeep on empty wiki subdirs so the structure is preserved across git clone
+# even when no pages/captures exist yet.
+for wd in "docs/_wiki/pages" "docs/_wiki/source-summary" "docs/_wiki/.archive" "docs/_wiki/.schema.d"; do
+    [ ! -f "$wd/.gitkeep" ] && touch "$wd/.gitkeep"
+done
 if [ ! -f "docs/_wiki/index.md" ]; then
     cat > "docs/_wiki/index.md" <<'EOF'
 # Wiki Index
@@ -559,6 +567,23 @@ if [ ! -f "$TARGET_DIR/.gitignore" ] && [ -f ".claude/templates/gitignore.templa
     if bash .claude/scripts/set_profile.sh personal >/dev/null 2>&1; then
         GITIGNORE_GENERATED="personal"
         echo -e "  ${GREEN}CREATE${NC}  .gitignore (profile: personal)"
+        echo ""
+    fi
+fi
+
+# ─── Permissions catalog drift check (advisory) ─────────────────────
+# Surfaces drift between docs/_bcos-framework/architecture/permissions-catalog.md
+# (SoT) and .claude/settings.json > permissions.allow. Advisory only —
+# never blocks install. Multi-plugin contract:
+# docs/_bcos-framework/architecture/permissions-write-contract.md
+if [ -x ".claude/bin/python3" ] && [ -f ".claude/scripts/validate_permissions_catalog.py" ]; then
+    PERMISSIONS_DRIFT=""
+    PERMISSIONS_DRIFT=$(.claude/bin/python3 .claude/scripts/validate_permissions_catalog.py --quiet 2>&1) || true
+    if [ -n "$PERMISSIONS_DRIFT" ]; then
+        echo ""
+        echo -e "  ${YELLOW}ADVISORY${NC} $PERMISSIONS_DRIFT"
+        echo -e "  ${YELLOW}        ${NC} Detail: .claude/bin/python3 .claude/scripts/validate_permissions_catalog.py"
+        echo -e "  ${YELLOW}        ${NC} Contract: docs/_bcos-framework/architecture/permissions-write-contract.md"
         echo ""
     fi
 fi

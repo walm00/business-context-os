@@ -54,6 +54,86 @@ STRUCTURAL_INFRA: set[str] = {
     "Grep",
 }
 
+# Structural patterns — entire pattern-classes that don't warrant per-line
+# catalog rationale. Each entry is (category-label, matcher, why-structural).
+# Matchers: a string is treated as a literal prefix (cheap, deterministic);
+# a re.Pattern is matched with .fullmatch().
+#
+# Why a separate list from STRUCTURAL_INFRA: STRUCTURAL_INFRA stays a
+# literal-exact set of primitives. STRUCTURAL_PATTERNS captures *classes*
+# of primitives that scale with the framework (one per shipped skill, one
+# per owned write zone, etc.). Keep both lists tight — when in doubt, the
+# catalog row is the right answer.
+STRUCTURAL_PATTERNS: "list[tuple[str, str | re.Pattern[str], str]]" = [
+    # --- Skill registration ---
+    # Every shipped skill needs a Skill() permission pair. The catalog
+    # doesn't (and shouldn't) carry one rationale row per skill — skill
+    # ownership lives in the skill's own SKILL.md.
+    ("skill-registration", "Skill(",
+     "Every shipped skill needs Skill(<name>) and Skill(<name>:*)."),
+
+    # --- Framework-owned write zones ---
+    # These paths are BCOS's contract surface: dispatcher writes here,
+    # hooks write here, skills write here. The catalog can't enumerate
+    # every file under them; the zone itself is the rationale.
+    ("owned-write-zone", "Edit(.claude/quality/",
+     "BCOS-owned quality state (sessions, ecosystem, hook_state, config)."),
+    ("owned-write-zone", "Write(.claude/quality/",
+     "BCOS-owned quality state (sessions, ecosystem, hook_state, config)."),
+    ("owned-write-zone", "Edit(.claude/hook_state/",
+     "BCOS-owned per-session hook state."),
+    ("owned-write-zone", "Write(.claude/hook_state/",
+     "BCOS-owned per-session hook state."),
+    ("owned-write-zone", "Edit(docs/_wiki/",
+     "BCOS-owned wiki zone (managed by bcos-wiki skill)."),
+    ("owned-write-zone", "Write(docs/_wiki/",
+     "BCOS-owned wiki zone (managed by bcos-wiki skill)."),
+    ("owned-write-zone", "Edit(docs/_inbox/",
+     "BCOS-owned ingest zone (managed by context-ingest skill)."),
+    ("owned-write-zone", "Write(docs/_inbox/",
+     "BCOS-owned ingest zone (managed by context-ingest skill)."),
+    ("owned-write-zone", "Edit(docs/_planned/",
+     "BCOS-owned planning zone (managed by clear-planner skill)."),
+    ("owned-write-zone", "Write(docs/_planned/",
+     "BCOS-owned planning zone (managed by clear-planner skill)."),
+    ("owned-write-zone", "Edit(docs/_archive/",
+     "BCOS-owned archive zone (managed by lifecycle skills)."),
+    ("owned-write-zone", "Write(docs/_archive/",
+     "BCOS-owned archive zone (managed by lifecycle skills)."),
+    # Dot-prefixed docs at top of docs/ (wake-up-context, session-diary,
+    # onboarding-checklist) — runtime-regenerated.
+    ("owned-write-zone", re.compile(r"(Edit|Write)\(docs/\.[A-Za-z0-9_-]+\.md\)"),
+     "BCOS runtime-generated dot-prefixed docs (wake-up, diary, etc.)."),
+    # Generated document-index and bcos-control-map (top-level docs/).
+    ("owned-write-zone", re.compile(r"(Edit|Write)\(docs/(document-index|bcos-control-map)\.md\)"),
+     "BCOS runtime-generated top-level index/control-map."),
+
+    # --- Dispatcher auto-commit ---
+    # Auto-commit hooks call `git add` on a fixed set of runtime-generated
+    # paths. Each path entry is structural — the rationale is the paired
+    # write permission above.
+    ("dispatcher-auto-commit", re.compile(r"Bash\(git add docs/\.[A-Za-z0-9_-]+\.md\)"),
+     "Auto-commit of runtime-regenerated dot-prefixed docs."),
+    ("dispatcher-auto-commit", re.compile(r"Bash\(git add docs/_(inbox|wiki)/[A-Za-z0-9._/-]+\)"),
+     "Auto-commit of dispatcher/wiki runtime outputs."),
+    ("dispatcher-auto-commit", re.compile(r"Bash\(git add \.claude/(hook_state|quality)/[A-Za-z0-9._/-]+\)"),
+     "Auto-commit of BCOS state files."),
+
+    # --- Python shim invocation ---
+    # The python-shim contract permits four invocation forms (bare,
+    # fully qualified, quoted-fully-qualified, hook-targeted). All
+    # resolve to the same shim; the catalog need not enumerate them
+    # per-script.
+    ("python-shim", re.compile(r"Bash\(\$CLAUDE_PROJECT_DIR/\.claude/bin/python3 .*\)"),
+     "Python-shim invocation (fully qualified, all script paths)."),
+    ("python-shim", re.compile(r"Bash\(\.claude/bin/python3 .*\)"),
+     "Python-shim invocation (relative, all script paths)."),
+    ("python-shim", re.compile(r"Bash\(\"\$CLAUDE_PROJECT_DIR/\.claude/bin/python3\".*\)"),
+     "Python-shim invocation (quoted-fully-qualified form used in context-onboarding _claude_md.py call)."),
+    ("python-shim", re.compile(r"Bash\(\$CLAUDE_PROJECT_DIR/\.claude/bin/python3 \"\$CLAUDE_PROJECT_DIR/.*\)"),
+     "Python-shim invocation (fully-qualified shim + quoted script path)."),
+]
+
 # Regex matching permission tokens inside backticks.
 # Examples of what we match:
 #   `Bash(python .claude/scripts/:*)`
@@ -158,13 +238,30 @@ def _glob_covers(catch_all: str, specific: str) -> bool:
     return False
 
 
-def _covered_by_any(specific: str, pool: list[str] | set[str]) -> bool:
+def _covered_by_any(specific: str, pool: "list[str] | set[str]") -> bool:
     """True iff some entry in `pool` covers `specific` (including
     verbatim match)."""
     for entry in pool:
         if _glob_covers(entry, specific):
             return True
     return False
+
+
+def _matches_structural_pattern(entry: str) -> "tuple[bool, str | None]":
+    """Does `entry` match any STRUCTURAL_PATTERNS row?
+
+    Returns (matched, category-label). Literal-string matchers are
+    treated as prefixes (entry.startswith). re.Pattern matchers use
+    fullmatch.
+    """
+    for label, matcher, _comment in STRUCTURAL_PATTERNS:
+        if isinstance(matcher, str):
+            if entry.startswith(matcher):
+                return (True, label)
+        else:
+            if matcher.fullmatch(entry):
+                return (True, label)
+    return (False, None)
 
 
 def _check_forward(
@@ -190,12 +287,18 @@ def _check_forward(
 
 
 def _check_reverse(
-    settings_allow: list[str], catalog_tokens: set[str],
-) -> list[str]:
+    settings_allow: "list[str]", catalog_tokens: "set[str]",
+) -> "tuple[list[str], dict[str, int]]":
     """Reverse check: every settings entry must be findable in catalog
-    (verbatim, covered by catalog glob) or be on STRUCTURAL_INFRA."""
+    (verbatim, covered by catalog glob), be on STRUCTURAL_INFRA, OR
+    match a STRUCTURAL_PATTERNS rule.
+
+    Returns (unrationalized, pattern_match_counts).
+    pattern_match_counts maps category-label -> count.
+    """
     catalog_list = sorted(catalog_tokens)
-    unrationalized: list[str] = []
+    unrationalized: "list[str]" = []
+    pattern_match_counts: "dict[str, int]" = {}
     for entry in settings_allow:
         if entry in STRUCTURAL_INFRA:
             continue
@@ -203,8 +306,12 @@ def _check_reverse(
             continue
         if _covered_by_any(entry, catalog_list):
             continue
+        matched, label = _matches_structural_pattern(entry)
+        if matched and label:
+            pattern_match_counts[label] = pattern_match_counts.get(label, 0) + 1
+            continue
         unrationalized.append(entry)
-    return unrationalized
+    return (unrationalized, pattern_match_counts)
 
 
 def validate(root: Path) -> tuple[dict, int]:
@@ -216,7 +323,9 @@ def validate(root: Path) -> tuple[dict, int]:
         return ({"ok": False, "errors": cat_errs + set_errs}, 2)
 
     forward_missing = _check_forward(catalog_tokens, settings_allow)
-    reverse_unrationalized = _check_reverse(settings_allow, catalog_tokens)
+    reverse_unrationalized, structural_pattern_counts = _check_reverse(
+        settings_allow, catalog_tokens,
+    )
 
     summary = {
         "ok": not (forward_missing or reverse_unrationalized),
@@ -225,6 +334,7 @@ def validate(root: Path) -> tuple[dict, int]:
         "structural_exemptions": sorted(
             e for e in settings_allow if e in STRUCTURAL_INFRA
         ),
+        "structural_pattern_matches": structural_pattern_counts,
         "forward_missing": forward_missing,
         "reverse_unrationalized": reverse_unrationalized,
         "errors": [],
@@ -247,6 +357,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="Repo root (default: CWD)")
     ap.add_argument("--json", action="store_true",
                     help="Emit a JSON summary on stdout")
+    ap.add_argument("--quiet", action="store_true",
+                    help="Suppress output on clean runs; one summary line on drift. "
+                         "Used by install.sh / update.py advisory preflight.")
     ap.add_argument("--strict", action="store_true",
                     help="Reserved for future use (currently a no-op)")
     args = ap.parse_args(argv)
@@ -258,6 +371,18 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(summary, indent=2))
         return rc
 
+    if args.quiet:
+        if rc == 0:
+            return 0
+        forward_missing = summary.get("forward_missing", [])
+        reverse_unrat = summary.get("reverse_unrationalized", [])
+        print(
+            f"[ADVISORY] Permissions catalog drift: "
+            f"{len(forward_missing)} forward, {len(reverse_unrat)} reverse. "
+            f"Run without --quiet for detail."
+        )
+        return rc
+
     print("=" * 62)
     print("  Permissions catalog drift check")
     print(f"  Root: {root}")
@@ -265,6 +390,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  Catalog tokens:    {summary.get('catalog_tokens', '-')}")
     print(f"  Settings entries:  {summary.get('settings_entries', '-')}")
     print(f"  Structural exempt: {len(summary.get('structural_exemptions', []))}")
+    pattern_counts = summary.get("structural_pattern_matches", {}) or {}
+    if pattern_counts:
+        total = sum(pattern_counts.values())
+        print(f"  Structural patterns matched: {total} entry(ies) across {len(pattern_counts)} categor{'y' if len(pattern_counts) == 1 else 'ies'}")
+        for label, count in sorted(pattern_counts.items()):
+            print(f"    {label}: {count}")
     print()
 
     if rc == 2:

@@ -6,6 +6,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-05-14
+
+### Added — Multi-plugin permissions write contract
+
+Pending v2.0.0 release. Three coordinated framework primitives implementing the [Multi-Plugin Permissions Write Contract](docs/_bcos-framework/architecture/permissions-write-contract.md):
+
+- **`_bcosManagedPermissions` marker key** in `.claude/settings.json` —
+  BCOS now tracks its slice of `permissions.allow` in a top-level marker key.
+  Enables multi-plugin coexistence (bcos-umbrella will ship the parallel
+  `_bcosManagedUmbrellaPermissions` slice in a coordinated release).
+- **5-state reconciler** (`SettingsReconciler` in
+  `.claude/scripts/_settings_reconciler.py`) — ADD / ADOPT / NOOP /
+  RESPECT_USER_REMOVAL (tombstone) / REVOKE. Atomic temp+rename writes.
+  `merge_settings_json` (now in `_settings_merge.py`) is marker-aware and
+  preserves user-added rules. First run after upgrade silently ADOPTs every
+  currently-shipped rule into the marker — zero disruption for existing
+  installs.
+- **`reset_permissions_marker.py` rescue command** — drops the marker so
+  the next `update.py` re-ADOPTs from current `allow`. Use this if a
+  tombstone has trapped a rule you want to re-enable.
+- **STRUCTURAL_PATTERNS layer in `validate_permissions_catalog.py`** —
+  recognizes pattern-class primitives (skill registration, owned write zones,
+  dispatcher auto-commit, python-shim variants) so the validator doesn't
+  flag every shipped skill/zone as a separate catalog drift. Reverse-drift
+  dropped from 91 → 0 false positives.
+- **Install/update preflight (advisory)** — `install.sh` and `update.py`
+  now emit an `[ADVISORY]` line at the end of each run when permissions drift
+  is detected. Never blocks install/update — surfaces the issue and points
+  at the catalog SoT for resolution.
+- **New `permissions-write-contract.md` architecture doc** — defines the
+  five rules every plugin that writes Claude Code settings must follow
+  (one writer per surface, marker-key namespacing, 5-state reconciler,
+  additive across plugin boundaries, idempotency) + install/update/uninstall
+  lifecycle + SDLC checklist.
+- **Permission catalog gap fixes** (shipped without v2.0 cut, additive):
+  `find_skills.sh:*` / `find_agents.sh:*` glob variants;
+  `.github/scripts/validate_*.py` mirrors for ecosystem-manager Step 3;
+  quoted-shim `"$CLAUDE_PROJECT_DIR/.claude/bin/python3"` form;
+  `cat .claude/quality/last-daydream.txt`; `Skill(ecosystem-planner)`
+  registration.
+- **`record_daydream.py` helper** — replaces the daydream Step 6
+  `echo "{date}" > .claude/quality/last-daydream.txt` shell redirect
+  (which didn't fit the allowlist shape) with a covered Python script.
+- **Wiki zone is now mandatory at install** — install.sh creates the full
+  `_wiki/` structure including `.schema.d/` and `.gitkeep` markers on empty
+  subdirectories; `update.py` calls `ensure_wiki_zone()` to backfill on
+  upgrades from pre-wiki installs.
+- **Wiki schedules default to daily** — `schedule-config.template.json`
+  now ships `wiki-source-refresh`, `wiki-graveyard`, and `wiki-coverage-audit`
+  on `daily` (matching BCOS's "starts daily, tune down once stable" pattern).
+  Cheap when nothing's due.
+
 ### Changed
 
 - **Fresh-install profile default flipped from `shared` to `personal`.**

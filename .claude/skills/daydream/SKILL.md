@@ -124,10 +124,10 @@ Report what was pruned and any suggested cross-references discovered.
 At the END of the daydream session (after Phase 4), save the timestamp:
 
 ```bash
-echo "{today's date}" > .claude/quality/last-daydream.txt
+python .claude/scripts/record_daydream.py
 ```
 
-This ensures the next daydream knows exactly where to pick up.
+(Writes today's UTC date to `.claude/quality/last-daydream.txt`. Pass an explicit `YYYY-MM-DD` to override.) This ensures the next daydream knows exactly where to pick up.
 
 ### Phase 2: Reflect on Changes (10 min)
 

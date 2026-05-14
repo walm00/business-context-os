@@ -4,10 +4,8 @@
       "Read(**)",
       "Glob",
       "Grep",
-
       "Bash(python .claude/scripts/:*)",
       "Bash(python3 .claude/scripts/:*)",
-
       "Bash(python .claude/scripts/append_diary.py:*)",
       "Bash(python .claude/scripts/build_document_index.py:*)",
       "Bash(python .claude/scripts/generate_wakeup_context.py:*)",
@@ -52,7 +50,6 @@
       "Bash(python .claude/scripts/cmd_wiki_archive.py:*)",
       "Bash(python .claude/scripts/update.py --dry-run:*)",
       "Bash(python .claude/scripts/update.py --check:*)",
-
       "Bash(python3 .claude/scripts/append_diary.py:*)",
       "Bash(python3 .claude/scripts/build_document_index.py:*)",
       "Bash(python3 .claude/scripts/generate_wakeup_context.py:*)",
@@ -72,16 +69,23 @@
       "Bash(python3 .claude/scripts/run_wiki_graveyard.py:*)",
       "Bash(python3 .claude/scripts/run_wiki_source_refresh.py:*)",
       "Bash(python3 .claude/scripts/run_wiki_stale_propagation.py:*)",
-
       "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 .claude/scripts/:*)",
       "Bash(.claude/bin/python3 .claude/scripts/:*)",
       "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 \"$CLAUDE_PROJECT_DIR/.claude/scripts/:*)",
       "Bash($CLAUDE_PROJECT_DIR/.claude/bin/python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/:*)",
-
       "Bash(bash .claude/scripts/set_profile.sh:*)",
       "Bash(bash .claude/skills/skill-discovery/find_skills.sh)",
+      "Bash(bash .claude/skills/skill-discovery/find_skills.sh:*)",
       "Bash(bash .claude/agents/agent-discovery/find_agents.sh)",
-
+      "Bash(bash .claude/agents/agent-discovery/find_agents.sh:*)",
+      "Bash(python .github/scripts/validate_frontmatter.py:*)",
+      "Bash(python .github/scripts/validate_references.py:*)",
+      "Bash(python3 .github/scripts/validate_frontmatter.py:*)",
+      "Bash(python3 .github/scripts/validate_references.py:*)",
+      "Bash(\"$CLAUDE_PROJECT_DIR/.claude/bin/python3\" .claude/scripts/:*)",
+      "Bash(\"$CLAUDE_PROJECT_DIR/.claude/bin/python3\" .claude/hooks/:*)",
+      "Bash(cat .claude/quality/last-daydream.txt)",
+      "Bash(cat .claude/quality/last-daydream.txt:*)",
       "Bash(git status)",
       "Bash(git status --porcelain)",
       "Bash(git status --porcelain:*)",
@@ -106,7 +110,6 @@
       "Bash(git add .claude/hook_state/schedule-diary.jsonl)",
       "Bash(git add .claude/quality/ecosystem/state.json)",
       "Bash(git commit -m bcos:*)",
-
       "Bash(mkdir -p .claude/hook_state:*)",
       "Bash(mkdir -p .claude/quality/sessions:*)",
       "Bash(mkdir -p .claude/quality/ecosystem:*)",
@@ -118,11 +121,9 @@
       "Bash(touch .claude/hook_state/.gitkeep)",
       "Bash(chmod +x .claude/hooks/:*)",
       "Bash(chmod +x .claude/scripts/:*)",
-
       "Read(.claude/hook_state/**)",
       "Edit(.claude/hook_state/**)",
       "Write(.claude/hook_state/**)",
-
       "Read(.claude/quality/**)",
       "Edit(.claude/quality/ecosystem/**)",
       "Write(.claude/quality/ecosystem/**)",
@@ -136,7 +137,6 @@
       "Write(.claude/quality/sessions/**)",
       "Edit(.claude/quality/atlas-ignore.json)",
       "Write(.claude/quality/atlas-ignore.json)",
-
       "Edit(docs/.wake-up-context.md)",
       "Write(docs/.wake-up-context.md)",
       "Edit(docs/.session-diary.md)",
@@ -145,14 +145,12 @@
       "Write(docs/.onboarding-checklist.md)",
       "Edit(docs/document-index.md)",
       "Write(docs/document-index.md)",
-
       "Edit(docs/_inbox/**)",
       "Write(docs/_inbox/**)",
       "Edit(docs/_planned/**)",
       "Write(docs/_planned/**)",
       "Edit(docs/_archive/**)",
       "Write(docs/_archive/**)",
-
       "Edit(docs/_wiki/index.md)",
       "Write(docs/_wiki/index.md)",
       "Edit(docs/_wiki/log.md)",
@@ -169,7 +167,6 @@
       "Write(docs/_wiki/source-summary/**)",
       "Edit(docs/_wiki/pages/**)",
       "Write(docs/_wiki/pages/**)",
-
       "Skill(schedule-dispatcher)",
       "Skill(schedule-dispatcher:*)",
       "Skill(schedule-tune)",
