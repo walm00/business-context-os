@@ -249,6 +249,32 @@ When `natural_language_command` is absent, the recorder writes `null` for that f
 
 ---
 
+### `promote-outputs` — added in 1.3.0
+
+- **applies-to:** `job-missing-outputs-declaration`
+- **type:** `apply-config`
+- **label:** "Promote outputs"
+- **reversible-by:** `git revert` of the single commit produced by the writer. `promote_outputs.py` updates `schedule-config.json` AND the matching `references/job-<name>.md` in one logical batch; both files appear in the same auto-commit so one revert covers both.
+- **telemetry-event:** `outputs-promoted`
+- **requires-write:** true (writes to `.claude/quality/schedule-config.json` AND `.claude/skills/schedule-dispatcher/references/job-<name>.md`)
+- **default-trigger:** `chat-targeted-fix`
+
+**What it does:** Reads `finding_attrs.job` + `finding_attrs.undeclared_paths` and invokes `.claude/scripts/promote_outputs.py --job <job> --paths <p1,p2,...>`. The script:
+
+1. Validates each path against the same rules dispatcher Step 7b applies (relative, inside `docs/` or `.claude/`, no `..` segments, total ≤ 20 literals + 5 globs after merge).
+2. Idempotently merges the paths into `jobs.<job>.outputs` in `schedule-config.json` (skips already-present entries; preserves order; atomic write).
+3. Idempotently appends the paths to the `## Outputs` section of `references/job-<job>.md`. If the section is `(none)`, replaces with the new list.
+4. On validation failure, exits non-zero with a single JSON line on stderr matching the `job-outputs-validation-error` `finding_attrs` shape: `{finding_type, job, invalid_entries, reason}`.
+
+**Routing.** The interactive renderer dispatches by the finding's `emitted_by`:
+
+- `dispatcher` → `business-context-os-dev/.claude/scripts/promote_outputs.py`
+- `umbrella-dispatcher` → `bcos-umbrella/scripts/promote_outputs.py` (same CLI; adds asymmetric "must resolve inside umbrella repo root" validator on top, rejecting cross-sibling paths with `umbrella-job-write-outside-host`-shape stderr and exit 5)
+
+**Pairing with "No, ignore":** The dispatcher Step 7b silencer reads `resolutions.jsonl` and suppresses re-emit when `(job, path)` appears in a `promote-outputs` row with `outcome: ignored` within the last `outputs_ignore_window_days` (default 30). The two options ("Yes, always" + "No, ignore") together make the chip the complete loop closure — accept or silence — with no manual config edits.
+
+---
+
 ### `acknowledge` — added in 1.1.0
 
 - **applies-to:** All 7 `bcos-framework` finding_types: `dispatcher-silent-skip`, `job-reference-missing`, `schema-validation-failed`, `auto-fix-handler-threw`, `installer-seed-missing`, `data-corruption-detected`, `framework-config-malformed`

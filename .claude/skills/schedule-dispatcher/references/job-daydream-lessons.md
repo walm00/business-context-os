@@ -132,3 +132,11 @@ Keep `actions_needed` to a maximum of 8 items. If daydream produced more, pick t
 - Does not replace the user's reading of the wake-up context — it complements it
 
 This job is the "widen your lens once a week" routine. If it never finds anything for three weeks, that's a signal to extend its frequency, not to delete it.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)

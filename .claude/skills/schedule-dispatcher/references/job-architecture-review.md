@@ -162,3 +162,11 @@ If there are fewer than three worth flagging, surface fewer. Do not manufacture 
 - Does not produce a health score more precise than one decimal — false precision is worse than no score
 
 State.json IS modified by this job — via the whitelisted `ecosystem-state-refresh` fix (see Step 3). Treating state.json as a derived artifact rather than authored truth is a deliberate design choice; see lesson L-INIT-20260404-009.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)

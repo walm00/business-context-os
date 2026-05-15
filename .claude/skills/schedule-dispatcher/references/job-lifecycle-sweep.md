@@ -161,3 +161,11 @@ canonical docs from a misfired classifier in the early-feedback window.
 - Routing config: [`.claude/quality/lifecycle-routing.yml`](../../../quality/lifecycle-routing.yml)
 - Headless actions: [`headless-actions.md`](./headless-actions.md) §`lifecycle-route-*` / §`lifecycle-fold-into`
 - Plan: [`docs/_planned/lifecycle-sweep/`](../../../../docs/_planned/lifecycle-sweep/)
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)

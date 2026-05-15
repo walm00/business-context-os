@@ -978,7 +978,7 @@
 
     // 1.1.0: suppress "Run now" for framework findings — running the
     // dispatcher again won't fix a framework bug. Acknowledge is the only
-    // applicable action. The framework owner (Guntis) sees the issue via
+    // applicable action. The framework owner sees the issue via
     // the umbrella's portfolio aggregation of bcos-framework-issues.jsonl
     // and ships a fix upstream.
     if (!isFramework && it.source_job && _ACTION_RUNNABLE.has(String(it.source_job))) {

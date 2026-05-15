@@ -351,7 +351,7 @@ def should_block_auto_commit(verdict: str, block_on_red: bool) -> bool:
 
 def _card_sort_key(card: Card) -> tuple[int, int, int]:
     """Pinning order for the cockpit card list:
-    1) framework category first (acknowledge-only, but high-trust signal — Guntis owns these)
+    1) framework category first (acknowledge-only, but high-trust signal — the framework maintainer owns these)
     2) stuck cards above non-stuck within the same category
     3) red > amber > green within each (stuck, category) bucket
     """

@@ -195,7 +195,7 @@ Emitted by ingest-time triage (`_wiki_triage.classify()` called from `bcos-wiki/
 |---|---|
 | `frequency-suggestion` | Job autonomy / cadence tuning suggestion (📈 / 📉). |
 
-### Dispatcher framework (9) — added in 1.1.0
+### Dispatcher framework (12) — added in 1.1.0, extended 1.2.0 (auto-commit outputs-per-job)
 
 Emitted by the dispatcher itself OR by registration-time skills (e.g. `context-onboarding`) when the framework's own state is broken (not by client content). All entries are `category: bcos-framework` per the classifier in [`finding-categories.md`](../../../.claude/skills/schedule-dispatcher/references/finding-categories.md). Always render as acknowledge-only cards in the dashboard — never get a Fix button — because the LLM patching them in a client repo would be overwritten by the next `update.py` run.
 
@@ -210,6 +210,9 @@ Emitted by the dispatcher itself OR by registration-time skills (e.g. `context-o
 | `installer-seed-missing` | A file expected to be installed by `update.py` is absent at runtime. |
 | `data-corruption-detected` | A JSONL loader's `_LAST_LOAD_REPORT.dropped > 0` — silent data drop in a framework-managed file. |
 | `framework-config-malformed` | `schedule-config.json` or another framework-managed JSON failed JSON parse or missed required fields. |
+| `job-missing-outputs-declaration` | A job ran with no `outputs:` key in `schedule-config.json` (or its `references/job-*.md` spec lacks an `## Outputs` section) AND the run changed at least one path outside `GLOBAL_ALLOWED` this tick (silence-preserving: silent jobs with no committable-shape writes do NOT trigger this finding). Yellow verdict — auto_commit skipped this tick; declare the outputs to clear it. Added 1.2.0. |
+| `job-outputs-validation-error` | A job's declared `outputs:` entry violated structural rules (contained `..`, absolute path, outside `docs/` or `.claude/`, or exceeded the 20-literal / 5-glob cap). Auto-commit skipped this tick; emitted by the dispatcher's Step 7b parse-time validation. Added 1.2.0. |
+| `dispatcher-auto-commit-disabled` | `digest.auto_commit` is `false` in the active `schedule-config.json`. Schema 1.2.0+ ships with `true` as the default; `false` is a valid override but rare. Yellow / info-level; dispatcher continues. Forcing function for plugin-package-checklist L7.10e adoption across the portfolio. Added 1.2.0. |
 
 ### auto-fix-audit (2)
 
@@ -286,6 +289,9 @@ Every `Finding` carries a typed `finding_attrs` object. Shapes below are the con
 | `installer-seed-missing` | `{expected_path: str, framework_files_entry: str, owning_job: str \| null}` |
 | `data-corruption-detected` | `{file: str, dropped_line_count: int, total_lines: int, first_error: str}` |
 | `framework-config-malformed` | `{file: str, parse_error: str \| null, missing_fields: str[] \| null}` |
+| `job-missing-outputs-declaration` | `{job: str, undeclared_paths: str[]}` |
+| `job-outputs-validation-error` | `{job: str, invalid_entries: str[], reason: str}` |
+| `dispatcher-auto-commit-disabled` | `{config_path: str}` |
 
 `str | null` means the field is required to be present (key exists) but the value MAY be null when the emitter cannot determine it. Skipping the key is a contract violation; emit `null` instead.
 
