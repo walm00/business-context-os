@@ -254,6 +254,11 @@ def check_state_coverage(project_root: str, changed_files: list[str]) -> list[di
     except Exception:
         return []
 
+    # DEV_ONLY skills are stripped at publish (see publish.sh DEV_ONLY_PATHS); they
+    # MUST NOT be declared in state.json (state.json ships to the public install).
+    # Excluded from the coverage check so the pre-flight reflects the *public* surface.
+    DEV_ONLY_SKILLS = {"ecosystem-planner"}
+
     gaps = []
     for changed in changed_files:
         normalized = changed.replace("\\", "/")
@@ -263,6 +268,8 @@ def check_state_coverage(project_root: str, changed_files: list[str]) -> list[di
             try:
                 skills_idx = parts.index("skills")
                 skill_name = parts[skills_idx + 1]
+                if skill_name in DEV_ONLY_SKILLS:
+                    continue
                 if skill_name not in skill_list:
                     gaps.append({
                         "file": normalized,

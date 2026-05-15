@@ -73,3 +73,11 @@ Failure modes here are cheap to detect (a single tree walk over `_wiki/`). Catch
 - **Never auto-fix.** Editing frontmatter or rewriting `queue.md` requires editorial judgement about whether the URL is still wanted, whether the summary is correct, etc.
 - **Never delete.** Archive is a separate decision (`wiki-graveyard` job covers that).
 - **Don't double-flag.** If `wiki-stale-propagation` already surfaces a finding for the same file, prefer that — failed-ingest is the dead-letter for things the existing wiki jobs miss.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)

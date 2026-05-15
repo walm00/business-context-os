@@ -175,3 +175,11 @@ Keep `notes` to one short sentence. Anything longer belongs in the digest.
 - Does not do strategic reflection (that's the daydream jobs)
 
 Keep this job dumb and fast. Its value is in the 364 days a year it runs and finds nothing.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- `docs/document-index.md`

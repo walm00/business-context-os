@@ -51,6 +51,11 @@ Read `.claude/quality/schedule-config.json`. Validate required fields:
 
 If the config is malformed, STOP. Emit a typed `framework-config-malformed` finding (schema 1.1.0+, `category: "bcos-framework"`) with `finding_attrs = {file: ".claude/quality/schedule-config.json", parse_error: "{message}" | null, missing_fields: [...] | null}`. Write the minimum-shape sidecar (with this finding + `overall_verdict: "red"` + empty `jobs[]`) AND a `framework-config-malformed` row to `.claude/hook_state/bcos-framework-issues.jsonl` via the Step 7c writer pattern. Write a diary entry `dispatcher.error` with the validation failure. Report to the user: "schedule-config.json is malformed — fix before the dispatcher can run. Use the `schedule-tune` skill to repair it." Note: the chat-echo follows the **error scenario** template from Step 7.3, not the normal compact card.
 
+**Schema-conformance nudge (schema 1.2.0+):** After successful parse, check the config against the schema 1.2.0 baseline:
+
+- If `digest.auto_commit` is `false` → emit a `dispatcher-auto-commit-disabled` framework finding (yellow, info-level — `finding_attrs = {config_path: ".claude/quality/schedule-config.json"}`). Surface in the daily digest's framework-issues block. The dispatcher continues — `false` is a valid override, just not the recommended default. Forcing function for plugin-package-checklist L7.10e adoption.
+- If any `jobs.*` entry has no `outputs:` key → record the job name for the silence-preserving check in Step 7b (do NOT emit a finding here — `job-missing-outputs-declaration` is emitted later only when the missing declaration actually mattered this tick).
+
 ---
 
 ## Step 2: Determine Today's Jobs
@@ -389,16 +394,16 @@ The verdict bar's `{findings-summary}` segment uses the same split rule as Step 
 **When framework findings present** (regardless of scenario), append ONE extra line BEFORE the action hint:
 
 ```markdown
-⚠️ {N} BCOS framework issue{s} logged (acknowledge-only — Guntis will fix in next release)
+⚠️ {N} BCOS framework issue{s} logged (acknowledge-only — the framework maintainer will fix in the next release)
 ```
 
 This is the cleanest possible chat surface for the user across all dispatcher invocations. The full detail lives in `docs/_inbox/daily-digest.md`; the chat just orients and hands off.
 
 ---
 
-## Step 7b: Auto-Commit Generated Artifacts (optional, clean-tree only)
+## Step 7b: Auto-Commit Generated Artifacts (default on, clean-tree only)
 
-If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), commit the generated artifacts so the next session starts from a clean tree and the diary/index are versioned.
+If `digest.auto_commit` is true in `schedule-config.json` (**default: `true`** as of schema 1.2.0; see template `_about` for the rationale), commit the generated artifacts so the next session starts from a clean tree and the diary/index are versioned.
 
 **Branch allowlist (skip commit on short-lived feature branches):**
 
@@ -407,28 +412,72 @@ If `digest.auto_commit` is true in `schedule-config.json` (default: `false`), co
 3. If the current branch is **not** in the allowlist → **skip** the commit entirely. Still write the digest file to disk (so it's available locally), but record `auto_commit: skipped (branch {name} not in allowlist)` in the digest. The user's feature-branch PR diff stays clean of unrelated digest commits; the next session on a long-lived branch picks up the digest naturally.
 4. If the current branch IS in the allowlist → proceed to the clean-tree rule below.
 
-**Clean-tree rule (borrowed from the command-center update flow):**
+**Per-tick ALLOWED set (outputs-per-job model, schema 1.2.0+):**
+
+The set of paths the dispatcher is permitted to auto-commit on this tick is computed dynamically:
+
+```
+TICK_ALLOWED = GLOBAL_ALLOWED  ∪  ⋃ job.outputs (for every job that ran this tick with verdict ≠ skipped)
+```
+
+Where:
+
+- **`GLOBAL_ALLOWED`** is the small hardcoded list of framework files that are written outside any specific job (by helpers, the dispatcher itself, or the digest writer):
+  - `docs/_inbox/daily-digest.md`
+  - `docs/_inbox/daily-digest.json`
+  - `docs/.session-diary.md`
+  - `docs/.wake-up-context.md`
+  - `docs/.onboarding-checklist.md`
+  - `.claude/hook_state/schedule-diary.jsonl`
+  - `.claude/quality/ecosystem/state.json`
+  - `.claude/quality/context-index.json`
+- **`job.outputs`** is read from the corresponding entry in `schedule-config.json` `jobs.<name>.outputs` (a list of paths and/or globs). Each `references/job-<name>.md` spec MUST also declare the matching `## Outputs` section — the spec is the contract, the config is the live wiring.
+- A job that wrote no artifacts (or whose verdict is `skipped` / `error`) contributes nothing — its declared outputs are NOT eligible this tick. This is the per-tick safety property: a stray hand-edit to a "generated" file on a day its owning job did not run still blocks auto-commit.
+
+**Validation of `outputs:` entries** (enforced at parse time; on violation, skip auto-commit for the tick and emit a `job-outputs-validation-error` framework-finding):
+
+- Must be relative paths.
+- Must lie inside `docs/` or `.claude/` (no `_collections/` — evidence is never auto-committed; no repo-root files).
+- No `..` segments. No absolute paths.
+- Maximum 20 literal entries + 5 globs per job.
+- Globs are resolved against `git status --porcelain` paths (same surface the clean-tree rule already inspects). Rename entries appear as `R  old -> new`; the parser splits on ` -> ` and treats the destination as the candidate path. A glob that should match a renamed file must match the destination path; the source path is ignored. (This matches the intent: outputs declare *where the job wrote*, not where files used to live.)
+
+**Backward-compat (soft, silence-preserving):** if a job runs and has no `outputs:` key in `schedule-config.json` (or the `references/job-*.md` spec lacks an `## Outputs` section), treat its outputs as `[]`. **Emit the `job-missing-outputs-declaration` framework-finding only when** the job's run would have changed at least one path *outside* `GLOBAL_ALLOWED` (i.e. a path that *could* have been auto-committable had it been declared). Jobs that ran but produced no committable-shaped writes stay silent — no day-1 finding flood on first sync into downstream repos. The dispatcher keeps functioning; the maintainer is nudged via the daily digest only when the missing declaration *actually mattered* this tick.
+
+**Emission shape (schema 1.3.0+).** The finding carries `suggested_actions: ["promote-outputs"]` so the cockpit / interactive Claude-side renderer can offer a one-click chip. `finding_attrs` is `{job: str, undeclared_paths: str[]}` per `typed-events.md`. The chip routes to the right writer by inspecting `emitted_by`:
+
+- `emitted_by: "dispatcher"` → invokes `business-context-os-dev/.claude/scripts/promote_outputs.py --job <job> --paths <comma-joined>`.
+- `emitted_by: "umbrella-dispatcher"` → invokes `bcos-umbrella/scripts/promote_outputs.py` (same CLI; adds asymmetric "must resolve inside umbrella repo root" validator on top).
+
+See [`headless-actions.md`](./references/headless-actions.md) `promote-outputs` for the full action contract.
+
+**Ignore-silencer pass (schema 1.3.0+).** Before emitting a `job-missing-outputs-declaration` finding for a given `(job, undeclared_paths)` tuple, read `.claude/quality/ecosystem/resolutions.jsonl` (if it exists) and build:
+
+```
+IGNORED = { (row.finding_attrs.job, path) : path ∈ row.finding_attrs.undeclared_paths
+            for row in resolutions
+            where row.action_taken == "promote-outputs"
+              and row.outcome == "ignored"
+              and (now() - row.ts) <= outputs_ignore_window_days (default 30) }
+```
+
+Filter `undeclared_paths` by `(job, path) ∉ IGNORED`. If the filtered list is empty, **do not emit the finding for that job at all**. The window is configurable via `digest.outputs_ignore_window_days` in `schedule-config.json` (default `30`). This is the cash-out for the chip's "No, ignore" option — without it the chip would be decorative.
+
+File-missing / parse-error tolerance: a missing `resolutions.jsonl` means `IGNORED = ∅` (silent). A malformed line is skipped with a `data-corruption-detected` framework finding emitted for the file (per Step 7c's normal pattern); the silencer pass continues with the remaining rows.
+
+**Clean-tree rule:**
 
 1. Run `git status --porcelain`. Collect all changed paths.
-2. Let `ALLOWED` = exactly these paths:
-   - `docs/document-index.md`
-   - `docs/.wake-up-context.md`
-   - `docs/.session-diary.md`
-   - `docs/.onboarding-checklist.md`
-   - `docs/_inbox/daily-digest.md`
-   - `docs/_inbox/daily-digest.json`
-   - `.claude/hook_state/schedule-diary.jsonl`
-   - `.claude/quality/ecosystem/state.json` (if touched by ecosystem jobs)
-   - `.claude/quality/context-index.json` (regenerated in Step 2.5; ignore if `.gitignore` excludes it on this install — the path appears in `git status` only when it's tracked from before the ignore rule landed)
-3. If **every** changed path is in `ALLOWED` → proceed to commit.
-   Otherwise → **skip** the commit entirely. Do not stage, do not branch. Record `auto_commit: skipped (tree not clean outside generated artifacts)` in the digest. The user will see the dirty state next session and decide manually.
+2. Compute `TICK_ALLOWED` per the formula above.
+3. If **every** changed path is in `TICK_ALLOWED` → proceed to commit.
+   Otherwise → **skip** the commit entirely. Do not stage, do not branch. Record `auto_commit: skipped (tree not clean outside generated artifacts)` in the digest, listing the unexpected paths. The user will see the dirty state next session and decide manually.
 4. On commit:
-   - `git add` each `ALLOWED` path that actually changed (never `git add .`)
-   - `git commit -m "bcos: daily maintenance {YYYY-MM-DD}"` — no push, ever
-   - If commit fails (pre-commit hook, etc.), do not retry — record the error in the digest and continue
+   - `git add` each path in `TICK_ALLOWED` that actually changed (never `git add .`).
+   - `git commit -m "bcos: daily maintenance {YYYY-MM-DD}"` — no push, ever.
+   - If commit fails (pre-commit hook, etc.), do not retry — record the error in the digest and continue.
 5. Never create a new branch. Never push. Never skip hooks.
 
-This mirrors the update.py policy: "commit only if the tree is clean outside the files we own." If a user has in-progress work, the dispatcher stays out of the way entirely.
+This mirrors the update.py policy: "commit only if the tree is clean outside the files we own." The outputs-per-job model strengthens that guarantee — eligibility is per-tick, scoped to jobs that actually ran, so unrelated edits to nominally-generated files still pause the dispatcher.
 
 ---
 
@@ -562,6 +611,24 @@ The dispatcher chooses options based on the aggregate result. At least one optio
 | Retry the failed job(s) | second chance — transient issue |
 | Show me the error detail | diagnose before retrying |
 | Skip — investigate later | defer |
+
+### Chip wiring: `promote-outputs` (schema 1.3.0+)
+
+When the tick produced one or more `job-missing-outputs-declaration` findings (each carrying `suggested_actions: ["promote-outputs"]`), surface ONE `AskUserQuestion` question **per `(job, undeclared_paths)` tuple** — these are concrete fix points, not aggregate "walk me through" candidates. Header ≤12 chars (e.g. "Promote outputs"). Question body template:
+
+```
+Auto-commit skipped this tick — job `<job>` wrote <paths> but those weren't declared
+in its `outputs:`. Promote them into the job's declaration?
+```
+
+Options (two only — no one-shot override):
+
+| Option | What it does |
+|---|---|
+| Yes, always | Invoke `.claude/scripts/promote_outputs.py --job <job> --paths <comma-joined>` (or umbrella mirror, per `emitted_by`). On success, write one `resolutions.jsonl` row via `record_resolution.py` with `action_taken: promote-outputs`, `outcome: applied`. |
+| No, ignore  | Write one `resolutions.jsonl` row via `record_resolution.py` with `action_taken: promote-outputs`, `outcome: ignored`. The Step 7b silencer suppresses re-emit on the same `(job, path)` for `outputs_ignore_window_days` (default 30 days). |
+
+Both options end the question cleanly — no follow-up loop. Subsequent findings (other jobs, other action types) get their own questions.
 
 ### Rules for option wording
 

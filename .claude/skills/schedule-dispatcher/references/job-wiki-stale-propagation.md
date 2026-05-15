@@ -103,3 +103,11 @@ Missing or unreadable `builds-on` targets are action items; do not guess.
 
 Everything else is an action item. Reviewing or rewriting wiki prose requires
 human judgement.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- `docs/_wiki/index.md`

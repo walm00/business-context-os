@@ -137,3 +137,11 @@ If `lessons-consolidate` has a `--report-only` flag, use it. If not (v1.0-1.1 ve
 - Does not merge or retire lessons — proposes only
 - Does not do deep ownership / completeness / relationship analysis — that's `architecture-review`'s scope
 - Does not compute a health score — `architecture-review` owns that output
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)

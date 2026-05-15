@@ -118,3 +118,11 @@ a source-summary page.
 - `wiki-mark-queue-ingested`
 
 No source-summary content rewrite is auto-fixable.
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- `docs/_wiki/queue.md`

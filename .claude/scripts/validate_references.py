@@ -64,13 +64,17 @@ def check_state_json():
 
     # Find actual skill directories on disk
     skill_dirs = [os.path.basename(os.path.dirname(d)) for d in glob.glob(".claude/skills/*/SKILL.md")]
-    actual_count = len(skill_dirs)
+    # DEV_ONLY skills don't ship publicly — see DEV_ONLY_SKILLS below + publish.sh DEV_ONLY_PATHS.
+    # Exclude them from the count comparison so the pre-flight reflects the *public* surface.
+    _DEV_ONLY = {"ecosystem-planner"}
+    shippable_dirs = [n for n in skill_dirs if n not in _DEV_ONLY and n != "skill-discovery"]
+    actual_count = len(shippable_dirs)
 
     if declared_count != actual_count:
-        print(f"FAIL: state.json says {declared_count} skills, but {actual_count} SKILL.md files found")
+        print(f"FAIL: state.json says {declared_count} skills, but {actual_count} shippable SKILL.md files found")
         errors += 1
     else:
-        print(f"OK:   state.json skill count ({declared_count}) matches disk")
+        print(f"OK:   state.json skill count ({declared_count}) matches shippable disk count")
 
     # Check each declared skill exists
     for skill_name in declared_skills:
@@ -82,9 +86,15 @@ def check_state_json():
             errors += 1
 
     # Check for undeclared skills
+    # DEV_ONLY skills live in the dev clone but are stripped at publish time via
+    # publish.sh's DEV_ONLY_PATHS — they must NOT be declared in state.json
+    # (state.json ships to the public install) AND must NOT block the pre-flight.
+    DEV_ONLY_SKILLS = {"ecosystem-planner"}
     for name in skill_dirs:
         if name == "skill-discovery":
             continue  # utility, not a skill
+        if name in DEV_ONLY_SKILLS:
+            continue  # stripped at publish via publish.sh DEV_ONLY_PATHS
         if name not in declared_skills:
             print(f"FAIL: skill '{name}' exists on disk but not declared in state.json")
             errors += 1

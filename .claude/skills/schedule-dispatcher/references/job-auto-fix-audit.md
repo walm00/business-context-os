@@ -87,6 +87,12 @@ The dispatcher folds the auditor's `findings[]` into the daily digest sidecar li
 - Reversal-rate calculation excludes `outcome="skipped"` (dry-run handler results from P3 v0.1) and `outcome="errored"` rows. Only applied/reverted move the rate.
 - The `REVERSAL_MIN_N` constant in `auto_fix_audit.py` keeps the auditor quiet for rules with too-small samples (single reversal of 2 events would be a 50% spurious spike). v0.1 uses 3.
 
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)
+
 ## See also
 
 - [`auto_fix_audit.py`](../../../scripts/auto_fix_audit.py) — implementation

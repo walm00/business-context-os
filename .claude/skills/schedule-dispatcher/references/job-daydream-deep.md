@@ -109,3 +109,11 @@ Example (amber):
 - Does not duplicate `daydream-lessons` — this is strategic, that is operational
 - Does not run if there's no meaningful context yet (< 5 data points) — in that case, emit `verdict: green` with `notes: "Context still forming — deep daydream skipped. Recommend disabling this job until you have at least 5 active data points."`
 - Does not repeat last week's observations unless they're still relevant (check diary for last 3 runs — if same observation has been flagged 3 weeks running and nothing changed, escalate to `red`)
+
+---
+
+## Outputs
+
+Paths this job writes that are eligible for dispatcher auto-commit on a tick where this job runs with verdict ≠ skipped. Globs allowed; resolved against `git status --porcelain` (rename destinations only). Empty list = job writes nothing committable on its own (findings flow to the global digest sidecar, which is already in `GLOBAL_ALLOWED`).
+
+- (none)
